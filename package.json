@@ -17,9 +17,14 @@
     "@nestjs/core": "^11.0.0",
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/swagger": "^11.2.3",
+    "@types/play-sound": "^1.1.2",
+    "@types/uuid": "^10.0.0",
     "axios": "^1.6.0",
+    "naudiodon": "^2.3.6",
+    "play-sound": "^1.1.6",
     "reflect-metadata": "^0.1.13",
-    "rxjs": "~7.8.0"
+    "rxjs": "~7.8.0",
+    "uuid": "^13.0.0"
   },
   "devDependencies": {
     "@angular-devkit/core": "~21.0.0",

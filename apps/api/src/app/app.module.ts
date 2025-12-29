@@ -6,10 +6,12 @@ import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
 import { VOICE_PROVIDERS } from './injection-tokens';
 import { VoiceProviderService } from './services/voice-providers/voice-provider.service';
 import { VoicesController } from './controllers/voices.controller';
+import { SpeakController } from './controllers/speak.controller';
+import { AudioProcessorService } from './services/audio-processor.service';
 
 @Module({
   imports: [],
-  controllers: [AppController, VoicesController],
+  controllers: [AppController, VoicesController, SpeakController],
   providers: [
     AppService, 
     ElevenLabsVoiceProvider,
@@ -23,6 +25,7 @@ import { VoicesController } from './controllers/voices.controller';
       useFactory: (elevenLabsVoiceProvider: ElevenLabsVoiceProvider) => [elevenLabsVoiceProvider],
     },
     VoiceProviderService,
+    AudioProcessorService,
   ],
 })
 export class AppModule {}

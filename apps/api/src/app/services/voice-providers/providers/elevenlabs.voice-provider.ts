@@ -3,6 +3,10 @@ import { VoiceProvider } from "../voice-provider.interface";
 import { Voice } from "../voice.interface";
 import { Injectable } from "@nestjs/common";
 import { AudioData } from "../audio-data.interface";
+import { writeFileSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
+import { v4 as uuid } from "uuid";
 
 @Injectable()
 export class ElevenLabsVoiceProvider implements VoiceProvider {
@@ -17,7 +21,6 @@ export class ElevenLabsVoiceProvider implements VoiceProvider {
         
         const output: Voice[] = [];
         for (const voice of voices.voices) {
-            console.log(voice);
             output.push({
                 providerName: this.providerName,
                 voiceId: voice.voiceId,
@@ -39,10 +42,6 @@ export class ElevenLabsVoiceProvider implements VoiceProvider {
             displayName: voice.name,
         };
     }
-
-    // getVoiceByName(name: string): Voice | null {
-    //     return this.elevenLabsClient.getVoiceByName(name);
-    // }
 
     async getRenderedMessage(message: string, voice: Voice): Promise<AudioData> {
         const audioStream = await this.elevenLabsClient.textToSpeech.convert(voice.voiceId, {
@@ -67,10 +66,15 @@ export class ElevenLabsVoiceProvider implements VoiceProvider {
         
         const audioBuffer = Buffer.concat(chunks);
 
+        // Write buffer to temporary file
+        const fileName = `${uuid()}.mp3`;
+        const tempFilePath = join(tmpdir(), fileName);
+        writeFileSync(tempFilePath, audioBuffer);
+
         return {
             message,
             voice,
-            audio: audioBuffer,
+            audioFilePath: tempFilePath,
         };
     }
 }
