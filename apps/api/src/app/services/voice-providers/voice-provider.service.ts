@@ -3,14 +3,22 @@ import { VOICE_PROVIDERS } from "../../injection-tokens";
 import { VoiceProvider } from "./voice-provider.interface";
 import { Voice } from "./voice.interface";
 import { AudioData } from "./audio-data.interface";
+import { AudioProcessorService } from "../audio-processor.service";
 
 @Injectable()
 export class VoiceProviderService {
-    constructor(@Inject(VOICE_PROVIDERS) private readonly voiceProviders: VoiceProvider[]) {
+    private cachedVoices: Voice[] | null = null;
 
-    }
+    constructor(
+        @Inject(VOICE_PROVIDERS) private readonly voiceProviders: VoiceProvider[],
+        private readonly audioProcessorService: AudioProcessorService
+    ) {}
 
-    async getVoices(): Promise<Voice[]> {
+    async getVoices(forceReload = false): Promise<Voice[]> {
+        // Return cached result if available and not forcing reload
+        if (this.cachedVoices !== null && !forceReload) {
+            return this.cachedVoices;
+        }
         
         const output: Voice[] = [];
         for (const provider of this.voiceProviders) {
@@ -27,6 +35,9 @@ export class VoiceProviderService {
             }
             return a.providerName.localeCompare(b.providerName);
         });
+
+        // Update cache with latest results
+        this.cachedVoices = output;
 
         return output;
     }
@@ -55,5 +66,15 @@ export class VoiceProviderService {
         }
 
         return await provider.getRenderedMessage(message, voice);
+    }
+
+    /**
+     * A convenience method to render a message and immediately add it to the audio processor queue.
+     * @param voice 
+     * @param message 
+     */
+    async speak(voice: Voice, message: string) {
+        const audioData = await this.getRenderedMessage(voice, message);
+        await this.audioProcessorService.addToQueue(audioData);
     }
 }

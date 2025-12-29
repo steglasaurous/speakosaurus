@@ -1,0 +1,22 @@
+import { StreamerbotEventName } from '@streamerbot/client';
+
+/**
+ * Interface for StreamerBot client implementations.
+ * Allows switching between real and mock implementations for testing.
+ */
+export interface IStreamerBotClient {
+  /**
+   * Subscribe to a StreamerBot event.
+   * @param eventType The event type to subscribe to
+   * @param callback Function to call when the event is received
+   */
+  on(eventType: StreamerbotEventName, callback: (payload: { data?: any }) => void): void;
+
+  /**
+   * Unsubscribe from an event.
+   * @param eventType The event type to unsubscribe from
+   * @param callback The callback function to remove
+   */
+  off(eventType: StreamerbotEventName, callback: (payload: { data?: any }) => void): void;
+}
+
