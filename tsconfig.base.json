@@ -15,9 +15,7 @@
     "skipDefaultLibCheck": true,
     "baseUrl": ".",
     "paths": {
-      "@streamtools/util-streamer-bot": [
-        "libs/util-streamer-bot/src/index.ts"
-      ],
+      "@streamtools/util-streamer-bot": ["libs/util-streamer-bot/src/index.ts"]
     }
   },
   "exclude": ["node_modules", "tmp"]
