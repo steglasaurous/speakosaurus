@@ -2,7 +2,12 @@
   "name": "@speakmanager2/source",
   "version": "0.0.0",
   "license": "MIT",
-  "scripts": {},
+  "scripts": {
+    "db:generate": "drizzle-kit generate",
+    "db:push": "drizzle-kit push",
+    "db:studio": "drizzle-kit studio",
+    "db:migrate": "drizzle-kit migrate"
+  },
   "private": true,
   "dependencies": {
     "@angular/common": "~21.0.0",

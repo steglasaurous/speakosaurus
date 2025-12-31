@@ -4,6 +4,7 @@ import { VoiceProvider } from "./voice-provider.interface";
 import { Voice } from "./voice.interface";
 import { AudioData } from "./audio-data.interface";
 import { AudioProcessorService } from "../audio-processor.service";
+import { SettingsService } from "../settings.service";
 
 @Injectable()
 export class VoiceProviderService {
@@ -11,7 +12,8 @@ export class VoiceProviderService {
 
     constructor(
         @Inject(VOICE_PROVIDERS) private readonly voiceProviders: VoiceProvider[],
-        private readonly audioProcessorService: AudioProcessorService
+        private readonly audioProcessorService: AudioProcessorService,
+        private readonly settingsService: SettingsService
     ) {}
 
     async getVoices(forceReload = false): Promise<Voice[]> {
@@ -76,5 +78,37 @@ export class VoiceProviderService {
     async speak(voice: Voice, message: string) {
         const audioData = await this.getRenderedMessage(voice, message);
         await this.audioProcessorService.addToQueue(audioData);
+    }
+
+    /**
+     * Return the default voice to use in cases where no specific voice is specified.
+     * 
+     * A default voice is chosen as follows:
+     * - If defaultVoice in settings is present, that is used.
+     * - If no defaultVoice is present, the first available voice from speakertts is used.
+     * - If no speakertts voices are available, use the first available voice from any provider.
+     * - If no voices are available, throw an error.
+     */
+    async getDefaultVoice(): Promise<Voice> {
+        const defaultVoiceSetting = await this.settingsService.getSetting(SettingsService.SETTING_DEFAULT_VOICE);
+        if (!defaultVoiceSetting) {
+            // We'll grab the first available voice from speakertts, as that's the built-in voices from either windows or mac.
+            const voices = await this.getVoices();
+            for (const voice of voices) {
+                if (voice.providerName === 'speakertts') {
+                    return voice;
+                }
+            }
+
+            // If we don't have any speakertts voices, return the first one in voices.
+            if (voices.length > 0) {
+                return voices[0];
+            }
+
+            throw new Error('No voices are available - configure at least one voice provider');
+        }
+
+        const defaultVoiceValue = JSON.parse(defaultVoiceSetting.value);
+        return await this.getVoice(defaultVoiceValue.voiceId, defaultVoiceValue.providerName);
     }
 }

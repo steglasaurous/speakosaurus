@@ -7,7 +7,9 @@ import { VOICE_PROVIDERS } from './injection-tokens';
 import { VoiceProviderService } from './services/voice-providers/voice-provider.service';
 import { VoicesController } from './controllers/voices.controller';
 import { SpeakController } from './controllers/speak.controller';
+import { SettingsController } from './controllers/settings.controller';
 import { AudioProcessorService } from './services/audio-processor.service';
+import { SettingsService } from './services/settings.service';
 import { DrizzleModule } from 'nestjs-drizzle/sqlite';
 import { schema } from './database/schema';
 import { StreamerBotService } from '@streamtools/util-streamer-bot';
@@ -22,7 +24,7 @@ import { SpeakerttsVoiceProvider } from './services/voice-providers/providers/sp
       driver: 'sqlite',
     }) as DynamicModule,
   ],
-  controllers: [AppController, VoicesController, SpeakController],
+  controllers: [AppController, VoicesController, SpeakController, SettingsController],
   providers: [
     AppService, 
     ElevenLabsVoiceProvider,
@@ -38,6 +40,7 @@ import { SpeakerttsVoiceProvider } from './services/voice-providers/providers/sp
     },
     VoiceProviderService,
     AudioProcessorService,
+    SettingsService,
     {
       provide: StreamerBotService,
       useFactory: () => {
