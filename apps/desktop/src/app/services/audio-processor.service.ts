@@ -9,7 +9,7 @@ export class AudioProcessorService {
     private audioPlayer = player();
 
     // in ms
-    private pauseBetweenMessages = 2000;
+    private pauseBetweenMessages = 1000;
 
     private isProcessing = false;
 

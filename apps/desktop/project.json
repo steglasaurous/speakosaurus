@@ -4,9 +4,27 @@
   "sourceRoot": "apps/desktop/src",
   "projectType": "application",
   "targets": {
+    "build-preload": {
+      "executor": "@nx/js:tsc",
+      "outputs": ["{options.outputPath}"],
+      "options": {
+        "outputPath": "dist/apps/desktop",
+        "main": "apps/desktop/src/bridge.ts",
+        "tsConfig": "apps/desktop/tsconfig.preload.json"
+      }
+    },
+    "move-preload": {
+      "executor": "nx:run-commands",
+      "outputs": [],
+      "dependsOn": ["build-preload"],
+      "options": {
+        "command": "if [ -f dist/apps/desktop/src/bridge.js ]; then mv dist/apps/desktop/src/bridge.js dist/apps/desktop/bridge.js; fi && if [ -f dist/apps/desktop/src/bridge.js.map ]; then mv dist/apps/desktop/src/bridge.js.map dist/apps/desktop/bridge.js.map; fi"
+      }
+    },
     "build": {
       "executor": "nx-electron:build",
       "outputs": ["{options.outputPath}"],
+      "dependsOn": ["move-preload"],
       "options": {
         "outputPath": "dist/apps/desktop",
         "main": "apps/desktop/src/main.ts",
@@ -31,7 +49,8 @@
       "executor": "nx-electron:execute",
       "options": {
         "buildTarget": "desktop:build"
-      }
+      },
+      "dependsOn": ["move-preload"]
     },
     "package": {
       "executor": "nx-electron:package",
