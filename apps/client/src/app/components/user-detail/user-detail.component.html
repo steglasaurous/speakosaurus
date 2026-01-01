@@ -1,0 +1,110 @@
+<div class="container">
+  <div class="header">
+    <div class="header-left">
+      <a class="back-button" [routerLink]="['/users']">
+        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+      </a>
+      <h1 *ngIf="user">Edit User: {{ user.twitchUsername }}</h1>
+      <h1 *ngIf="!user && !loading">User Not Found</h1>
+    </div>
+    <button class="save-button" (click)="saveChanges()" [disabled]="saving || loading || !user">
+      {{ saving ? 'Saving...' : 'Save Changes' }}
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading-state">
+    <p>Loading user...</p>
+  </div>
+
+  <div *ngIf="error" class="error-state">
+    <p>{{ error }}</p>
+  </div>
+
+  <div *ngIf="user && !loading">
+    <div class="form-section">
+      <h2 class="section-title">Voice Assignment</h2>
+      <div class="form-group">
+        <label for="voice-select">
+          Voice
+          <span class="label-hint">Search and select a voice. Results are grouped by provider.</span>
+        </label>
+        <div class="autocomplete-wrapper">
+          <input
+            type="text"
+            id="voice-select"
+            class="autocomplete-input"
+            placeholder="Type to search voices..."
+            [(ngModel)]="voiceSearchQuery"
+            (input)="onVoiceSearchInput()"
+            (focus)="onVoiceInputFocus()"
+            (blur)="onVoiceInputBlur()"
+          >
+          <div class="autocomplete-dropdown" [class.active]="showVoiceDropdown">
+            <div *ngFor="let group of getGroupedVoices()" class="dropdown-group">
+              <div class="dropdown-group-header">{{ group.provider }}</div>
+              <div
+                *ngFor="let voice of group.voices"
+                class="dropdown-item"
+                [class.selected]="selectedVoice?.voiceId === voice.voiceId && selectedVoice?.providerName === voice.providerName"
+                (mousedown)="selectVoice(voice)"
+              >
+                <div>
+                  <div class="voice-name">{{ voice.voiceName }}</div>
+                  <div class="voice-id">{{ voice.voiceId }}</div>
+                </div>
+              </div>
+            </div>
+            <div *ngIf="filteredVoices.length === 0" class="dropdown-item">
+              <div>No voices found</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h2 class="section-title">TTS Name</h2>
+      <div class="form-group">
+        <label for="tts-name">
+          TTS Name
+          <span class="label-hint">The name that will be used when speaking this user's messages</span>
+        </label>
+        <input
+          type="text"
+          id="tts-name"
+          placeholder="Enter TTS name..."
+          [(ngModel)]="ttsName"
+        >
+      </div>
+    </div>
+
+    <div class="form-section">
+      <h2 class="section-title">Custom Intros</h2>
+      <div class="form-group">
+        <label>
+          Custom Intro Text
+          <span class="label-hint">Add multiple custom intro texts that can be randomly selected when this user speaks</span>
+        </label>
+        <div class="intros-list">
+          <div *ngFor="let intro of customIntros; let i = index" class="intro-item">
+            <div class="intro-item-header">
+              <span class="intro-number">Intro #{{ i + 1 }}</span>
+              <button class="delete-intro-button" (click)="removeIntro(i)">Delete</button>
+            </div>
+            <textarea
+              [(ngModel)]="intro.introText"
+              placeholder="Enter intro text..."
+            ></textarea>
+          </div>
+          <div *ngIf="customIntros.length === 0" class="empty-intros">
+            <p>No custom intros yet. Click "Add New Intro" to create one.</p>
+          </div>
+        </div>
+        <button class="add-intro-button" (click)="addIntro()">+ Add New Intro</button>
+      </div>
+    </div>
+  </div>
+</div>
+

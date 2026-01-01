@@ -1,0 +1,57 @@
+<div class="container">
+  <div class="header">
+    <h1>Users</h1>
+    <p class="subtitle">Manage user voices, TTS names, and custom intros</p>
+  </div>
+
+  <div class="search-bar">
+    <div class="search-input-wrapper">
+      <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+      </svg>
+      <input
+        type="text"
+        class="search-input"
+        placeholder="Search users by Twitch username or TTS name..."
+        [(ngModel)]="searchQuery"
+        (input)="filterUsers()"
+      >
+    </div>
+  </div>
+
+  <div class="users-list">
+    <div *ngIf="filteredUsers.length === 0" class="empty-state">
+      <div class="empty-state-icon">👤</div>
+      <p>No users found</p>
+    </div>
+    <a
+      *ngFor="let user of filteredUsers"
+      [routerLink]="['/users', user.twitchUserId]"
+      class="user-item"
+    >
+      <div class="user-info">
+        <div class="user-name">{{ user.twitchUsername }}</div>
+        <div class="user-details">
+          <div class="user-detail-item">
+            <span>TTS Name:</span>
+            <strong>{{ user.ttsName || 'Not set' }}</strong>
+          </div>
+          <div class="user-detail-item">
+            <span>Voice:</span>
+            <span [class.badge]="true" [class.voice]="user.ttsVoiceId" [class]="{'badge': true, 'voice': user.ttsVoiceId}">
+              {{ getVoiceDisplayName(user) }}
+            </span>
+          </div>
+          <div class="user-detail-item">
+            <span>Intros:</span>
+            <strong>{{ getIntroCount(user) }}</strong>
+          </div>
+        </div>
+      </div>
+      <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+      </svg>
+    </a>
+  </div>
+</div>
+

@@ -14,7 +14,15 @@ export const users = sqliteTable('users', {
   ttsVoiceId: text('tts_voice_id'),
 });
 
+export const customIntros = sqliteTable('custom_intros', {
+  id: text('id').notNull().primaryKey(),
+  twitchUserId: text('twitch_user_id').notNull(),
+  introText: text('intro_text').notNull(),
+});
+
 export const schema = {
   settings,
+  users,
+  customIntros,
 };
 

@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Edit User - Speak Manager</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: #f5f5f7;
+            color: #1d1d1f;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            padding: 24px;
+        }
+
+        .header {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .back-button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            padding: 8px;
+            border-radius: 8px;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+        }
+
+        .back-button:hover {
+            background: #f5f5f7;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 600;
+        }
+
+        .save-button {
+            background: #007aff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .save-button:hover {
+            background: #0051d5;
+        }
+
+        .form-section {
+            background: white;
+            padding: 24px;
+            border-radius: 12px;
+            margin-bottom: 24px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #e5e5e7;
+        }
+
+        .form-group {
+            margin-bottom: 24px;
+        }
+
+        .form-group:last-child {
+            margin-bottom: 0;
+        }
+
+        label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #1d1d1f;
+        }
+
+        .label-hint {
+            font-size: 12px;
+            color: #86868b;
+            font-weight: 400;
+            margin-top: 4px;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e5e7;
+            border-radius: 8px;
+            font-size: 16px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #007aff;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .autocomplete-wrapper {
+            position: relative;
+        }
+
+        .autocomplete-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 2px solid #e5e5e7;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: border-color 0.2s;
+        }
+
+        .autocomplete-input:focus {
+            outline: none;
+            border-color: #007aff;
+        }
+
+        .autocomplete-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: white;
+            border: 2px solid #e5e5e7;
+            border-top: none;
+            border-radius: 0 0 8px 8px;
+            max-height: 300px;
+            overflow-y: auto;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+            display: none;
+        }
+
+        .autocomplete-dropdown.active {
+            display: block;
+        }
+
+        .dropdown-group {
+            padding: 8px 0;
+        }
+
+        .dropdown-group-header {
+            padding: 8px 16px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #86868b;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            background: #f5f5f7;
+            border-bottom: 1px solid #e5e5e7;
+        }
+
+        .dropdown-item {
+            padding: 12px 16px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .dropdown-item:hover {
+            background: #f5f5f7;
+        }
+
+        .dropdown-item.selected {
+            background: #e8f4fd;
+        }
+
+        .voice-name {
+            font-weight: 500;
+        }
+
+        .voice-id {
+            font-size: 12px;
+            color: #86868b;
+        }
+
+        .intros-list {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+        }
+
+        .intro-item {
+            border: 2px solid #e5e5e7;
+            border-radius: 8px;
+            padding: 16px;
+            position: relative;
+        }
+
+        .intro-item-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .intro-number {
+            font-size: 14px;
+            font-weight: 500;
+            color: #86868b;
+        }
+
+        .delete-intro-button {
+            background: #ff3b30;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .delete-intro-button:hover {
+            background: #d70015;
+        }
+
+        .add-intro-button {
+            background: #34c759;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background-color 0.2s;
+            width: 100%;
+            margin-top: 8px;
+        }
+
+        .add-intro-button:hover {
+            background: #28a745;
+        }
+
+        .empty-intros {
+            text-align: center;
+            padding: 40px;
+            color: #86868b;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="header-left">
+                <button class="back-button">
+                    <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                    </svg>
+                </button>
+                <h1>Edit User: xQc</h1>
+            </div>
+            <button class="save-button">Save Changes</button>
+        </div>
+
+        <div class="form-section">
+            <h2 class="section-title">Voice Assignment</h2>
+            <div class="form-group">
+                <label for="voice-select">
+                    Voice
+                    <span class="label-hint">Search and select a voice. Results are grouped by provider.</span>
+                </label>
+                <div class="autocomplete-wrapper">
+                    <input 
+                        type="text" 
+                        id="voice-select" 
+                        class="autocomplete-input" 
+                        placeholder="Type to search voices..."
+                        value="ElevenLabs - Rachel"
+                    >
+                    <div class="autocomplete-dropdown active">
+                        <div class="dropdown-group">
+                            <div class="dropdown-group-header">ElevenLabs</div>
+                            <div class="dropdown-item selected">
+                                <div>
+                                    <div class="voice-name">Rachel</div>
+                                    <div class="voice-id">voice-123</div>
+                                </div>
+                            </div>
+                            <div class="dropdown-item">
+                                <div>
+                                    <div class="voice-name">Adam</div>
+                                    <div class="voice-id">voice-124</div>
+                                </div>
+                            </div>
+                            <div class="dropdown-item">
+                                <div>
+                                    <div class="voice-name">Bella</div>
+                                    <div class="voice-id">voice-125</div>
+                                </div>
+                            </div>
+                            <div class="dropdown-item">
+                                <div>
+                                    <div class="voice-name">Charlie</div>
+                                    <div class="voice-id">voice-126</div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="dropdown-group">
+                            <div class="dropdown-group-header">SpeakerTTS</div>
+                            <div class="dropdown-item">
+                                <div>
+                                    <div class="voice-name">Emma</div>
+                                    <div class="voice-id">voice-201</div>
+                                </div>
+                            </div>
+                            <div class="dropdown-item">
+                                <div>
+                                    <div class="voice-name">James</div>
+                                    <div class="voice-id">voice-202</div>
+                                </div>
+                            </div>
+                            <div class="dropdown-item">
+                                <div>
+                                    <div class="voice-name">Olivia</div>
+                                    <div class="voice-id">voice-203</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h2 class="section-title">TTS Name</h2>
+            <div class="form-group">
+                <label for="tts-name">
+                    TTS Name
+                    <span class="label-hint">The name that will be used when speaking this user's messages</span>
+                </label>
+                <input 
+                    type="text" 
+                    id="tts-name" 
+                    placeholder="Enter TTS name..."
+                    value="Felix"
+                >
+            </div>
+        </div>
+
+        <div class="form-section">
+            <h2 class="section-title">Custom Intros</h2>
+            <div class="form-group">
+                <label>
+                    Custom Intro Text
+                    <span class="label-hint">Add multiple custom intro texts that can be randomly selected when this user speaks</span>
+                </label>
+                <div class="intros-list">
+                    <div class="intro-item">
+                        <div class="intro-item-header">
+                            <span class="intro-number">Intro #1</span>
+                            <button class="delete-intro-button">Delete</button>
+                        </div>
+                        <textarea placeholder="Enter intro text...">Hey everyone, it's Felix here!</textarea>
+                    </div>
+                    <div class="intro-item">
+                        <div class="intro-item-header">
+                            <span class="intro-number">Intro #2</span>
+                            <button class="delete-intro-button">Delete</button>
+                        </div>
+                        <textarea placeholder="Enter intro text...">What's up chat? Felix checking in!</textarea>
+                    </div>
+                    <div class="intro-item">
+                        <div class="intro-item-header">
+                            <span class="intro-number">Intro #3</span>
+                            <button class="delete-intro-button">Delete</button>
+                        </div>
+                        <textarea placeholder="Enter intro text...">Yo yo yo, it's your boy Felix!</textarea>
+                    </div>
+                </div>
+                <button class="add-intro-button">+ Add New Intro</button>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
+

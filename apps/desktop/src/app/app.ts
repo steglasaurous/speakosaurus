@@ -62,6 +62,15 @@ export default class App {
     const globalPrefix = 'api';
     app.setGlobalPrefix(globalPrefix);
     
+    // Enable CORS for the Angular client
+    // FOR DEV MODE ONLY.  In production mode, the assets are loaded
+    // by electron directly. (I think?)
+    app.enableCors({
+      origin: 'http://localhost:4200',
+      methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
+      credentials: true,
+    });
+    
     const config = new DocumentBuilder()
       .setTitle('Speak Manager API')
       .setDescription('API for managing voice providers and voices')

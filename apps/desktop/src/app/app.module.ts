@@ -6,6 +6,7 @@ import { VoiceProviderService } from './services/voice-providers/voice-provider.
 import { VoicesController } from './controllers/voices.controller';
 import { SpeakController } from './controllers/speak.controller';
 import { SettingsController } from './controllers/settings.controller';
+import { UsersController } from './controllers/users.controller';
 import { AudioProcessorService } from './services/audio-processor.service';
 import { SettingsService } from './services/settings.service';
 import { DrizzleModule } from 'nestjs-drizzle/sqlite';
@@ -23,7 +24,7 @@ import { UsersService } from './services/users.service';
       driver: 'sqlite',
     }) as DynamicModule,
   ],
-  controllers: [VoicesController, SpeakController, SettingsController],
+  controllers: [VoicesController, SpeakController, SettingsController, UsersController],
   providers: [ 
     ElevenLabsVoiceProvider,
     SpeakerttsVoiceProvider,
