@@ -23,4 +23,23 @@ export class UsersService {
         return user;
     }
 
+    async createUser(twitchUserId: string, twitchUsername: string): Promise<any> {
+        const [user] = await this.drizzleService.db
+            .insert(schema.users as any)
+            .values({
+                twitchUserId,
+                twitchUsername,
+                ttsName: UsersService.ttsFriendlyUsername(twitchUsername),
+            })
+            .returning();
+
+        return user;
+    }
+
+    static ttsFriendlyUsername(username: string): string {
+        username = username.replace(/([A-Z])/g, ' $1');
+        username = username.replace(/_/g, ' ');
+
+        return username;
+    }
 }

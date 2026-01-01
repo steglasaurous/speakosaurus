@@ -6,9 +6,8 @@ export const settings = sqliteTable('settings', {
 });
 
 export const users = sqliteTable('users', {
-  id: text('id').notNull().primaryKey(),
+  twitchUserId: text('twitch_user_id').notNull().primaryKey(),
   twitchUsername: text('twitch_username').notNull(),
-  twitchUserId: text('twitch_user_id').notNull(),
   // The username that TTS should use when speaking.
   ttsName: text('tts_name'),
   ttsProviderName: text('tts_provider_name'),

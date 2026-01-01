@@ -8,6 +8,9 @@ import { Voice } from "../services/voice-providers/voice.interface";
 @Injectable()
 export class SpeakCommand {
     private readonly logger: Logger = new Logger(SpeakCommand.constructor.name);
+    private lastMessageUserId: string | null = null;
+    private lastMessageTime = 0;
+
     constructor(
         private readonly streamerBotService: StreamerBotService, 
         private readonly voiceProviderService: VoiceProviderService,
@@ -36,6 +39,24 @@ export class SpeakCommand {
     }
 
     async handleChatMessage(data: any) {
+        // Look for a matching user record.
+        let user = await this.usersService.getUser(data.user.id);
+        let voice: Voice | null = null;
+        if (user) {
+            voice = await this.voiceProviderService.getVoice(user.ttsVoiceId, user.ttsProviderName);
+            if (!voice) {
+                this.logger.log(`Voice not found for user, falling back to default voice`, { userId: data.user.id, voiceId: user.ttsVoiceId, providerName: user.ttsProviderName });
+            }
+        } else {
+            // Create a new user record with defaults.
+            this.logger.log(`Creating new user record with defaults`, { userId: data.user.id, username: data.user.name });
+            user = await this.usersService.createUser(data.user.id, data.user.name);
+        }
+        if (!voice) {
+            voice = await this.voiceProviderService.getDefaultVoice();
+        }
+        
+        
         const mode = await this.settingsService.getSetting('mode');
         switch (mode.value) {
             case 'trigger': {
@@ -63,22 +84,23 @@ export class SpeakCommand {
                 return;
             }
         }
-        
-        // Look for a matching user record.
-        const user = await this.usersService.getUser(data.user.id);
-        let voice: Voice | null = null;
-        if (user) {
-            voice = await this.voiceProviderService.getVoice(user.ttsVoiceId, user.ttsProviderName);
-            if (!voice) {
-                this.logger.warn(`Voice not found for user, falling back to default voice`, { userId: data.user.id, voiceId: user.ttsVoiceId, providerName: user.ttsProviderName });
+
+        let message = await this.sanitizeMessage(data);
+
+        const sameUserOmit = await this.settingsService.getSetting(SettingsService.SETTING_MESSAGE_PREFIX_OMIT_SAME_USER);
+        const sameUserTimeout = await this.settingsService.getSetting(SettingsService.SETTING_MESSAGE_PREFIX_OMIT_SAME_USER_TIMEOUT);
+
+        if (sameUserOmit.value === 'true') {
+            const sameUserTimeoutValue = parseInt(sameUserTimeout.value);
+            if (! (this.lastMessageUserId === data.user.id && Date.now() - this.lastMessageTime < sameUserTimeoutValue)) {
+                const messagePrefix = await this.settingsService.getSetting(SettingsService.SETTING_MESSAGE_PREFIX);
+                message = messagePrefix.value.replace('{ttsName}', user.ttsName) + ' ' + message;
             }
         }
-        if (!voice) {
-            voice = await this.voiceProviderService.getDefaultVoice();
-        }
-
-        const message = this.sanitizeMessage(data);
+        
         await this.voiceProviderService.speak(voice, message);
+        this.lastMessageUserId = data.user.id;
+        this.lastMessageTime = Date.now();
     }
 
     handleFirstWord(data: any) {
@@ -93,13 +115,26 @@ export class SpeakCommand {
      * @param data - The data from the Twitch.ChatMessage or Twitch.FirstWord event.
      * @returns - The sanitized message string.
      */
-    private sanitizeMessage(data: any): string {
+    private async sanitizeMessage(data: any): Promise<string> {
         // Assemble using the text "parts" of the message, filtering out emotes.
         // Later we might want to make this optional to read emotes or not.
         let output = '';
         for (const part of data.parts) {
             if (part.type === 'text') {
                 output += part.text;
+            }
+        }
+
+        // Strip the trigger command from the message.
+        const triggerCommands = await this.settingsService.getSetting(SettingsService.SETTING_TRIGGER_COMMANDS);
+        if (!triggerCommands) {
+            this.logger.warn('Trigger commands not found, returning original message');
+            return output;
+        }
+        const triggers = JSON.parse(triggerCommands.value);
+        for (const trigger of triggers) {
+            if (output.startsWith(trigger + ' ')) {
+                output = output.replace(trigger + ' ', '');
             }
         }
 

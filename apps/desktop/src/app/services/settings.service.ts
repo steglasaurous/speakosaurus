@@ -9,7 +9,17 @@ export class SettingsService {
   static SETTING_MODE = 'mode';
   static SETTING_TRIGGER_COMMANDS = 'triggerCommands';
   static SETTING_DEFAULT_VOICE = 'defaultVoice';
+  static SETTING_MESSAGE_PREFIX = 'chatMessagePrefix';
+
+  // If enabled, the message prefix will be omitted if the same user speaks within the timeout period.
+  static SETTING_MESSAGE_PREFIX_OMIT_SAME_USER = 'chatMessagePrefixOmitSameUser';
   
+  // The timeout period in milliseconds for the same user message prefix omission, in milliseconds.
+  static SETTING_MESSAGE_PREFIX_OMIT_SAME_USER_TIMEOUT = 'chatMessagePrefixOmitSameUserTimeout';
+
+  // How long to pause between playing messages in milliseconds.
+  static SETTING_PAUSE_BETWEEN_MESSAGES_MS = 'pauseBetweenMessagesMs';
+
   constructor(
     private readonly drizzleService: DrizzleService<typeof schema>,
   ) {}
@@ -20,6 +30,14 @@ export class SettingsService {
         return 'trigger';
       case SettingsService.SETTING_TRIGGER_COMMANDS:
         return '["!s", "!\\"", "!say"]';
+      case SettingsService.SETTING_MESSAGE_PREFIX:
+        return '{ttsName} said,, ';
+      case SettingsService.SETTING_MESSAGE_PREFIX_OMIT_SAME_USER:
+        return 'true';
+      case SettingsService.SETTING_MESSAGE_PREFIX_OMIT_SAME_USER_TIMEOUT:
+        return '30000';
+      case SettingsService.SETTING_PAUSE_BETWEEN_MESSAGES_MS:
+        return '1000';
       default:
         return null;
     }
