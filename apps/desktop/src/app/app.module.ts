@@ -1,6 +1,4 @@
 import { Module, type DynamicModule } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
 import { ElevenLabsVoiceProvider } from './services/voice-providers/providers/elevenlabs.voice-provider';
 import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
 import { VOICE_PROVIDERS } from './injection-tokens';
@@ -15,6 +13,7 @@ import { schema } from './database/schema';
 import { StreamerBotService } from '@streamtools/util-streamer-bot';
 import { SpeakCommand } from './chat-event-handlers/speak-command';
 import { SpeakerttsVoiceProvider } from './services/voice-providers/providers/speakertts.voice-provider';
+import { UsersService } from './services/users.service';
 
 @Module({
   imports: [
@@ -24,9 +23,8 @@ import { SpeakerttsVoiceProvider } from './services/voice-providers/providers/sp
       driver: 'sqlite',
     }) as DynamicModule,
   ],
-  controllers: [AppController, VoicesController, SpeakController, SettingsController],
-  providers: [
-    AppService, 
+  controllers: [VoicesController, SpeakController, SettingsController],
+  providers: [ 
     ElevenLabsVoiceProvider,
     SpeakerttsVoiceProvider,
     {
@@ -56,6 +54,7 @@ import { SpeakerttsVoiceProvider } from './services/voice-providers/providers/sp
       }
     },
     SpeakCommand,
+    UsersService,
   ],
 })
 export class AppModule {}

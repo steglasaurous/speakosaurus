@@ -14,6 +14,17 @@ export class SettingsService {
     private readonly drizzleService: DrizzleService<typeof schema>,
   ) {}
 
+  getDefaultSettingValue(name: string): string | null {
+    switch (name) {
+      case SettingsService.SETTING_MODE:
+        return 'trigger';
+      case SettingsService.SETTING_TRIGGER_COMMANDS:
+        return '["!s", "!\\"", "!say"]';
+      default:
+        return null;
+    }
+  }
+
   async getAllSettings(): Promise<SettingDto[]> {
     const settings = await this.drizzleService.db
       .select()
@@ -21,7 +32,7 @@ export class SettingsService {
     return settings as SettingDto[];
   }
 
-  async getSetting(name: string): Promise<SettingDto> {
+  async getSetting(name: string): Promise<SettingDto | null> {
     const [setting] = await this.drizzleService.db
       .select()
       .from(schema.settings as any)
@@ -29,7 +40,17 @@ export class SettingsService {
       .limit(1);
 
     if (!setting) {
-      throw new NotFoundException(`Setting with name '${name}' not found`);
+      // See if there's a default value.
+      const defaultValue = this.getDefaultSettingValue(name);
+      if (defaultValue) {
+        return {
+          name,
+          value: defaultValue,
+        } as SettingDto;
+      }
+
+      // throw new NotFoundException(`Setting with name '${name}' not found`);
+      return null;
     }
 
     return setting as SettingDto;

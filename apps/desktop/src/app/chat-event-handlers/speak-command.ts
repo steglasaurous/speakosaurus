@@ -1,18 +1,18 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { StreamerBotEvent, StreamerBotService } from "@streamtools/util-streamer-bot";
-import { DrizzleService } from "nestjs-drizzle/sqlite";
-import * as schema from '../database/schema';
 import { VoiceProviderService } from "../services/voice-providers/voice-provider.service";
 import { SettingsService } from "../services/settings.service";
+import { UsersService } from "../services/users.service";
+import { Voice } from "../services/voice-providers/voice.interface";
 
 @Injectable()
 export class SpeakCommand {
     private readonly logger: Logger = new Logger(SpeakCommand.constructor.name);
     constructor(
         private readonly streamerBotService: StreamerBotService, 
-        private readonly drizzleService: DrizzleService<typeof schema>,
         private readonly voiceProviderService: VoiceProviderService,
-        private readonly settingsService: SettingsService
+        private readonly settingsService: SettingsService,
+        private readonly usersService: UsersService
     ) {
         this.streamerBotService.events$.subscribe({
             next: (streamerbotEvent: StreamerBotEvent) => {
@@ -44,9 +44,17 @@ export class SpeakCommand {
                     this.logger.warn('Mode is set to trigger, but trigger commands are not set');
                     return;
                 }
-    
-                if (! data.message.message.toLowerCase().startsWith(triggerCommands.value.toLowerCase())) {
+                const triggers = JSON.parse(triggerCommands.value);
+                let triggerFound = false;
+                for (const trigger of triggers) {
+                    if (data.message.message.toLowerCase().startsWith(trigger.toLowerCase())) {
+                        triggerFound = true;
+                        break;
+                    }
+                }
+                if (!triggerFound) {
                     // Trigger wasn't present, ignore it.
+                    this.logger.log('Trigger not found, ignoring message', { message: data.message.message, triggerCommands: triggerCommands.value });
                     return;
                 }
                 break;
@@ -57,11 +65,16 @@ export class SpeakCommand {
         }
         
         // Look for a matching user record.
-        
-        const voice = await this.voiceProviderService.getVoice('JBFqnCBsd6RMkjVDRZzb', 'elevenlabs');
+        const user = await this.usersService.getUser(data.user.id);
+        let voice: Voice | null = null;
+        if (user) {
+            voice = await this.voiceProviderService.getVoice(user.ttsVoiceId, user.ttsProviderName);
+            if (!voice) {
+                this.logger.warn(`Voice not found for user, falling back to default voice`, { userId: data.user.id, voiceId: user.ttsVoiceId, providerName: user.ttsProviderName });
+            }
+        }
         if (!voice) {
-            console.error('Voice not found');
-            return;
+            voice = await this.voiceProviderService.getDefaultVoice();
         }
 
         const message = this.sanitizeMessage(data);

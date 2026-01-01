@@ -1,4 +1,4 @@
-import { Inject, Injectable } from "@nestjs/common";
+import { Inject, Injectable, Logger } from "@nestjs/common";
 import { VOICE_PROVIDERS } from "../../injection-tokens";
 import { VoiceProvider } from "./voice-provider.interface";
 import { Voice } from "./voice.interface";
@@ -9,6 +9,7 @@ import { SettingsService } from "../settings.service";
 @Injectable()
 export class VoiceProviderService {
     private cachedVoices: Voice[] | null = null;
+    private logger: Logger = new Logger(VoiceProviderService.constructor.name);
 
     constructor(
         @Inject(VOICE_PROVIDERS) private readonly voiceProviders: VoiceProvider[],
@@ -66,7 +67,7 @@ export class VoiceProviderService {
         if (!provider) {
             throw new Error(`Voice provider '${voice.providerName}' not found`);
         }
-
+        this.logger.log('Getting rendered message', { message, voice });
         return await provider.getRenderedMessage(message, voice);
     }
 

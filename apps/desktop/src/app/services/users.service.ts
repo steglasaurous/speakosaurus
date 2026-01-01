@@ -1,7 +1,9 @@
 import { DrizzleService } from "nestjs-drizzle/sqlite";
 import * as schema from "../database/schema";
 import { eq } from "drizzle-orm";
+import { Injectable } from "@nestjs/common";
 
+@Injectable()
 export class UsersService {
     constructor(
         private readonly drizzleService: DrizzleService<typeof schema>,

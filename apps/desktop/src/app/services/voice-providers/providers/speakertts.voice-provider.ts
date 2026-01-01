@@ -6,10 +6,12 @@ import { join } from "path";
 import { tmpdir } from "os";
 import { AudioData } from '../audio-data.interface';
 import * as childProcess from 'child_process';
+import { Logger } from '@nestjs/common';
 
 export class SpeakerttsVoiceProvider implements VoiceProvider {
     providerName = 'speakertts';
     speaker: speaker.Speaker;
+    private logger: Logger = new Logger(SpeakerttsVoiceProvider.constructor.name);
 
     constructor() {
         this.speaker = new speaker.Speaker();
@@ -119,11 +121,13 @@ export class SpeakerttsVoiceProvider implements VoiceProvider {
         const tempFilePath = join(tmpdir(), fileName);
         
         return new Promise<AudioData>((resolve, reject) => {
-            this.speaker.export(message, voice.voiceId, tempFilePath, (error: Error | null) => {
+            this.logger.log('Exporting message', { message, voice, tempFilePath });
+            this.speaker.export(message, voice.voiceId, null, null, tempFilePath, (error: Error | null) => {
                 if (error) {
+                    this.logger.error('Error exporting message', { error, message, voice, tempFilePath });
                     reject(error);
                 }
-                
+                this.logger.log('Message exported', { message, voice, tempFilePath });
                 resolve({
                     message: message,
                     voice: voice,

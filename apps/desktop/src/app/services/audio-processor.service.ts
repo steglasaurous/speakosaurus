@@ -1,10 +1,11 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, Logger } from '@nestjs/common';
 import player from 'play-sound';
 import { unlinkSync } from 'fs';
 import { AudioData } from './voice-providers/audio-data.interface';
 
 @Injectable()
 export class AudioProcessorService {
+    private logger: Logger = new Logger(AudioProcessorService.constructor.name);
     private queue: AudioData[] = [];
     private audioPlayer = player();
 
@@ -16,6 +17,7 @@ export class AudioProcessorService {
     async addToQueue(audioData: AudioData) {
         this.queue.push(audioData);
         if (!this.isProcessing) {
+            this.logger.log('Processing queue', { queueLength: this.queue.length });
             this.processQueue();
         }
     }
@@ -24,12 +26,16 @@ export class AudioProcessorService {
         this.isProcessing = true;
         while (this.queue.length > 0) {
             const audioData = this.queue.shift();
+            this.logger.log('Processing audio data', { audioData });
             if (audioData) {
+                this.logger.log('Playing audio data', { audioData });
                 await this.playAudio(audioData);
+                this.logger.log('Pausing between messages', { pauseBetweenMessages: this.pauseBetweenMessages });
                 await new Promise(resolve => setTimeout(resolve, this.pauseBetweenMessages));
             }
         }
         this.isProcessing = false;
+        this.logger.log('Queue processed', { queueLength: this.queue.length });
     }
 
     private async playAudio(audioData: AudioData): Promise<void> {

@@ -15,6 +15,13 @@
       "when": 1767056000000,
       "tag": "0001_insert_initial_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1767233767193,
+      "tag": "0002_lame_roland_deschain",
+      "breakpoints": true
     }
   ]
 }
