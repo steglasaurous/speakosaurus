@@ -26,6 +26,8 @@ export enum SettingType {
   ARRAY = 'array',
   JSON = 'json',
   ENUM = 'enum',
+  // This will render a voice selector in the UI.
+  VOICE = 'voice',
 }
 
 export interface SettingDefinition {
@@ -77,7 +79,7 @@ export class SettingsService {
       displayName: 'Default Voice',
       group: 'General',
       description: 'The default voice to use for TTS',
-      type: SettingType.JSON,
+      type: SettingType.VOICE,
     },
     {
       name: Setting.CHAT_MESSAGE_PREFIX,

@@ -1,0 +1,194 @@
+<div class="container">
+  <div class="header">
+    <div class="header-left">
+      <a class="back-button" [routerLink]="['/users']">
+        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+        </svg>
+      </a>
+      <h1>Settings</h1>
+    </div>
+    <button 
+      class="save-all-button" 
+      (click)="saveAllSettings()" 
+      [disabled]="saving || loading"
+    >
+      {{ saving ? 'Saving...' : 'Save All' }}
+    </button>
+  </div>
+
+  <div *ngIf="loading" class="loading-state">
+    <p>Loading settings...</p>
+  </div>
+
+  <div *ngIf="error" class="error-state">
+    <p>{{ error }}</p>
+  </div>
+
+  <div *ngIf="successMessage" class="success-state">
+    <p>{{ successMessage }}</p>
+  </div>
+
+  <div *ngIf="!loading && groupedSettings.length > 0" class="settings-content">
+    <div class="tabs">
+      <button
+        *ngFor="let group of groupedSettings"
+        class="tab-button"
+        [class.active]="activeTab === group.group"
+        (click)="activeTab = group.group"
+      >
+        {{ group.group }}
+      </button>
+    </div>
+
+    <div class="tab-content">
+      <div *ngFor="let setting of getSettingsForActiveTab()" class="setting-item">
+        <div class="setting-header">
+          <label [for]="'setting-' + setting.name" class="setting-label">
+            {{ setting.displayName }}
+            <span *ngIf="setting.required" class="required-indicator">*</span>
+          </label>
+          <button
+            class="save-setting-button"
+            (click)="saveSetting(setting)"
+            [disabled]="saving"
+          >
+            Save
+          </button>
+        </div>
+        <p class="setting-description">{{ setting.description }}</p>
+
+        <!-- STRING type -->
+        <div *ngIf="setting.type === 'string'" class="form-group">
+          <input
+            type="text"
+            [id]="'setting-' + setting.name"
+            class="form-input"
+            [value]="getSettingValue(setting)"
+            (input)="onSettingChange(setting, $any($event.target).value)"
+            [placeholder]="setting.default || ''"
+          >
+        </div>
+
+        <!-- NUMBER type -->
+        <div *ngIf="setting.type === 'number'" class="form-group">
+          <input
+            type="number"
+            [id]="'setting-' + setting.name"
+            class="form-input"
+            [value]="getSettingValue(setting)"
+            (input)="onSettingChange(setting, $any($event.target).value)"
+            [placeholder]="setting.default || ''"
+          >
+        </div>
+
+        <!-- BOOLEAN type -->
+        <div *ngIf="setting.type === 'boolean'" class="form-group">
+          <label class="checkbox-label">
+            <input
+              type="checkbox"
+              [id]="'setting-' + setting.name"
+              [checked]="getSettingValue(setting) === 'true'"
+              (change)="onSettingChange(setting, $any($event.target).checked)"
+            >
+            <span>{{ getSettingValue(setting) === 'true' ? 'Enabled' : 'Disabled' }}</span>
+          </label>
+        </div>
+
+        <!-- ENUM type -->
+        <div *ngIf="setting.type === 'enum' && setting.options" class="form-group">
+          <select
+            [id]="'setting-' + setting.name"
+            class="form-select"
+            [value]="getSettingValue(setting)"
+            (change)="onSettingChange(setting, $any($event.target).value)"
+          >
+            <option *ngFor="let option of setting.options" [value]="option">
+              {{ option }}
+            </option>
+          </select>
+        </div>
+
+        <!-- ARRAY type -->
+        <div *ngIf="setting.type === 'array'" class="form-group">
+          <div class="array-items">
+            <div
+              *ngFor="let item of parseArrayValue(setting); let i = index; trackBy: trackByIndex"
+              class="array-item"
+            >
+              <input
+                type="text"
+                class="form-input array-input"
+                [ngModel]="item"
+                (ngModelChange)="updateArrayItem(setting, i, $event)"
+                [placeholder]="'Item ' + (i + 1)"
+              >
+              <button
+                class="remove-array-item-button"
+                (click)="removeArrayItem(setting, i)"
+                type="button"
+              >
+                Remove
+              </button>
+            </div>
+            <button
+              class="add-array-item-button"
+              (click)="addArrayItem(setting)"
+              type="button"
+            >
+              + Add Item
+            </button>
+          </div>
+        </div>
+
+        <!-- JSON type -->
+        <div *ngIf="setting.type === 'json'" class="form-group">
+          <textarea
+            [id]="'setting-' + setting.name"
+            class="form-textarea"
+            [value]="getSettingValue(setting)"
+            (input)="onSettingChange(setting, $any($event.target).value)"
+            rows="4"
+            placeholder="Enter JSON..."
+          ></textarea>
+        </div>
+
+        <!-- VOICE type -->
+        <div *ngIf="setting.type === 'voice'" class="form-group">
+          <div class="autocomplete-wrapper">
+            <input
+              type="text"
+              [id]="'setting-' + setting.name"
+              class="autocomplete-input"
+              placeholder="Type to search voices..."
+              [value]="voiceSearchQueries[setting.name] || ''"
+              (input)="onVoiceSearchInput(setting.name); voiceSearchQueries[setting.name] = $any($event.target).value"
+              (focus)="onVoiceInputFocus(setting.name)"
+              (blur)="onVoiceInputBlur(setting.name)"
+            >
+            <div class="autocomplete-dropdown" [class.active]="showVoiceDropdowns[setting.name]">
+              <div *ngFor="let group of getGroupedVoices(setting.name)" class="dropdown-group">
+                <div class="dropdown-group-header">{{ group.provider }}</div>
+                <div
+                  *ngFor="let voice of group.voices"
+                  class="dropdown-item"
+                  [class.selected]="selectedVoices[setting.name]?.voiceId === voice.voiceId && selectedVoices[setting.name]?.providerName === voice.providerName"
+                  (mousedown)="selectVoice(setting, voice)"
+                >
+                  <div>
+                    <div class="voice-name">{{ voice.voiceName }}</div>
+                    <div class="voice-id">{{ voice.voiceId }}</div>
+                  </div>
+                </div>
+              </div>
+              <div *ngIf="filteredVoices[setting.name]?.length === 0" class="dropdown-item">
+                <div>No voices found</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
