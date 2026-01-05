@@ -7,6 +7,8 @@ import { AudioProcessorService } from "../audio-processor.service";
 import { Setting, SettingsService } from "../settings.service";
 import { ElevenLabsVoiceProvider } from "./providers/elevenlabs.voice-provider";
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
+import { TTSMonsterVoiceProvider } from "./providers/tts-monster.voice-provider";
+import { HttpService } from "@nestjs/axios";
 
 @Injectable()
 export class VoiceProviderService implements OnModuleInit {
@@ -17,7 +19,8 @@ export class VoiceProviderService implements OnModuleInit {
     constructor(
         @Inject(VOICE_PROVIDERS) private readonly initialVoiceProviders: VoiceProvider[],
         private readonly audioProcessorService: AudioProcessorService,
-        private readonly settingsService: SettingsService
+        private readonly settingsService: SettingsService,
+        private readonly httpService: HttpService
     ) {
         // Start with the initial providers (typically just SpeakerttsVoiceProvider)
         this.voiceProviders = [...this.initialVoiceProviders];
@@ -26,6 +29,7 @@ export class VoiceProviderService implements OnModuleInit {
     async onModuleInit() {
         // Check if ElevenLabs API key is set and add provider if available
         await this.updateElevenLabsProvider();
+        await this.updateTTSMonsterProvider();
     }
 
     async getVoices(forceReload = false): Promise<Voice[]> {
@@ -57,18 +61,11 @@ export class VoiceProviderService implements OnModuleInit {
     }
 
     async getVoice(voiceId: string, providerName: string): Promise<Voice | null> {
-        const provider = this.voiceProviders.find(p => p.providerName === providerName);
-        
-        if (!provider) {
-            return null;
-        }
-
-        const voice = await provider.getVoiceById(voiceId);
-        
+        const voices = await this.getVoices();
+        const voice = voices.find(v => v.voiceId === voiceId && v.providerName === providerName);
         if (!voice) {
             return null;
         }
-
         return voice;
     }
 
@@ -153,6 +150,22 @@ export class VoiceProviderService implements OnModuleInit {
             }
         } else {
             this.logger.log('ElevenLabs provider not added - API key not set');
+            // Clear cache so voices are refreshed
+            this.cachedVoices = null;
+        }
+    }
+
+    async updateTTSMonsterProvider(): Promise<void> {
+        const apiKeySetting = await this.settingsService.getSetting(Setting.TTS_MONSTER_API_KEY);
+        const apiKey = apiKeySetting?.value;
+        if (apiKey && apiKey.trim() !== '') {
+            const ttsMonsterProvider = new TTSMonsterVoiceProvider(apiKey, this.httpService);
+            this.voiceProviders.push(ttsMonsterProvider);
+            this.logger.log('TTS Monster provider added');
+            // Clear cache so new voices are loaded
+            this.cachedVoices = null;
+        } else {
+            this.logger.log('TTS Monster provider not added - API key not set');
             // Clear cache so voices are refreshed
             this.cachedVoices = null;
         }

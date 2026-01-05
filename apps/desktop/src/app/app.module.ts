@@ -13,6 +13,7 @@ import { StreamerBotManagerService } from './services/streamer-bot-manager.servi
 import { SpeakCommand } from './chat-event-handlers/speak-command';
 import { SpeakerttsVoiceProvider } from './services/voice-providers/providers/speakertts.voice-provider';
 import { UsersService } from './services/users.service';
+import { HttpModule } from '@nestjs/axios';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { UsersService } from './services/users.service';
       url: './database.sqlite',
       driver: 'sqlite',
     }) as DynamicModule,
+    HttpModule,
   ],
   controllers: [VoicesController, SpeakController, SettingsController, UsersController],
   providers: [ 

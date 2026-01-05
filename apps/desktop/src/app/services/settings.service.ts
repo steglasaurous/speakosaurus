@@ -1,9 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { DrizzleService } from 'nestjs-drizzle/sqlite';
 import * as schema from '../database/schema';
 import { SettingDto } from '../dto/setting.dto';
 import { eq } from 'drizzle-orm';
-import { group } from 'console';
 
 // The enums are so that code calling the setting service can use them (vs just arbitrary strings prone to error)
 // When defining a new setting, make sure to add it to this enum AND the settingDefinition.
@@ -17,6 +16,7 @@ export enum Setting {
   PAUSE_BETWEEN_MESSAGES_MS = 'pauseBetweenMessagesMs',
   STREAMERBOT_WEBSOCKET_URL = 'streamerbotWebsocketUrl',
   ELEVENLABS_API_KEY = 'elevenLabsApiKey',
+  TTS_MONSTER_API_KEY = 'ttsMonsterApiKey',
 }
 
 export enum SettingType {
@@ -128,7 +128,14 @@ export class SettingsService {
       group: 'TTS Providers',
       description: 'The API key for the elevenlabs API',
       type: SettingType.STRING,
-    }
+    },
+    {
+      name: Setting.TTS_MONSTER_API_KEY,
+      displayName: 'TTS Monster API Key',
+      group: 'TTS Providers',
+      description: 'The API key for the tts.monster API',
+      type: SettingType.STRING,
+    },
   ];
 
   private settingsMap: Map<Setting, SettingDto> = new Map<Setting, SettingDto>();
