@@ -9,13 +9,15 @@ import {
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateSettingDto, SettingDto, UpdateSettingDto } from '../dto/setting.dto';
-import { SettingsService } from '../services/settings.service';
+import { SettingsService, Setting } from '../services/settings.service';
+import { VoiceProviderService } from '../services/voice-providers/voice-provider.service';
 
 @ApiTags('settings')
 @Controller('settings')
 export class SettingsController {
   constructor(
     private readonly settingsService: SettingsService,
+    private readonly voiceProviderService: VoiceProviderService,
   ) {}
 
   @Get()
@@ -66,10 +68,17 @@ export class SettingsController {
     type: SettingDto,
   })
   async createSetting(@Body() createSettingDto: CreateSettingDto): Promise<SettingDto> {
-    return this.settingsService.setSetting(
+    const result = await this.settingsService.setSetting(
       createSettingDto.name,
       createSettingDto.value,
     );
+    
+    // If ElevenLabs API key was updated, update the voice provider
+    if (createSettingDto.name === Setting.ELEVENLABS_API_KEY) {
+      await this.voiceProviderService.updateElevenLabsProvider();
+    }
+    
+    return result;
   }
 
   @Put(':name')
@@ -91,13 +100,22 @@ export class SettingsController {
     @Param('name') name: string,
     @Body() updateSettingDto: UpdateSettingDto,
   ): Promise<SettingDto> {
+    let result: SettingDto;
+    
     if (!updateSettingDto.value) {
       // If no value provided, get existing setting to preserve current value
       const existing = await this.settingsService.getSetting(name);
-      return this.settingsService.setSetting(name, existing.value);
+      result = await this.settingsService.setSetting(name, existing.value);
+    } else {
+      result = await this.settingsService.setSetting(name, updateSettingDto.value);
     }
 
-    return this.settingsService.setSetting(name, updateSettingDto.value);
+    // If ElevenLabs API key was updated, update the voice provider
+    if (name === Setting.ELEVENLABS_API_KEY) {
+      await this.voiceProviderService.updateElevenLabsProvider();
+    }
+
+    return result;
   }
 
   @Delete(':name')
@@ -120,6 +138,11 @@ export class SettingsController {
   })
   async deleteSetting(@Param('name') name: string): Promise<{ success: boolean; message: string }> {
     await this.settingsService.deleteSetting(name);
+
+    // If ElevenLabs API key was deleted, update the voice provider
+    if (name === Setting.ELEVENLABS_API_KEY) {
+      await this.voiceProviderService.updateElevenLabsProvider();
+    }
 
     return {
       success: true,

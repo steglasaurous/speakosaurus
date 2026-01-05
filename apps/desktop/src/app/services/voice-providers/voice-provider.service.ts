@@ -1,21 +1,32 @@
-import { Inject, Injectable, Logger } from "@nestjs/common";
+import { Inject, Injectable, Logger, OnModuleInit } from "@nestjs/common";
 import { VOICE_PROVIDERS } from "../../injection-tokens";
 import { VoiceProvider } from "./voice-provider.interface";
 import { Voice } from "./voice.interface";
 import { AudioData } from "./audio-data.interface";
 import { AudioProcessorService } from "../audio-processor.service";
 import { Setting, SettingsService } from "../settings.service";
+import { ElevenLabsVoiceProvider } from "./providers/elevenlabs.voice-provider";
+import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 
 @Injectable()
-export class VoiceProviderService {
+export class VoiceProviderService implements OnModuleInit {
     private cachedVoices: Voice[] | null = null;
     private logger: Logger = new Logger(VoiceProviderService.constructor.name);
+    private voiceProviders: VoiceProvider[] = [];
 
     constructor(
-        @Inject(VOICE_PROVIDERS) private readonly voiceProviders: VoiceProvider[],
+        @Inject(VOICE_PROVIDERS) private readonly initialVoiceProviders: VoiceProvider[],
         private readonly audioProcessorService: AudioProcessorService,
         private readonly settingsService: SettingsService
-    ) {}
+    ) {
+        // Start with the initial providers (typically just SpeakerttsVoiceProvider)
+        this.voiceProviders = [...this.initialVoiceProviders];
+    }
+
+    async onModuleInit() {
+        // Check if ElevenLabs API key is set and add provider if available
+        await this.updateElevenLabsProvider();
+    }
 
     async getVoices(forceReload = false): Promise<Voice[]> {
         // Return cached result if available and not forcing reload
@@ -111,5 +122,39 @@ export class VoiceProviderService {
 
         const defaultVoiceValue = JSON.parse(defaultVoiceSetting.value);
         return await this.getVoice(defaultVoiceValue.voiceId, defaultVoiceValue.providerName);
+    }
+
+    /**
+     * Update the ElevenLabs provider based on whether the API key is set in settings.
+     * This method is called on module init and when the API key setting changes.
+     */
+    async updateElevenLabsProvider(): Promise<void> {
+        const apiKeySetting = await this.settingsService.getSetting(Setting.ELEVENLABS_API_KEY);
+        const apiKey = apiKeySetting?.value;
+
+        // Remove existing ElevenLabs provider if present
+        this.voiceProviders = this.voiceProviders.filter(
+            provider => provider.providerName !== 'elevenlabs'
+        );
+
+        // Add ElevenLabs provider if API key is set
+        if (apiKey && apiKey.trim() !== '') {
+            try {
+                const elevenLabsClient = new ElevenLabsClient({
+                    apiKey: apiKey,
+                });
+                const elevenLabsProvider = new ElevenLabsVoiceProvider(elevenLabsClient);
+                this.voiceProviders.push(elevenLabsProvider);
+                this.logger.log('ElevenLabs provider added');
+                // Clear cache so new voices are loaded
+                this.cachedVoices = null;
+            } catch (error) {
+                this.logger.error('Failed to initialize ElevenLabs provider', error);
+            }
+        } else {
+            this.logger.log('ElevenLabs provider not added - API key not set');
+            // Clear cache so voices are refreshed
+            this.cachedVoices = null;
+        }
     }
 }

@@ -1,6 +1,4 @@
 import { Module, type DynamicModule } from '@nestjs/common';
-import { ElevenLabsVoiceProvider } from './services/voice-providers/providers/elevenlabs.voice-provider';
-import { ElevenLabsClient } from '@elevenlabs/elevenlabs-js';
 import { VOICE_PROVIDERS } from './injection-tokens';
 import { VoiceProviderService } from './services/voice-providers/voice-provider.service';
 import { VoicesController } from './controllers/voices.controller';
@@ -26,16 +24,11 @@ import { UsersService } from './services/users.service';
   ],
   controllers: [VoicesController, SpeakController, SettingsController, UsersController],
   providers: [ 
-    ElevenLabsVoiceProvider,
     SpeakerttsVoiceProvider,
     {
-      provide: ElevenLabsClient,
-      useValue: new ElevenLabsClient(),
-    },
-    {
       provide: VOICE_PROVIDERS,
-      inject: [ElevenLabsVoiceProvider, SpeakerttsVoiceProvider],
-      useFactory: (elevenLabsVoiceProvider: ElevenLabsVoiceProvider, speakerttsVoiceProvider: SpeakerttsVoiceProvider) => [elevenLabsVoiceProvider, speakerttsVoiceProvider],
+      inject: [SpeakerttsVoiceProvider],
+      useFactory: (speakerttsVoiceProvider: SpeakerttsVoiceProvider) => [speakerttsVoiceProvider],
     },
     VoiceProviderService,
     AudioProcessorService,
