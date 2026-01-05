@@ -135,7 +135,9 @@ export class SettingsService {
 
   constructor(
     private readonly drizzleService: DrizzleService<typeof schema>,
-  ) {}
+  ) {
+    this.getAllSettings();
+  }
 
   async getAllSettings(): Promise<SettingDto[]> {
     if (this.settingsMap.size > 0) {

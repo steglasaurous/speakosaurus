@@ -11,6 +11,7 @@ import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CreateSettingDto, SettingDto, UpdateSettingDto } from '../dto/setting.dto';
 import { SettingsService, Setting } from '../services/settings.service';
 import { VoiceProviderService } from '../services/voice-providers/voice-provider.service';
+import { StreamerBotManagerService } from '../services/streamer-bot-manager.service';
 
 @ApiTags('settings')
 @Controller('settings')
@@ -18,6 +19,7 @@ export class SettingsController {
   constructor(
     private readonly settingsService: SettingsService,
     private readonly voiceProviderService: VoiceProviderService,
+    private readonly streamerBotManagerService: StreamerBotManagerService,
   ) {}
 
   @Get()
@@ -78,6 +80,11 @@ export class SettingsController {
       await this.voiceProviderService.updateElevenLabsProvider();
     }
     
+    // If StreamerBot WebSocket URL was updated, reconnect the service
+    if (createSettingDto.name === Setting.STREAMERBOT_WEBSOCKET_URL) {
+      await this.streamerBotManagerService.updateStreamerBotService();
+    }
+    
     return result;
   }
 
@@ -115,6 +122,11 @@ export class SettingsController {
       await this.voiceProviderService.updateElevenLabsProvider();
     }
 
+    // If StreamerBot WebSocket URL was updated, reconnect the service
+    if (name === Setting.STREAMERBOT_WEBSOCKET_URL) {
+      await this.streamerBotManagerService.updateStreamerBotService();
+    }
+
     return result;
   }
 
@@ -142,6 +154,11 @@ export class SettingsController {
     // If ElevenLabs API key was deleted, update the voice provider
     if (name === Setting.ELEVENLABS_API_KEY) {
       await this.voiceProviderService.updateElevenLabsProvider();
+    }
+
+    // If StreamerBot WebSocket URL was deleted, reconnect the service (will use default)
+    if (name === Setting.STREAMERBOT_WEBSOCKET_URL) {
+      await this.streamerBotManagerService.updateStreamerBotService();
     }
 
     return {

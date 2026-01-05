@@ -1,9 +1,10 @@
 import { Injectable, Logger } from "@nestjs/common";
-import { StreamerBotEvent, StreamerBotService } from "@streamtools/util-streamer-bot";
+import { StreamerBotEvent } from "@streamtools/util-streamer-bot";
 import { VoiceProviderService } from "../services/voice-providers/voice-provider.service";
 import { Setting, SettingsService } from "../services/settings.service";
 import { UsersService } from "../services/users.service";
 import { Voice } from "../services/voice-providers/voice.interface";
+import { StreamerBotManagerService } from "../services/streamer-bot-manager.service";
 
 @Injectable()
 export class SpeakCommand {
@@ -12,12 +13,12 @@ export class SpeakCommand {
     private lastMessageTime = 0;
 
     constructor(
-        private readonly streamerBotService: StreamerBotService, 
+        private readonly streamerBotManagerService: StreamerBotManagerService, 
         private readonly voiceProviderService: VoiceProviderService,
         private readonly settingsService: SettingsService,
         private readonly usersService: UsersService
     ) {
-        this.streamerBotService.events$.subscribe({
+        this.streamerBotManagerService.events$.subscribe({
             next: (streamerbotEvent: StreamerBotEvent) => {
                 this.handle(streamerbotEvent);
             },

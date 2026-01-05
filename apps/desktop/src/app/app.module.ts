@@ -9,7 +9,7 @@ import { AudioProcessorService } from './services/audio-processor.service';
 import { SettingsService } from './services/settings.service';
 import { DrizzleModule } from 'nestjs-drizzle/sqlite';
 import { schema } from './database/schema';
-import { StreamerBotService } from '@streamtools/util-streamer-bot';
+import { StreamerBotManagerService } from './services/streamer-bot-manager.service';
 import { SpeakCommand } from './chat-event-handlers/speak-command';
 import { SpeakerttsVoiceProvider } from './services/voice-providers/providers/speakertts.voice-provider';
 import { UsersService } from './services/users.service';
@@ -33,20 +33,7 @@ import { UsersService } from './services/users.service';
     VoiceProviderService,
     AudioProcessorService,
     SettingsService,
-    {
-      provide: StreamerBotService,
-      useFactory: () => {
-        const sb = new StreamerBotService(
-          process.env.STREAMERBOT_WS_URL || 'ws://localhost:8080', 
-          process.env.STREAMERBOT_USE_MOCK === 'true'
-        );
-
-        sb.subscribeToEvent('Twitch.ChatMessage');
-        sb.subscribeToEvent('Twitch.FirstWord');
-
-        return sb;
-      }
-    },
+    StreamerBotManagerService,
     SpeakCommand,
     UsersService,
   ],
