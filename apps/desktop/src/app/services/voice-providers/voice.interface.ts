@@ -4,4 +4,5 @@ export interface Voice {
 	voiceName: string;
 	displayName?: string;
 	group?: string;
+	previewUrl?: string;
 }

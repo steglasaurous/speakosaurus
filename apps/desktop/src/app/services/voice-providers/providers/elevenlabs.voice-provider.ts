@@ -21,11 +21,13 @@ export class ElevenLabsVoiceProvider implements VoiceProvider {
         
         const output: Voice[] = [];
         for (const voice of voices.voices) {
+            const voiceWithPreview = voice as typeof voice & { preview_url?: string };
             output.push({
                 providerName: this.providerName,
                 voiceId: voice.voiceId,
                 voiceName: voice.name,
                 displayName: voice.name,
+                previewUrl: voiceWithPreview.preview_url || undefined,
             });
         }
 
@@ -35,11 +37,13 @@ export class ElevenLabsVoiceProvider implements VoiceProvider {
     // FUTURE: Might cache all the voices in memory or db and use that instead of calling the API each time
     async getVoiceById(id: string): Promise<Voice|null> {
         const voice = await this.elevenLabsClient.voices.get(id);
+        const voiceWithPreview = voice as typeof voice & { preview_url?: string };
         return {
             providerName: this.providerName,
             voiceId: voice.voiceId,
             voiceName: voice.name,
             displayName: voice.name,
+            previewUrl: voiceWithPreview.preview_url || undefined,
         };
     }
 

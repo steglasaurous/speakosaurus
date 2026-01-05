@@ -59,6 +59,7 @@ constructor(private readonly apiKey: string, private readonly httpService: HttpS
                 voiceId: voice.voice_id,
                 voiceName: voice.name,
                 displayName: voice.name,
+                previewUrl: voice.sample || undefined,
             });
         }
 
@@ -69,6 +70,7 @@ constructor(private readonly apiKey: string, private readonly httpService: HttpS
                 voiceId: voice.voice_id,
                 voiceName: voice.name,
                 displayName: voice.name,
+                previewUrl: voice.sample || undefined,
             });
         }
 

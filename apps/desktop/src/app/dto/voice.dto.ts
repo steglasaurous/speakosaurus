@@ -30,5 +30,11 @@ export class VoiceDto {
     example: 'Professional',
   })
   group?: string;
+
+  @ApiPropertyOptional({
+    description: 'URL to a preview audio sample of the voice',
+    example: 'https://storage.googleapis.com/eleven-public-prod/premade/voices/9BWtsMINqrJLrRacOk9x/405766b8-1f4e-4d3c-aba1-6f25333823ec.mp3',
+  })
+  previewUrl?: string;
 }
 
