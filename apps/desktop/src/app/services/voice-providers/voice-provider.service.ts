@@ -4,7 +4,7 @@ import { VoiceProvider } from "./voice-provider.interface";
 import { Voice } from "./voice.interface";
 import { AudioData } from "./audio-data.interface";
 import { AudioProcessorService } from "../audio-processor.service";
-import { SettingsService } from "../settings.service";
+import { Setting, SettingsService } from "../settings.service";
 
 @Injectable()
 export class VoiceProviderService {
@@ -91,7 +91,7 @@ export class VoiceProviderService {
      * - If no voices are available, throw an error.
      */
     async getDefaultVoice(): Promise<Voice> {
-        const defaultVoiceSetting = await this.settingsService.getSetting(SettingsService.SETTING_DEFAULT_VOICE);
+        const defaultVoiceSetting = await this.settingsService.getSetting(Setting.DEFAULT_VOICE);
         if (!defaultVoiceSetting) {
             // We'll grab the first available voice from speakertts, as that's the built-in voices from either windows or mac.
             const voices = await this.getVoices();

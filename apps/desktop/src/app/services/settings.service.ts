@@ -3,78 +3,182 @@ import { DrizzleService } from 'nestjs-drizzle/sqlite';
 import * as schema from '../database/schema';
 import { SettingDto } from '../dto/setting.dto';
 import { eq } from 'drizzle-orm';
+import { group } from 'console';
+
+// The enums are so that code calling the setting service can use them (vs just arbitrary strings prone to error)
+// When defining a new setting, make sure to add it to this enum AND the settingDefinition.
+export enum Setting {
+  MODE = 'mode',
+  TRIGGER_COMMANDS = 'triggerCommands',
+  DEFAULT_VOICE = 'defaultVoice',
+  CHAT_MESSAGE_PREFIX = 'chatMessagePrefix',
+  CHAT_MESSAGE_PREFIX_OMIT_SAME_USER = 'chatMessagePrefixOmitSameUser',
+  CHAT_MESSAGE_PREFIX_OMIT_SAME_USER_TIMEOUT = 'chatMessagePrefixOmitSameUserTimeout',
+  PAUSE_BETWEEN_MESSAGES_MS = 'pauseBetweenMessagesMs',
+  STREAMERBOT_WEBSOCKET_URL = 'streamerbotWebsocketUrl',
+  ELEVENLABS_API_KEY = 'elevenLabsApiKey',
+}
+
+export enum SettingType {
+  STRING = 'string',
+  NUMBER = 'number',
+  BOOLEAN = 'boolean',
+  ARRAY = 'array',
+  JSON = 'json',
+  ENUM = 'enum',
+}
+
+export interface SettingDefinition {
+  name: Setting;
+  displayName: string;
+  /**
+   * Used to determine what group to display the setting in (UI)l
+   */
+  group: string;
+  description: string;
+
+  type: SettingType;
+  default?: string;
+  /**
+   * If an enum type, this lists the valid options.
+   */
+  options?: string[];
+  required?: boolean;
+  /**
+   * The value of the setting in the database, if present. Otherwise is populated by default, if set.
+   */
+  value?: string;
+}
 
 @Injectable()
 export class SettingsService {
-  static SETTING_MODE = 'mode';
-  static SETTING_TRIGGER_COMMANDS = 'triggerCommands';
-  static SETTING_DEFAULT_VOICE = 'defaultVoice';
-  static SETTING_MESSAGE_PREFIX = 'chatMessagePrefix';
+  // Consider typing these as SettingDto objects? Just make sure the API interface can only modify the value part.
+  private settingDefinitions: SettingDefinition[] = [
+    {
+      name: Setting.MODE,
+      displayName: 'TTS Mode',
+      group: 'General',
+      description: 'How TTS should respond to chat messages',
+      type: SettingType.ENUM,
+      default: 'trigger',
+      options: ['trigger', 'off', 'always'],
+      required: true,
+    },
+    {
+      name: Setting.TRIGGER_COMMANDS,
+      displayName: 'Trigger Commands',
+      group: 'General',
+      description: 'The commands that will trigger TTS - typically start with an ! excalamation ex: !s',
+      type: SettingType.ARRAY,
+      default: '["!s", "!\\"", "!say"]',
+    },
+    {
+      name: Setting.DEFAULT_VOICE,
+      displayName: 'Default Voice',
+      group: 'General',
+      description: 'The default voice to use for TTS',
+      type: SettingType.JSON,
+    },
+    {
+      name: Setting.CHAT_MESSAGE_PREFIX,
+      displayName: 'Chat Message Prefix',
+      group: 'General',
+      description: 'The prefix to use for chat messages',
+      type: SettingType.STRING,
+      default: '{ttsName} said,, ',
+    },
+    {
+      name: Setting.CHAT_MESSAGE_PREFIX_OMIT_SAME_USER,
+      displayName: 'Omit Message Prefix for Same User',
+      group: 'General',
+      description: 'Whether to omit the message prefix if the same user speaks within the timeout period',
+      type: SettingType.BOOLEAN,
+      default: 'true',
+    },
+    {
+      name: Setting.CHAT_MESSAGE_PREFIX_OMIT_SAME_USER_TIMEOUT,
+      displayName: 'Same User Message Prefix Omission Timeout',
+      group: 'General',
+      description: 'The timeout period in milliseconds for the same user message prefix omission',
+      type: SettingType.NUMBER,
+      default: '30000',
+    },
+    {
+      name: Setting.PAUSE_BETWEEN_MESSAGES_MS,
+      displayName: 'Pause Between Messages',
+      group: 'General',
+      description: 'How long to pause between playing messages in milliseconds',
+      type: SettingType.NUMBER,
+      default: '1000',
+    },
+    {
+      name: Setting.STREAMERBOT_WEBSOCKET_URL,
+      displayName: 'StreamerBot WebSocket URL',
+      group: 'Streaming',
+      description: 'The URL of the streamerbot websocket server. Ex: ws://localhost:8080',
+      type: SettingType.STRING,
+      default: 'ws://localhost:8080',
+      required: true,
+    },
+    {
+      name: Setting.ELEVENLABS_API_KEY,
+      displayName: 'ElevenLabs API Key',
+      group: 'TTS Providers',
+      description: 'The API key for the elevenlabs API',
+      type: SettingType.STRING,
+    }
+  ];
 
-  // If enabled, the message prefix will be omitted if the same user speaks within the timeout period.
-  static SETTING_MESSAGE_PREFIX_OMIT_SAME_USER = 'chatMessagePrefixOmitSameUser';
-  
-  // The timeout period in milliseconds for the same user message prefix omission, in milliseconds.
-  static SETTING_MESSAGE_PREFIX_OMIT_SAME_USER_TIMEOUT = 'chatMessagePrefixOmitSameUserTimeout';
-
-  // How long to pause between playing messages in milliseconds.
-  static SETTING_PAUSE_BETWEEN_MESSAGES_MS = 'pauseBetweenMessagesMs';
+  private settingsMap: Map<Setting, SettingDto> = new Map<Setting, SettingDto>();
 
   constructor(
     private readonly drizzleService: DrizzleService<typeof schema>,
   ) {}
 
-  getDefaultSettingValue(name: string): string | null {
-    switch (name) {
-      case SettingsService.SETTING_MODE:
-        return 'trigger';
-      case SettingsService.SETTING_TRIGGER_COMMANDS:
-        return '["!s", "!\\"", "!say"]';
-      case SettingsService.SETTING_MESSAGE_PREFIX:
-        return '{ttsName} said,, ';
-      case SettingsService.SETTING_MESSAGE_PREFIX_OMIT_SAME_USER:
-        return 'true';
-      case SettingsService.SETTING_MESSAGE_PREFIX_OMIT_SAME_USER_TIMEOUT:
-        return '30000';
-      case SettingsService.SETTING_PAUSE_BETWEEN_MESSAGES_MS:
-        return '1000';
-      default:
-        return null;
-    }
-  }
-
   async getAllSettings(): Promise<SettingDto[]> {
+    if (this.settingsMap.size > 0) {
+      return Array.from(this.settingsMap.values());
+    }
+
     const settings = await this.drizzleService.db
       .select()
       .from(schema.settings as any);
-    return settings as SettingDto[];
+    // Map settings in DB by name for quick lookup
+    const settingsMap = new Map<Setting, any>();
+    for (const setting of settings) {
+      settingsMap.set(setting.name as Setting, setting);
+    }
+
+    // Build SettingDto[] based on definitions, filling value from db or default/null
+    for (const def of this.settingDefinitions) {
+      const dbSetting = settingsMap.get(def.name);
+      this.settingsMap.set(def.name, {
+        ...def,
+        value: dbSetting?.value ?? def.default ?? null,
+      });
+    }
+
+    return Array.from(this.settingsMap.values());
   }
 
   async getSetting(name: string): Promise<SettingDto | null> {
-    const [setting] = await this.drizzleService.db
-      .select()
-      .from(schema.settings as any)
-      .where(eq(schema.settings.name, name) as any)
-      .limit(1);
-
-    if (!setting) {
-      // See if there's a default value.
-      const defaultValue = this.getDefaultSettingValue(name);
-      if (defaultValue) {
-        return {
-          name,
-          value: defaultValue,
-        } as SettingDto;
-      }
-
-      // throw new NotFoundException(`Setting with name '${name}' not found`);
-      return null;
+    const setting = this.settingsMap.get(name as Setting);
+    if (setting) {
+      return setting;
     }
 
-    return setting as SettingDto;
+    return null;
   }
 
   async setSetting(name: string, value: string): Promise<SettingDto> {
+    const setting = this.settingsMap.get(name as Setting);
+    if (!setting) {
+      throw new Error(`Setting with name '${name}' not found`);
+    }
+    
+    // FIXME: Validate value against setting type and options
+    setting.value = value;
+
     // Check if setting exists
     const [existing] = await this.drizzleService.db
       .select()
@@ -91,8 +195,6 @@ export class SettingsService {
         })
         .where(eq(schema.settings.name, name) as any)
         .returning();
-
-      return updated as SettingDto;
     } else {
       // Create new setting if it doesn't exist
       const [created] = await this.drizzleService.db
@@ -102,21 +204,18 @@ export class SettingsService {
           value,
         })
         .returning();
-
-      return created as SettingDto;
     }
+
+    return setting;
   }
 
   async deleteSetting(name: string): Promise<void> {
-    const [existing] = await this.drizzleService.db
-      .select()
-      .from(schema.settings as any)
-      .where(eq(schema.settings.name, name) as any)
-      .limit(1);
-
-    if (!existing) {
-      throw new NotFoundException(`Setting with name '${name}' not found`);
+    const setting = this.settingsMap.get(name as Setting);
+    if (!setting) {
+      throw new Error(`Setting with name '${name}' not found`);
     }
+
+    setting.value = setting.default ?? null;
 
     await this.drizzleService.db
       .delete(schema.settings as any)

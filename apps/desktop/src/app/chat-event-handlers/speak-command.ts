@@ -1,7 +1,7 @@
 import { Injectable, Logger } from "@nestjs/common";
 import { StreamerBotEvent, StreamerBotService } from "@streamtools/util-streamer-bot";
 import { VoiceProviderService } from "../services/voice-providers/voice-provider.service";
-import { SettingsService } from "../services/settings.service";
+import { Setting, SettingsService } from "../services/settings.service";
 import { UsersService } from "../services/users.service";
 import { Voice } from "../services/voice-providers/voice.interface";
 
@@ -87,13 +87,13 @@ export class SpeakCommand {
 
         let message = await this.sanitizeMessage(data);
 
-        const sameUserOmit = await this.settingsService.getSetting(SettingsService.SETTING_MESSAGE_PREFIX_OMIT_SAME_USER);
-        const sameUserTimeout = await this.settingsService.getSetting(SettingsService.SETTING_MESSAGE_PREFIX_OMIT_SAME_USER_TIMEOUT);
+        const sameUserOmit = await this.settingsService.getSetting(Setting.CHAT_MESSAGE_PREFIX_OMIT_SAME_USER);
+        const sameUserTimeout = await this.settingsService.getSetting(Setting.CHAT_MESSAGE_PREFIX_OMIT_SAME_USER_TIMEOUT);
 
         if (sameUserOmit.value === 'true') {
             const sameUserTimeoutValue = parseInt(sameUserTimeout.value);
             if (! (this.lastMessageUserId === data.user.id && Date.now() - this.lastMessageTime < sameUserTimeoutValue)) {
-                const messagePrefix = await this.settingsService.getSetting(SettingsService.SETTING_MESSAGE_PREFIX);
+                const messagePrefix = await this.settingsService.getSetting(Setting.CHAT_MESSAGE_PREFIX);
                 message = messagePrefix.value.replace('{ttsName}', user.ttsName) + ' ' + message;
             }
         }
@@ -126,7 +126,7 @@ export class SpeakCommand {
         }
 
         // Strip the trigger command from the message.
-        const triggerCommands = await this.settingsService.getSetting(SettingsService.SETTING_TRIGGER_COMMANDS);
+        const triggerCommands = await this.settingsService.getSetting(Setting.TRIGGER_COMMANDS);
         if (!triggerCommands) {
             this.logger.warn('Trigger commands not found, returning original message');
             return output;
