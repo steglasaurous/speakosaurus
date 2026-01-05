@@ -2,6 +2,7 @@ import { Component, OnInit, Input, Output, EventEmitter, OnChanges, SimpleChange
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { VoicesService, Voice } from '../../services/voices.service';
+import { HttpClient } from '@angular/common/http';
 import { Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 
@@ -26,8 +27,12 @@ export class VoiceSelectorComponent implements OnInit, OnChanges {
   filteredVoices: Voice[] = [];
   showVoiceDropdown = false;
   voiceSearchSubject = new Subject<string>();
+  playingVoiceId: string | null = null;
+  private dropdownMouseDown = false;
 
   private voicesService = inject(VoicesService);
+  private http = inject(HttpClient);
+  private apiUrl = 'http://localhost:3000/api';
 
   ngOnInit(): void {
     this.loadVoices();
@@ -86,8 +91,16 @@ export class VoiceSelectorComponent implements OnInit, OnChanges {
   onVoiceInputBlur(): void {
     // Delay to allow click on dropdown item
     setTimeout(() => {
-      this.showVoiceDropdown = false;
+      // Don't close if mouse was pressed inside dropdown
+      if (!this.dropdownMouseDown) {
+        this.showVoiceDropdown = false;
+      }
+      this.dropdownMouseDown = false;
     }, 200);
+  }
+
+  onDropdownMouseDown(): void {
+    this.dropdownMouseDown = true;
   }
 
   selectVoice(voice: Voice): void {
@@ -113,6 +126,52 @@ export class VoiceSelectorComponent implements OnInit, OnChanges {
         provider,
         voices: grouped[provider],
       }));
+  }
+
+  playPreview(event: Event, voice: Voice): void {
+    event.preventDefault();
+    event.stopPropagation(); // Prevent voice selection when clicking play button
+    
+    // Keep dropdown open
+    this.showVoiceDropdown = true;
+
+    if (this.playingVoiceId === voice.voiceId) {
+      // If already playing this voice, stop it (note: we can't actually stop playback on backend)
+      this.playingVoiceId = null;
+      return;
+    }
+
+    this.playingVoiceId = voice.voiceId;
+
+    // Call the preview API endpoint
+    const previewPayload: any = {
+      voiceProvider: voice.providerName,
+      voiceId: voice.voiceId,
+    };
+
+    // Include previewUrl if available
+    if (voice.previewUrl) {
+      previewPayload.previewUrl = voice.previewUrl;
+    }
+
+    this.http.post(`${this.apiUrl}/speak/preview`, previewPayload).subscribe({
+      next: () => {
+        console.log('Preview queued for playback');
+        // Audio is queued for playback on the backend
+        // Reset playing state after a delay (we can't easily detect when it finishes)
+        setTimeout(() => {
+          this.playingVoiceId = null;
+        }, 5000); // Approximate duration for preview
+      },
+      error: (error) => {
+        console.error('Error playing voice preview:', error);
+        this.playingVoiceId = null;
+      },
+    });
+  }
+
+  isPlaying(voice: Voice): boolean {
+    return this.playingVoiceId === voice.voiceId;
   }
 }
 

@@ -101,3 +101,40 @@ label {
   color: #86868b;
 }
 
+.play-button {
+  background: transparent;
+  border: 1px solid #e5e5e7;
+  border-radius: 4px;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  font-size: 12px;
+  color: #007aff;
+  padding: 0;
+}
+
+.play-button:hover {
+  background: #f5f5f7;
+  border-color: #007aff;
+}
+
+.play-button:active {
+  background: #e8f4fd;
+}
+
+.play-button.playing {
+  background: #007aff;
+  border-color: #007aff;
+  color: white;
+}
+
+.play-button.playing:hover {
+  background: #0051d5;
+  border-color: #0051d5;
+}
+

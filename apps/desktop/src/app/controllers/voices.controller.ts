@@ -34,6 +34,7 @@ export class VoicesController {
       voiceName: voice.voiceName,
       displayName: voice.displayName,
       group: voice.group,
+      previewUrl: voice.previewUrl,
     }));
   }
 }
