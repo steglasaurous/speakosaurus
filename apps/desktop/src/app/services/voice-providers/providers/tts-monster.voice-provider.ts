@@ -1,9 +1,12 @@
-import { SettingsService, Setting } from "../../settings.service";
 import { VoiceProvider } from "../voice-provider.interface";
 import { HttpService } from "@nestjs/axios";
 import { Voice } from "../voice.interface";
 import { AudioData } from "../audio-data.interface";
 import { firstValueFrom } from "rxjs";
+import { writeFileSync } from "fs";
+import { join } from "path";
+import { tmpdir } from "os";
+import { v4 as uuid } from "uuid";
 
 interface TTSMonsterVoiceResponse {
     voices: Array<{
@@ -18,6 +21,11 @@ interface TTSMonsterVoiceResponse {
         sample: string;
         language?: string;
     }>;
+}
+
+interface TTSMonsterGenerateResponse {
+    status: number;
+    url: string;
 }
 
 export class TTSMonsterVoiceProvider implements VoiceProvider {
@@ -72,6 +80,47 @@ constructor(private readonly apiKey: string, private readonly httpService: HttpS
     }
 
     async getRenderedMessage(message: string, voice: Voice): Promise<AudioData> {
-        return null;
+        // Step 1: Generate TTS and get the audio URL
+        const generateResponse = await firstValueFrom(
+            this.httpService.post<TTSMonsterGenerateResponse>(
+                this.generateTtsUrl,
+                {
+                    voice_id: voice.voiceId,
+                    message: message,
+                },
+                {
+                    headers: {
+                        'Authorization': `${this.apiKey}`,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            )
+        );
+
+        if (generateResponse.data.status !== 200 || !generateResponse.data.url) {
+            throw new Error(`TTS Monster API returned error: status ${generateResponse.data.status}`);
+        }
+
+        // Step 2: Download the audio file from the URL
+        const audioResponse = await firstValueFrom(
+            this.httpService.get<ArrayBuffer>(
+                generateResponse.data.url,
+                {
+                    responseType: 'arraybuffer',
+                }
+            )
+        );
+
+        // Step 3: Save to temporary file
+        const audioBuffer = Buffer.from(audioResponse.data);
+        const fileName = `${uuid()}.wav`;
+        const tempFilePath = join(tmpdir(), fileName);
+        writeFileSync(tempFilePath, audioBuffer);
+
+        return {
+            message,
+            voice,
+            audioFilePath: tempFilePath,
+        };
     }
 }
