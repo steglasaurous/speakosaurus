@@ -4,8 +4,8 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { SettingsService, Setting, SettingType } from '../../services/settings.service';
 import { VoicesService, Voice } from '../../services/voices.service';
-import { Subject, forkJoin } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { forkJoin } from 'rxjs';
+import { VoiceSelectorComponent } from '../voice-selector/voice-selector.component';
 
 interface GroupedSettings {
   group: string;
@@ -15,7 +15,7 @@ interface GroupedSettings {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule],
+  imports: [CommonModule, FormsModule, RouterModule, VoiceSelectorComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
@@ -30,12 +30,7 @@ export class SettingsComponent implements OnInit {
   successMessage: string | null = null;
 
   // Voice selection for VOICE type settings
-  voiceSearchQueries: { [key: string]: string } = {};
-  availableVoices: Voice[] = [];
-  filteredVoices: { [key: string]: Voice[] } = {};
-  showVoiceDropdowns: { [key: string]: boolean } = {};
   selectedVoices: { [key: string]: Voice | null } = {};
-  voiceSearchSubjects: { [key: string]: Subject<string> } = {};
 
   // Cached array values to prevent re-parsing on every change detection
   arrayCache: { [key: string]: string[] } = {};
@@ -45,7 +40,6 @@ export class SettingsComponent implements OnInit {
 
   ngOnInit(): void {
     this.loadSettings();
-    this.loadVoices();
   }
 
   loadSettings(): void {
@@ -79,20 +73,6 @@ export class SettingsComponent implements OnInit {
     });
   }
 
-  loadVoices(): void {
-    this.voicesService.getVoices().subscribe({
-      next: (voices) => {
-        this.availableVoices = voices;
-        // Initialize filtered voices for all voice settings
-        Object.keys(this.selectedVoices).forEach((settingName) => {
-          this.filteredVoices[settingName] = voices;
-        });
-      },
-      error: (error) => {
-        console.error('Error loading voices:', error);
-      },
-    });
-  }
 
   groupSettings(): void {
     const grouped: { [key: string]: Setting[] } = {};
@@ -116,23 +96,7 @@ export class SettingsComponent implements OnInit {
     this.settings
       .filter((s) => s.type === SettingType.VOICE)
       .forEach((setting) => {
-        this.voiceSearchQueries[setting.name] = '';
-        this.showVoiceDropdowns[setting.name] = false;
         this.selectedVoices[setting.name] = null;
-        this.filteredVoices[setting.name] = this.availableVoices;
-
-        // Create search subject for this setting
-        const subject = new Subject<string>();
-        subject
-          .pipe(
-            debounceTime(300),
-            distinctUntilChanged(),
-            switchMap((query) => this.voicesService.searchVoices(query))
-          )
-          .subscribe((voices) => {
-            this.filteredVoices[setting.name] = voices;
-          });
-        this.voiceSearchSubjects[setting.name] = subject;
 
         // Set initial value if setting has a value
         if (setting.value) {
@@ -148,8 +112,6 @@ export class SettingsComponent implements OnInit {
                   );
                   if (voice) {
                     this.selectedVoices[setting.name] = voice;
-                    this.voiceSearchQueries[setting.name] =
-                      this.voicesService.getVoiceDisplayName(voice);
                   }
                 },
               });
@@ -187,50 +149,18 @@ export class SettingsComponent implements OnInit {
     setting.value = stringValue;
   }
 
-  onVoiceSearchInput(settingName: string): void {
-    this.voiceSearchSubjects[settingName].next(this.voiceSearchQueries[settingName]);
-    this.showVoiceDropdowns[settingName] = true;
-  }
-
-  onVoiceInputFocus(settingName: string): void {
-    this.showVoiceDropdowns[settingName] = true;
-    this.voiceSearchSubjects[settingName].next(this.voiceSearchQueries[settingName]);
-  }
-
-  onVoiceInputBlur(settingName: string): void {
-    setTimeout(() => {
-      this.showVoiceDropdowns[settingName] = false;
-    }, 200);
-  }
-
-  selectVoice(setting: Setting, voice: Voice): void {
+  onVoiceSelected(setting: Setting, voice: Voice | null): void {
     this.selectedVoices[setting.name] = voice;
-    this.voiceSearchQueries[setting.name] = this.voicesService.getVoiceDisplayName(voice);
-    this.showVoiceDropdowns[setting.name] = false;
     
     // Update setting value with JSON representation
-    setting.value = JSON.stringify({
-      providerName: voice.providerName,
-      voiceId: voice.voiceId,
-    });
-  }
-
-  getGroupedVoices(settingName: string): { provider: string; voices: Voice[] }[] {
-    const grouped: Record<string, Voice[]> = {};
-    
-    this.filteredVoices[settingName]?.forEach((voice) => {
-      if (!grouped[voice.providerName]) {
-        grouped[voice.providerName] = [];
-      }
-      grouped[voice.providerName].push(voice);
-    });
-
-    return Object.keys(grouped)
-      .sort()
-      .map((provider) => ({
-        provider,
-        voices: grouped[provider],
-      }));
+    if (voice) {
+      setting.value = JSON.stringify({
+        providerName: voice.providerName,
+        voiceId: voice.voiceId,
+      });
+    } else {
+      setting.value = '';
+    }
   }
 
   parseArrayValue(setting: Setting): string[] {

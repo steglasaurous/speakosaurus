@@ -1,46 +1,39 @@
-import { Component, OnInit } from '@angular/core';
+import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { UsersService, User, CustomIntro } from '../../services/users.service';
 import { VoicesService, Voice } from '../../services/voices.service';
-import { Subject, forkJoin } from 'rxjs';
-import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
+import { forkJoin } from 'rxjs';
+import { VoiceSelectorComponent } from '../voice-selector/voice-selector.component';
 
 @Component({
   selector: 'app-user-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, RouterModule, FormsModule, VoiceSelectorComponent],
   templateUrl: './user-detail.component.html',
   styleUrl: './user-detail.component.scss',
 })
 export class UserDetailComponent implements OnInit {
   user: User | null = null;
-  twitchUserId: string = '';
+  twitchUserId = '';
 
-  // Voice autocomplete
-  voiceSearchQuery: string = '';
-  availableVoices: Voice[] = [];
-  filteredVoices: Voice[] = [];
-  showVoiceDropdown: boolean = false;
-  voiceSearchSubject = new Subject<string>();
+  // Voice selection
   selectedVoice: Voice | null = null;
 
   // Form fields
-  ttsName: string = '';
+  ttsName = '';
   customIntros: CustomIntro[] = [];
 
   // Loading and error states
-  loading: boolean = false;
-  saving: boolean = false;
+  loading = false;
+  saving = false;
   error: string | null = null;
 
-  constructor(
-    private route: ActivatedRoute,
-    private router: Router,
-    private usersService: UsersService,
-    private voicesService: VoicesService
-  ) {}
+  private router = inject(Router);
+  private usersService = inject(UsersService);
+  private voicesService = inject(VoicesService);
+  private route = inject(ActivatedRoute);
 
   ngOnInit(): void {
     this.twitchUserId = this.route.snapshot.paramMap.get('twitchUserId') || '';
@@ -51,18 +44,6 @@ export class UserDetailComponent implements OnInit {
     }
 
     this.loadUser();
-    this.loadVoices();
-
-    // Set up voice search debouncing
-    this.voiceSearchSubject
-      .pipe(
-        debounceTime(300),
-        distinctUntilChanged(),
-        switchMap((query) => this.voicesService.searchVoices(query))
-      )
-      .subscribe((voices) => {
-        this.filteredVoices = voices;
-      });
   }
 
   loadUser(): void {
@@ -77,19 +58,9 @@ export class UserDetailComponent implements OnInit {
         if (user.ttsProviderName && user.ttsVoiceId) {
           this.voicesService.getVoices().subscribe({
             next: (voices) => {
-              this.availableVoices = voices;
-              this.filteredVoices = voices;
               this.selectedVoice = voices.find(
                 (v) => v.providerName === user.ttsProviderName && v.voiceId === user.ttsVoiceId
               ) || null;
-              
-              // Set the display name using voiceName if found
-              if (this.selectedVoice) {
-                this.voiceSearchQuery = this.voicesService.getVoiceDisplayName(this.selectedVoice);
-              } else {
-                // Fallback to voiceId if voice not found
-                this.voiceSearchQuery = `${user.ttsProviderName} - ${user.ttsVoiceId}`;
-              }
             },
           });
         }
@@ -104,57 +75,8 @@ export class UserDetailComponent implements OnInit {
     });
   }
 
-  loadVoices(): void {
-    this.voicesService.getVoices().subscribe({
-      next: (voices) => {
-        this.availableVoices = voices;
-        this.filteredVoices = voices;
-      },
-      error: (error) => {
-        console.error('Error loading voices:', error);
-      },
-    });
-  }
-
-  onVoiceSearchInput(): void {
-    this.voiceSearchSubject.next(this.voiceSearchQuery);
-    this.showVoiceDropdown = true;
-  }
-
-  onVoiceInputFocus(): void {
-    this.showVoiceDropdown = true;
-    this.voiceSearchSubject.next(this.voiceSearchQuery);
-  }
-
-  onVoiceInputBlur(): void {
-    // Delay to allow click on dropdown item
-    setTimeout(() => {
-      this.showVoiceDropdown = false;
-    }, 200);
-  }
-
-  selectVoice(voice: Voice): void {
+  onVoiceSelected(voice: Voice | null): void {
     this.selectedVoice = voice;
-    this.voiceSearchQuery = this.voicesService.getVoiceDisplayName(voice);
-    this.showVoiceDropdown = false;
-  }
-
-  getGroupedVoices(): { provider: string; voices: Voice[] }[] {
-    const grouped: Record<string, Voice[]> = {};
-    
-    this.filteredVoices.forEach((voice) => {
-      if (!grouped[voice.providerName]) {
-        grouped[voice.providerName] = [];
-      }
-      grouped[voice.providerName].push(voice);
-    });
-
-    return Object.keys(grouped)
-      .sort()
-      .map((provider) => ({
-        provider,
-        voices: grouped[provider],
-      }));
   }
 
   addIntro(): void {

@@ -154,38 +154,14 @@
         </div>
 
         <!-- VOICE type -->
-        <div *ngIf="setting.type === 'voice'" class="form-group">
-          <div class="autocomplete-wrapper">
-            <input
-              type="text"
-              [id]="'setting-' + setting.name"
-              class="autocomplete-input"
-              placeholder="Type to search voices..."
-              [value]="voiceSearchQueries[setting.name] || ''"
-              (input)="onVoiceSearchInput(setting.name); voiceSearchQueries[setting.name] = $any($event.target).value"
-              (focus)="onVoiceInputFocus(setting.name)"
-              (blur)="onVoiceInputBlur(setting.name)"
-            >
-            <div class="autocomplete-dropdown" [class.active]="showVoiceDropdowns[setting.name]">
-              <div *ngFor="let group of getGroupedVoices(setting.name)" class="dropdown-group">
-                <div class="dropdown-group-header">{{ group.provider }}</div>
-                <div
-                  *ngFor="let voice of group.voices"
-                  class="dropdown-item"
-                  [class.selected]="selectedVoices[setting.name]?.voiceId === voice.voiceId && selectedVoices[setting.name]?.providerName === voice.providerName"
-                  (mousedown)="selectVoice(setting, voice)"
-                >
-                  <div>
-                    <div class="voice-name">{{ voice.voiceName }}</div>
-                    <div class="voice-id">{{ voice.voiceId }}</div>
-                  </div>
-                </div>
-              </div>
-              <div *ngIf="filteredVoices[setting.name]?.length === 0" class="dropdown-item">
-                <div>No voices found</div>
-              </div>
-            </div>
-          </div>
+        <div *ngIf="setting.type === 'voice'">
+          <app-voice-selector
+            [selectedVoice]="selectedVoices[setting.name]"
+            [inputId]="'setting-' + setting.name"
+            [showLabel]="false"
+            (voiceSelected)="onVoiceSelected(setting, $event)"
+          >
+          </app-voice-selector>
         </div>
       </div>
     </div>

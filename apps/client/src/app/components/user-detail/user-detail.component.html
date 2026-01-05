@@ -25,43 +25,13 @@
   <div *ngIf="user && !loading">
     <div class="form-section">
       <h2 class="section-title">Voice Assignment</h2>
-      <div class="form-group">
-        <label for="voice-select">
-          Voice
-          <span class="label-hint">Search and select a voice. Results are grouped by provider.</span>
-        </label>
-        <div class="autocomplete-wrapper">
-          <input
-            type="text"
-            id="voice-select"
-            class="autocomplete-input"
-            placeholder="Type to search voices..."
-            [(ngModel)]="voiceSearchQuery"
-            (input)="onVoiceSearchInput()"
-            (focus)="onVoiceInputFocus()"
-            (blur)="onVoiceInputBlur()"
-          >
-          <div class="autocomplete-dropdown" [class.active]="showVoiceDropdown">
-            <div *ngFor="let group of getGroupedVoices()" class="dropdown-group">
-              <div class="dropdown-group-header">{{ group.provider }}</div>
-              <div
-                *ngFor="let voice of group.voices"
-                class="dropdown-item"
-                [class.selected]="selectedVoice?.voiceId === voice.voiceId && selectedVoice?.providerName === voice.providerName"
-                (mousedown)="selectVoice(voice)"
-              >
-                <div>
-                  <div class="voice-name">{{ voice.voiceName }}</div>
-                  <div class="voice-id">{{ voice.voiceId }}</div>
-                </div>
-              </div>
-            </div>
-            <div *ngIf="filteredVoices.length === 0" class="dropdown-item">
-              <div>No voices found</div>
-            </div>
-          </div>
-        </div>
-      </div>
+      <app-voice-selector
+        [selectedVoice]="selectedVoice"
+        inputId="voice-select"
+        (voiceSelected)="onVoiceSelected($event)"
+      >
+        <span slot="label">Voice</span>
+      </app-voice-selector>
     </div>
 
     <div class="form-section">
@@ -83,10 +53,10 @@
     <div class="form-section">
       <h2 class="section-title">Custom Intros</h2>
       <div class="form-group">
-        <label>
-          Custom Intro Text
+        <div class="label-wrapper">
+          <span class="label-text">Custom Intro Text</span>
           <span class="label-hint">Add multiple custom intro texts that can be randomly selected when this user speaks</span>
-        </label>
+        </div>
         <div class="intros-list">
           <div *ngFor="let intro of customIntros; let i = index" class="intro-item">
             <div class="intro-item-header">
@@ -94,6 +64,8 @@
               <button class="delete-intro-button" (click)="removeIntro(i)">Delete</button>
             </div>
             <textarea
+              [id]="'intro-text-' + i"
+              [attr.aria-label]="'Intro text ' + (i + 1)"
               [(ngModel)]="intro.introText"
               placeholder="Enter intro text..."
             ></textarea>

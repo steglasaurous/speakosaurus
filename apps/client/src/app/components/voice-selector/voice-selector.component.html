@@ -1,0 +1,38 @@
+<div class="form-group">
+  <label [for]="inputId" *ngIf="showLabel">
+    <ng-content select="[slot=label]">Voice</ng-content>
+    <span class="label-hint" *ngIf="hint">{{ hint }}</span>
+  </label>
+  <div class="autocomplete-wrapper">
+    <input
+      [type]="type"
+      [id]="inputId"
+      class="autocomplete-input"
+      [placeholder]="placeholder"
+      [(ngModel)]="voiceSearchQuery"
+      (input)="onVoiceSearchInput()"
+      (focus)="onVoiceInputFocus()"
+      (blur)="onVoiceInputBlur()"
+    >
+    <div class="autocomplete-dropdown" [class.active]="showVoiceDropdown">
+      <div *ngFor="let group of getGroupedVoices()" class="dropdown-group">
+        <div class="dropdown-group-header">{{ group.provider }}</div>
+        <div
+          *ngFor="let voice of group.voices"
+          class="dropdown-item"
+          [class.selected]="selectedVoice?.voiceId === voice.voiceId && selectedVoice?.providerName === voice.providerName"
+          (mousedown)="selectVoice(voice)"
+        >
+          <div>
+            <div class="voice-name">{{ voice.voiceName }}</div>
+            <div class="voice-id">{{ voice.voiceId }}</div>
+          </div>
+        </div>
+      </div>
+      <div *ngIf="filteredVoices.length === 0" class="dropdown-item">
+        <div>No voices found</div>
+      </div>
+    </div>
+  </div>
+</div>
+
