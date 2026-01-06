@@ -19,6 +19,8 @@ export enum Setting {
   ELEVENLABS_API_KEY = 'elevenLabsApiKey',
   TTS_MONSTER_API_KEY = 'ttsMonsterApiKey',
   TWITCH_CLIENT_ID = 'twitchClientId',
+  TTS_MONSTER_UNOFFICIAL_USER_ID = 'ttsMonsterUnofficialUserId',
+  TTS_MONSTER_UNOFFICIAL_API_KEY = 'ttsMonsterUnofficialApiKey',
 }
 
 export enum SettingType {
@@ -151,6 +153,20 @@ export class SettingsService {
       default: '6ash2utgzo1hns22mle8v6g21q1qf0',
       group: 'Twitch',
       description: 'Your Twitch application Client ID. Get one from https://dev.twitch.tv/console/apps',
+      type: SettingType.STRING,
+    },
+    {
+      name: Setting.TTS_MONSTER_UNOFFICIAL_USER_ID,
+      displayName: 'TTS MonsterUnofficial User ID',
+      group: 'TTS Providers',
+      description: 'The user ID for the tts.monsterUnofficial API',
+      type: SettingType.STRING,
+    },
+    {
+      name: Setting.TTS_MONSTER_UNOFFICIAL_API_KEY,
+      displayName: 'TTS MonsterUnofficial API Key',
+      group: 'TTS Providers',
+      description: 'The API key for the tts.monsterUnofficial API',
       type: SettingType.STRING,
     },
   ];

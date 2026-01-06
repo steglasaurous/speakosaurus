@@ -9,6 +9,7 @@ import { ElevenLabsVoiceProvider } from "./providers/elevenlabs.voice-provider";
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import { TTSMonsterVoiceProvider } from "./providers/tts-monster.voice-provider";
 import { HttpService } from "@nestjs/axios";
+import { TTSMonsterUnofficialVoiceProvider } from "./providers/tts-monster-unofficial.voice-provider";
 
 @Injectable()
 export class VoiceProviderService implements OnModuleInit {
@@ -30,6 +31,7 @@ export class VoiceProviderService implements OnModuleInit {
         // Check if ElevenLabs API key is set and add provider if available
         await this.updateElevenLabsProvider();
         await this.updateTTSMonsterProvider();
+        await this.updateTTSMonsterUnofficialProvider();
     }
 
     async getVoices(forceReload = false): Promise<Voice[]> {
@@ -169,6 +171,24 @@ export class VoiceProviderService implements OnModuleInit {
             this.logger.log('TTS Monster provider not added - API key not set');
             // Clear cache so voices are refreshed
             this.cachedVoices = null;
+        }
+    }
+
+    async updateTTSMonsterUnofficialProvider(): Promise<void> {
+        const userIdSetting = await this.settingsService.getSetting(Setting.TTS_MONSTER_UNOFFICIAL_USER_ID);
+        const userId = userIdSetting?.value;
+        const apiKeySetting = await this.settingsService.getSetting(Setting.TTS_MONSTER_UNOFFICIAL_API_KEY);
+        const apiKey = apiKeySetting?.value;
+        if (userId && apiKey && userId.trim() !== '' && apiKey.trim() !== '') {
+            // Remove existing TTS MonsterUnofficial provider if present
+            this.voiceProviders = this.voiceProviders.filter(
+                provider => provider.providerName !== 'ttsMonsterUnofficial'
+            );
+
+            const ttsMonsterUnofficialProvider = new TTSMonsterUnofficialVoiceProvider(userId, apiKey, this.httpService);
+            this.voiceProviders.push(ttsMonsterUnofficialProvider);
+            this.cachedVoices = null;
+            this.logger.log('TTS MonsterUnofficial provider added');
         }
     }
 }
