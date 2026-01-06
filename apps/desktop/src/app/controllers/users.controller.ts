@@ -12,6 +12,7 @@ import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   UserDto,
   UpdateUserDto,
+  CreateUserDto,
   CreateCustomIntroDto,
   UpdateCustomIntroDto,
 } from '../dto/user.dto';
@@ -37,6 +38,25 @@ export class UsersController {
     const result = await this.usersService.getAllUsers();
     this.logger.log('getAllUsers result', { result });
     return result;
+  }
+
+  @Post()
+  @ApiOperation({
+    summary: 'Create a new user',
+    description: 'Creates a new user record with Twitch user ID and username',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'User successfully created',
+    type: UserDto,
+  })
+  async createUser(@Body() createUserDto: CreateUserDto): Promise<UserDto> {
+    const user = await this.usersService.createUser(
+      createUserDto.twitchUserId,
+      createUserDto.twitchUsername,
+    );
+    this.logger.log('createUser result', { user });
+    return user;
   }
 
   @Get(':twitchUserId')

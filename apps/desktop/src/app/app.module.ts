@@ -13,6 +13,8 @@ import { StreamerBotManagerService } from './services/streamer-bot-manager.servi
 import { SpeakCommand } from './chat-event-handlers/speak-command';
 import { SpeakerttsVoiceProvider } from './services/voice-providers/providers/speakertts.voice-provider';
 import { UsersService } from './services/users.service';
+import { TwitchAuthService } from './services/twitch-auth.service';
+import { TwitchController } from './controllers/twitch.controller';
 import { HttpModule } from '@nestjs/axios';
 
 @Module({
@@ -24,7 +26,7 @@ import { HttpModule } from '@nestjs/axios';
     }) as DynamicModule,
     HttpModule,
   ],
-  controllers: [VoicesController, SpeakController, SettingsController, UsersController],
+  controllers: [VoicesController, SpeakController, SettingsController, UsersController, TwitchController],
   providers: [ 
     SpeakerttsVoiceProvider,
     {
@@ -38,6 +40,7 @@ import { HttpModule } from '@nestjs/axios';
     StreamerBotManagerService,
     SpeakCommand,
     UsersService,
+    TwitchAuthService,
   ],
 })
 export class AppModule {}

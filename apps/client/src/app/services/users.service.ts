@@ -31,6 +31,11 @@ export interface UpdateCustomIntroRequest {
   introText: string;
 }
 
+export interface CreateUserRequest {
+  twitchUserId: string;
+  twitchUsername: string;
+}
+
 @Injectable({
   providedIn: 'root',
 })
@@ -69,6 +74,10 @@ export class UsersService {
     return this.http.delete<{ success: boolean; message: string }>(
       `${this.apiUrl}/users/intros/${introId}`
     );
+  }
+
+  createUser(userData: CreateUserRequest): Observable<User> {
+    return this.http.post<User>(`${this.apiUrl}/users`, userData);
   }
 }
 

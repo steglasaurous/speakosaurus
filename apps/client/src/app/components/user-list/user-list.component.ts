@@ -1,9 +1,12 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { Subject, firstValueFrom } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { UsersService, User } from '../../services/users.service';
 import { VoicesService, Voice } from '../../services/voices.service';
+import { TwitchService, TwitchUser } from '../../services/twitch.service';
 
 @Component({
   selector: 'app-user-list',
@@ -12,17 +15,67 @@ import { VoicesService, Voice } from '../../services/voices.service';
   templateUrl: './user-list.component.html',
   styleUrl: './user-list.component.scss',
 })
-export class UserListComponent implements OnInit {
+export class UserListComponent implements OnInit, OnDestroy {
   users: User[] = [];
   filteredUsers: User[] = [];
   searchQuery = '';
+  
+  // Twitch search
+  showTwitchSearch = false;
+  twitchSearchQuery = '';
+  twitchSearchResults: TwitchUser[] = [];
+  isSearchingTwitch = false;
+  addingUserIds = new Set<string>(); // Track which users are being added
+  twitchSearchSubject = new Subject<string>();
+  isAuthenticated = false;
+  authError: string | null = null;
+  deviceCodeInfo: { userCode: string; verificationUri: string } | null = null;
+  isPollingAuth = false;
+  pollingSubscription: { unsubscribe: () => void } | null = null;
+  
   private usersService = inject(UsersService);
   private voicesService = inject(VoicesService);
+  twitchService = inject(TwitchService); // Made public for template access
+  private cdr = inject(ChangeDetectorRef);
   private voices: Voice[] = [];
 
   ngOnInit(): void {
     this.loadVoices();
     this.loadUsers();
+    this.checkAuthStatus();
+
+    // Set up Twitch search debouncing
+    this.twitchSearchSubject
+      .pipe(
+        debounceTime(500),
+        distinctUntilChanged(),
+        switchMap((query) => {
+          this.isSearchingTwitch = true;
+          return this.twitchService.searchUsers(query);
+        })
+      )
+      .subscribe({
+        next: (users) => {
+          this.twitchSearchResults = users;
+          this.isSearchingTwitch = false;
+        },
+        error: (error) => {
+          console.error('Error searching Twitch users:', error);
+          this.isSearchingTwitch = false;
+          this.twitchSearchResults = [];
+        },
+      });
+  }
+
+  checkAuthStatus(): void {
+    this.twitchService.isAuthenticated().subscribe({
+      next: (authenticated) => {
+        this.isAuthenticated = authenticated;
+      },
+      error: () => {
+        this.isAuthenticated = false;
+      },
+    });
   }
 
   loadVoices(): void {
@@ -39,13 +92,20 @@ export class UserListComponent implements OnInit {
   loadUsers(): void {
     this.usersService.getAllUsers().subscribe({
       next: (users) => {
-        this.users = users;
+        this.users = this.sortUsers(users);
         this.filterUsers();
+        this.cdr.detectChanges(); // Ensure change detection runs
       },
       error: (error) => {
         console.error('Error loading users:', error);
       },
     });
+  }
+
+  sortUsers(users: User[]): User[] {
+    return [...users].sort((a, b) => 
+      a.twitchUsername.toLowerCase().localeCompare(b.twitchUsername.toLowerCase())
+    );
   }
 
   filterUsers(): void {
@@ -55,11 +115,13 @@ export class UserListComponent implements OnInit {
     }
 
     const query = this.searchQuery.toLowerCase();
-    this.filteredUsers = this.users.filter(
+    const filtered = this.users.filter(
       (user) =>
         user.twitchUsername.toLowerCase().includes(query) ||
         (user.ttsName && user.ttsName.toLowerCase().includes(query))
     );
+    // Ensure filtered results are also sorted
+    this.filteredUsers = this.sortUsers(filtered);
   }
 
   getVoiceDisplayName(user: User): string {
@@ -80,6 +142,151 @@ export class UserListComponent implements OnInit {
 
   getIntroCount(user: User): number {
     return user.customIntros?.length || 0;
+  }
+
+  toggleTwitchSearch(): void {
+    this.showTwitchSearch = !this.showTwitchSearch;
+    if (this.showTwitchSearch) {
+      this.checkAuthStatus();
+    } else {
+      this.twitchSearchQuery = '';
+      this.twitchSearchResults = [];
+      this.authError = null;
+      this.deviceCodeInfo = null;
+      this.stopPolling();
+    }
+  }
+
+  startDeviceCodeFlow(): void {
+    this.authError = null;
+    this.deviceCodeInfo = null;
+    this.isPollingAuth = true;
+
+    this.twitchService.startDeviceCodeFlow().subscribe({
+      next: (info) => {
+        this.deviceCodeInfo = {
+          userCode: info.userCode,
+          verificationUri: info.verificationUri,
+        };
+        // Start polling
+        this.startPolling(info.interval * 1000);
+      },
+      error: (error) => {
+        console.error('Failed to start device code flow:', error);
+        this.authError = error.message || 'Failed to start authentication';
+        this.isPollingAuth = false;
+      },
+    });
+  }
+
+  startPolling(intervalMs: number): void {
+    this.stopPolling();
+    
+    this.pollingSubscription = this.twitchService.pollDeviceCodeUntilComplete(intervalMs).subscribe({
+      next: (result) => {
+        if (result.success) {
+          this.isPollingAuth = false;
+          this.deviceCodeInfo = null;
+          this.checkAuthStatus();
+          this.stopPolling();
+        }
+      },
+      error: (error) => {
+        console.error('Polling error:', error);
+        this.isPollingAuth = false;
+        this.authError = error.message || 'Authentication failed';
+        this.stopPolling();
+      },
+    });
+  }
+
+  stopPolling(): void {
+    if (this.pollingSubscription) {
+      this.pollingSubscription.unsubscribe();
+      this.pollingSubscription = null;
+    }
+  }
+
+  openVerificationUri(): void {
+    if (this.deviceCodeInfo?.verificationUri) {
+      window.open(this.deviceCodeInfo.verificationUri, '_blank');
+    }
+  }
+
+  onTwitchSearchInput(): void {
+    if (this.twitchSearchQuery.trim()) {
+      this.twitchSearchSubject.next(this.twitchSearchQuery);
+    } else {
+      this.twitchSearchResults = [];
+    }
+  }
+
+  async addTwitchUser(twitchUser: TwitchUser): Promise<void> {
+    // Check if user already exists
+    const existingUser = this.users.find(
+      (u) => u.twitchUserId === twitchUser.id
+    );
+    if (existingUser) {
+      alert(`User ${twitchUser.display_name} is already in the list.`);
+      return;
+    }
+
+    // Check if already adding this user
+    if (this.addingUserIds.has(twitchUser.id)) {
+      return;
+    }
+
+    this.addingUserIds.add(twitchUser.id);
+    // Reassign to trigger change detection
+    this.addingUserIds = new Set(this.addingUserIds);
+    try {
+      const newUser = await firstValueFrom(
+        this.usersService.createUser({
+          twitchUserId: twitchUser.id,
+          twitchUsername: twitchUser.login,
+        })
+      );
+
+      if (newUser) {
+        // Add the new user to the list immediately (optimistic update)
+        this.users.push(newUser);
+        this.users = this.sortUsers(this.users); // Re-sort after adding
+        this.filterUsers();
+        this.cdr.detectChanges();
+        
+        // Also reload from server to ensure we have the latest data
+        this.loadUsers();
+        // Close search and clear
+        // this.showTwitchSearch = false;
+        // this.twitchSearchQuery = '';
+        // this.twitchSearchResults = [];
+      }
+    } catch (error) {
+      console.error('Error adding user:', error);
+      const httpError = error as { status?: number; message?: string };
+      if (httpError.status === 409 || httpError.status === 400) {
+        alert(`User ${twitchUser.display_name} already exists or could not be added.`);
+      } else {
+        alert('Error adding user: ' + (httpError.message || 'Unknown error'));
+      }
+    } finally {
+      this.addingUserIds.delete(twitchUser.id);
+      // Reassign to trigger change detection (Angular doesn't detect Set mutations)
+      this.addingUserIds = new Set(this.addingUserIds);
+      this.cdr.detectChanges(); // Force change detection to update the UI
+    }
+  }
+
+  isUserBeingAdded(twitchUserId: string): boolean {
+    return this.addingUserIds.has(twitchUserId);
+  }
+
+  isUserAlreadyAdded(twitchUserId: string): boolean {
+    return this.users.some((u) => u.twitchUserId === twitchUserId);
+  }
+
+  ngOnDestroy(): void {
+    this.stopPolling();
   }
 }
 

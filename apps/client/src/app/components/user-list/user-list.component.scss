@@ -15,8 +15,42 @@
   justify-content: space-between;
 }
 
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .header-content {
   flex: 1;
+}
+
+.add-user-button {
+  background: #007aff;
+  color: white;
+  border: none;
+  cursor: pointer;
+  padding: 10px 16px;
+  border-radius: 8px;
+  transition: background-color 0.2s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+.add-user-button:hover {
+  background: #0051d5;
+}
+
+.add-user-button.active {
+  background: #ff3b30;
+}
+
+.add-user-button.active:hover {
+  background: #d70015;
 }
 
 .settings-button {
@@ -163,5 +197,414 @@ h1 {
 .empty-state-icon {
   font-size: 48px;
   margin-bottom: 16px;
+}
+
+// Twitch Search Panel
+.twitch-search-panel {
+  background: white;
+  padding: 24px;
+  border-radius: 12px;
+  margin-bottom: 24px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
+
+.twitch-search-header {
+  margin-bottom: 20px;
+}
+
+.twitch-search-header h2 {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 4px;
+}
+
+.twitch-search-subtitle {
+  color: #86868b;
+  font-size: 14px;
+}
+
+.twitch-search-input-wrapper {
+  position: relative;
+  margin-bottom: 20px;
+}
+
+.twitch-search-input {
+  width: 100%;
+  padding: 12px 16px 12px 48px;
+  border: 2px solid #e5e5e7;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.2s;
+}
+
+.twitch-search-input:focus {
+  outline: none;
+  border-color: #007aff;
+}
+
+.twitch-search-input:disabled {
+  background: #f5f5f7;
+  cursor: not-allowed;
+}
+
+.loading-spinner {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 20px;
+  height: 20px;
+  border: 2px solid #e5e5e7;
+  border-top-color: #007aff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to {
+    transform: translateY(-50%) rotate(360deg);
+  }
+}
+
+.twitch-results {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.twitch-user-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px;
+  border: 2px solid #e5e5e7;
+  border-radius: 8px;
+  transition: all 0.2s;
+}
+
+.twitch-user-item:hover {
+  border-color: #007aff;
+  background: #f5f5f7;
+}
+
+.twitch-user-item.already-added {
+  opacity: 0.6;
+  background: #f5f5f7;
+}
+
+.twitch-user-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex: 1;
+}
+
+.twitch-user-avatar {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  object-fit: cover;
+}
+
+.twitch-user-details {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.twitch-user-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: #1d1d1f;
+}
+
+.twitch-user-login {
+  font-size: 14px;
+  color: #86868b;
+}
+
+.add-button {
+  background: #007aff;
+  color: white;
+  border: none;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+}
+
+.add-button:hover:not(:disabled) {
+  background: #0051d5;
+}
+
+.add-button:disabled {
+  background: #e5e5e7;
+  color: #86868b;
+  cursor: not-allowed;
+}
+
+.twitch-empty-state,
+.twitch-initial-state {
+  padding: 40px 24px;
+  text-align: center;
+  color: #86868b;
+  font-size: 14px;
+}
+
+// Client ID Form
+.client-id-form {
+  margin-bottom: 24px;
+  padding: 20px;
+  background: #f5f5f7;
+  border-radius: 8px;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-group label {
+  display: block;
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 8px;
+  color: #1d1d1f;
+}
+
+.form-help {
+  font-size: 12px;
+  color: #86868b;
+  margin-bottom: 12px;
+  line-height: 1.4;
+}
+
+.form-help a {
+  color: #007aff;
+  text-decoration: none;
+}
+
+.form-help a:hover {
+  text-decoration: underline;
+}
+
+.form-input {
+  width: 100%;
+  padding: 12px 16px;
+  border: 2px solid #e5e5e7;
+  border-radius: 8px;
+  font-size: 16px;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #007aff;
+}
+
+.error-message {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #ff3b30;
+}
+
+.form-actions {
+  display: flex;
+  gap: 12px;
+  justify-content: flex-end;
+}
+
+.save-button,
+.cancel-button {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  border: none;
+}
+
+.save-button {
+  background: #007aff;
+  color: white;
+}
+
+.save-button:hover {
+  background: #0051d5;
+}
+
+.cancel-button {
+  background: #e5e5e7;
+  color: #1d1d1f;
+}
+
+.cancel-button:hover {
+  background: #d1d1d6;
+}
+
+// Auth Error Banner
+.auth-error-banner {
+  margin-bottom: 20px;
+  padding: 16px;
+  background: #fff3f3;
+  border: 2px solid #ff3b30;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.auth-error-banner p {
+  color: #ff3b30;
+  margin: 0;
+  flex: 1;
+}
+
+.retry-button {
+  padding: 8px 16px;
+  background: #ff3b30;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.retry-button:hover {
+  background: #d70015;
+}
+
+// Auth Prompt
+.auth-prompt {
+  margin-bottom: 20px;
+  padding: 20px;
+  background: #f5f5f7;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.auth-prompt p {
+  margin-bottom: 16px;
+  color: #1d1d1f;
+}
+
+.auth-button {
+  padding: 10px 20px;
+  background: #9146ff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.auth-button:hover {
+  background: #772ce8;
+}
+
+// Device Code Display
+.device-code-display {
+  margin-bottom: 24px;
+  padding: 24px;
+  background: #f5f5f7;
+  border-radius: 8px;
+  border: 2px solid #007aff;
+}
+
+.device-code-header {
+  margin-bottom: 20px;
+  text-align: center;
+}
+
+.device-code-header h3 {
+  font-size: 18px;
+  font-weight: 600;
+  margin-bottom: 8px;
+  color: #1d1d1f;
+}
+
+.device-code-subtitle {
+  font-size: 14px;
+  color: #86868b;
+  margin: 0;
+}
+
+.device-code-box {
+  background: white;
+  border: 2px dashed #007aff;
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.device-code-value {
+  font-size: 32px;
+  font-weight: 700;
+  font-family: 'Courier New', monospace;
+  letter-spacing: 8px;
+  color: #007aff;
+  user-select: all;
+}
+
+.device-code-actions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.open-url-button {
+  padding: 12px 24px;
+  background: #007aff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.open-url-button:hover {
+  background: #0051d5;
+}
+
+.verification-url {
+  font-size: 12px;
+  color: #007aff;
+  text-decoration: none;
+  word-break: break-all;
+}
+
+.verification-url:hover {
+  text-decoration: underline;
+}
+
+.polling-status {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 16px;
+  color: #86868b;
+  font-size: 14px;
+}
+
+.spinner-small {
+  width: 16px;
+  height: 16px;
+  border: 2px solid #e5e5e7;
+  border-top-color: #007aff;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
 }
 

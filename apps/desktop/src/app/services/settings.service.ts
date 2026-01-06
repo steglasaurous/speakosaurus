@@ -10,6 +10,7 @@ export enum Setting {
   MODE = 'mode',
   TRIGGER_COMMANDS = 'triggerCommands',
   DEFAULT_VOICE = 'defaultVoice',
+  DEFAULT_INTRO_VOICE = 'defaultIntroVoice',
   CHAT_MESSAGE_PREFIX = 'chatMessagePrefix',
   CHAT_MESSAGE_PREFIX_OMIT_SAME_USER = 'chatMessagePrefixOmitSameUser',
   CHAT_MESSAGE_PREFIX_OMIT_SAME_USER_TIMEOUT = 'chatMessagePrefixOmitSameUserTimeout',
@@ -17,6 +18,7 @@ export enum Setting {
   STREAMERBOT_WEBSOCKET_URL = 'streamerbotWebsocketUrl',
   ELEVENLABS_API_KEY = 'elevenLabsApiKey',
   TTS_MONSTER_API_KEY = 'ttsMonsterApiKey',
+  TWITCH_CLIENT_ID = 'twitchClientId',
 }
 
 export enum SettingType {
@@ -82,6 +84,13 @@ export class SettingsService {
       type: SettingType.VOICE,
     },
     {
+      name: Setting.DEFAULT_INTRO_VOICE,
+      displayName: 'Default Intro Voice',
+      group: 'General',
+      description: 'The default voice to use for intro messages',
+      type: SettingType.VOICE,
+    },
+    {
       name: Setting.CHAT_MESSAGE_PREFIX,
       displayName: 'Chat Message Prefix',
       group: 'General',
@@ -134,6 +143,14 @@ export class SettingsService {
       displayName: 'TTS Monster API Key',
       group: 'TTS Providers',
       description: 'The API key for the tts.monster API',
+      type: SettingType.STRING,
+    },
+    {
+      name: Setting.TWITCH_CLIENT_ID,
+      displayName: 'Twitch Client ID',
+      default: '6ash2utgzo1hns22mle8v6g21q1qf0',
+      group: 'Twitch',
+      description: 'Your Twitch application Client ID. Get one from https://dev.twitch.tv/console/apps',
       type: SettingType.STRING,
     },
   ];

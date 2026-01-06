@@ -20,9 +20,18 @@ export const customIntros = sqliteTable('custom_intros', {
   introText: text('intro_text').notNull(),
 });
 
+export const twitchAuth = sqliteTable('twitch_auth', {
+  id: text('id').notNull().primaryKey().default('default'),
+  accessToken: text('access_token'),
+  refreshToken: text('refresh_token'),
+  expiresAt: text('expires_at'),
+  scope: text('scope'),
+});
+
 export const schema = {
   settings,
   users,
   customIntros,
+  twitchAuth,
 };
 

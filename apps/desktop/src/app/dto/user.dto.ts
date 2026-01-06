@@ -94,3 +94,17 @@ export class UpdateCustomIntroDto {
   introText: string;
 }
 
+export class CreateUserDto {
+  @ApiProperty({
+    description: 'Twitch user ID',
+    example: '12345678',
+  })
+  twitchUserId: string;
+
+  @ApiProperty({
+    description: 'Twitch username',
+    example: 'xQc',
+  })
+  twitchUsername: string;
+}
+
