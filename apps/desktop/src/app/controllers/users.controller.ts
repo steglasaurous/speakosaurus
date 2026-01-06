@@ -36,7 +36,6 @@ export class UsersController {
   })
   async getAllUsers(): Promise<UserDto[]> {
     const result = await this.usersService.getAllUsers();
-    this.logger.log('getAllUsers result', { result });
     return result;
   }
 

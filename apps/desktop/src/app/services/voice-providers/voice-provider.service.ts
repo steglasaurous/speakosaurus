@@ -10,6 +10,7 @@ import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import { TTSMonsterVoiceProvider } from "./providers/tts-monster.voice-provider";
 import { HttpService } from "@nestjs/axios";
 import { TTSMonsterUnofficialVoiceProvider } from "./providers/tts-monster-unofficial.voice-provider";
+import { AzureVoiceProvider } from "./providers/azure.voice-provider";
 
 @Injectable()
 export class VoiceProviderService implements OnModuleInit {
@@ -32,6 +33,7 @@ export class VoiceProviderService implements OnModuleInit {
         await this.updateElevenLabsProvider();
         await this.updateTTSMonsterProvider();
         await this.updateTTSMonsterUnofficialProvider();
+        await this.updateAzureProvider();
     }
 
     async getVoices(forceReload = false): Promise<Voice[]> {
@@ -64,7 +66,6 @@ export class VoiceProviderService implements OnModuleInit {
 
     async getVoice(voiceId: string, providerName: string): Promise<Voice | null> {
         const voices = await this.getVoices();
-        this.logger.log('Getting voice', { voiceId, providerName, voices });
         const voice = voices.find(v => v.voiceId === voiceId && v.providerName === providerName);
         if (!voice) {
             return null;
@@ -189,6 +190,25 @@ export class VoiceProviderService implements OnModuleInit {
             this.voiceProviders.push(ttsMonsterUnofficialProvider);
             this.cachedVoices = null;
             this.logger.log('TTS MonsterUnofficial provider added');
+        }
+    }
+
+    async updateAzureProvider(): Promise<void> {
+        const apiKeySetting = await this.settingsService.getSetting(Setting.AZURE_SPEECH_KEY);
+        const apiKey = apiKeySetting?.value;
+        const regionSetting = await this.settingsService.getSetting(Setting.AZURE_SPEECH_REGION);
+        const region = regionSetting?.value;
+        const endpointSetting = await this.settingsService.getSetting(Setting.AZURE_ENDPOINT);
+        const endpoint = endpointSetting?.value;
+        if (apiKey && region && endpoint && apiKey.trim() !== '' && region.trim() !== '' && endpoint.trim() !== '') {
+            const azureProvider = new AzureVoiceProvider(apiKey, region, endpoint);
+            this.voiceProviders.push(azureProvider);
+            this.cachedVoices = null;
+            this.logger.log('Azure provider added');
+        } else {
+            this.logger.log('Azure provider not added - API key, region, or endpoint not set');
+            // Clear cache so voices are refreshed
+            this.cachedVoices = null;
         }
     }
 }

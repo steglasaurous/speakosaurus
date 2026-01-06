@@ -50,7 +50,7 @@ export class AudioProcessorService {
         } finally {
             // Delete the temporary file after playback
             try {
-                unlinkSync(audioData.audioFilePath);
+                //unlinkSync(audioData.audioFilePath);
             } catch (deleteError) {
                 this.logger.error(`Failed to delete temp file ${audioData.audioFilePath}:`, deleteError);
             }

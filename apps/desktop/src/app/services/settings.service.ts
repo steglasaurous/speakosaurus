@@ -21,6 +21,9 @@ export enum Setting {
   TWITCH_CLIENT_ID = 'twitchClientId',
   TTS_MONSTER_UNOFFICIAL_USER_ID = 'ttsMonsterUnofficialUserId',
   TTS_MONSTER_UNOFFICIAL_API_KEY = 'ttsMonsterUnofficialApiKey',
+  AZURE_SPEECH_KEY = 'azureSpeechKey',
+  AZURE_SPEECH_REGION = 'azureSpeechRegion',
+  AZURE_ENDPOINT = 'azureEndpoint',
 }
 
 export enum SettingType {
@@ -167,6 +170,27 @@ export class SettingsService {
       displayName: 'TTS MonsterUnofficial API Key',
       group: 'TTS Providers',
       description: 'The API key for the tts.monsterUnofficial API',
+      type: SettingType.STRING,
+    },
+    {
+      name: Setting.AZURE_SPEECH_KEY,
+      displayName: 'Azure Speech Key',
+      group: 'TTS Providers',
+      description: 'The API key for the Azure Speech API',
+      type: SettingType.STRING,
+    },
+    {
+      name: Setting.AZURE_SPEECH_REGION,
+      displayName: 'Azure Speech Region',
+      group: 'TTS Providers',
+      description: 'The region for the Azure Speech API',
+      type: SettingType.STRING,
+    },
+    {
+      name: Setting.AZURE_ENDPOINT,
+      displayName: 'Azure Endpoint',
+      group: 'TTS Providers',
+      description: 'The endpoint for the Azure Speech API',
       type: SettingType.STRING,
     },
   ];
