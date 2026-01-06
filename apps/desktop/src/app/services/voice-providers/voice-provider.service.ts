@@ -62,6 +62,7 @@ export class VoiceProviderService implements OnModuleInit {
 
     async getVoice(voiceId: string, providerName: string): Promise<Voice | null> {
         const voices = await this.getVoices();
+        this.logger.log('Getting voice', { voiceId, providerName, voices });
         const voice = voices.find(v => v.voiceId === voiceId && v.providerName === providerName);
         if (!voice) {
             return null;
@@ -100,7 +101,7 @@ export class VoiceProviderService implements OnModuleInit {
      */
     async getDefaultVoice(): Promise<Voice> {
         const defaultVoiceSetting = await this.settingsService.getSetting(Setting.DEFAULT_VOICE);
-        if (!defaultVoiceSetting) {
+        if (!defaultVoiceSetting || defaultVoiceSetting.value === null) {
             // We'll grab the first available voice from speakertts, as that's the built-in voices from either windows or mac.
             const voices = await this.getVoices();
             for (const voice of voices) {

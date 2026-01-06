@@ -1,18 +1,16 @@
 import { Injectable, Logger } from '@nestjs/common';
-import player from 'play-sound';
+import sound from 'sound-play';
 import { unlinkSync } from 'fs';
 import { AudioData } from './voice-providers/audio-data.interface';
+import { Setting, SettingsService } from './settings.service';
 
 @Injectable()
 export class AudioProcessorService {
     private logger: Logger = new Logger(AudioProcessorService.constructor.name);
     private queue: AudioData[] = [];
-    private audioPlayer = player();
-
-    // in ms
-    private pauseBetweenMessages = 1000;
 
     private isProcessing = false;
+    constructor(private readonly settingsService: SettingsService) {}
 
     async addToQueue(audioData: AudioData) {
         this.queue.push(audioData);
@@ -24,14 +22,19 @@ export class AudioProcessorService {
 
     private async processQueue() {
         this.isProcessing = true;
+        let pauseBetweenMessages = 1000;
+        const pauseBetweenMessagesSetting = await this.settingsService.getSetting(Setting.PAUSE_BETWEEN_MESSAGES_MS);
+        if (pauseBetweenMessagesSetting) {
+            pauseBetweenMessages = parseInt(pauseBetweenMessagesSetting.value ?? '1000');
+        }
+
         while (this.queue.length > 0) {
             const audioData = this.queue.shift();
-            this.logger.log('Processing audio data', { audioData });
             if (audioData) {
                 this.logger.log('Playing audio data', { audioData });
                 await this.playAudio(audioData);
-                this.logger.log('Pausing between messages', { pauseBetweenMessages: this.pauseBetweenMessages });
-                await new Promise(resolve => setTimeout(resolve, this.pauseBetweenMessages));
+                this.logger.log(`Pausing between messages for ${pauseBetweenMessages}ms`);
+                await new Promise(resolve => setTimeout(resolve, pauseBetweenMessages));
             }
         }
         this.isProcessing = false;
@@ -39,21 +42,18 @@ export class AudioProcessorService {
     }
 
     private async playAudio(audioData: AudioData): Promise<void> {
-        return new Promise((resolve, reject) => {
-            this.audioPlayer.play(audioData.audioFilePath, (err) => {
-                // Delete the temporary file after playback
-                try {
-                    unlinkSync(audioData.audioFilePath);
-                } catch (deleteError) {
-                    console.error(`Failed to delete temp file ${audioData.audioFilePath}:`, deleteError);
-                }
-
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve();
-                }
-            });
-        });
+        try {
+            await sound.play(audioData.audioFilePath);
+        } catch (err) {
+            this.logger.error('Error playing audio', err);
+            throw err;
+        } finally {
+            // Delete the temporary file after playback
+            try {
+                unlinkSync(audioData.audioFilePath);
+            } catch (deleteError) {
+                this.logger.error(`Failed to delete temp file ${audioData.audioFilePath}:`, deleteError);
+            }
+        }
     }
 }

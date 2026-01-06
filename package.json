@@ -41,7 +41,6 @@
     "@nestjs/platform-express": "^11.0.0",
     "@nestjs/swagger": "^11.2.3",
     "@streamerbot/client": "^1.12.2",
-    "@types/play-sound": "^1.1.2",
     "@types/uuid": "^10.0.0",
     "axios": "^1.13.2",
     "better-sqlite3": "^12.5.0",
@@ -50,9 +49,9 @@
     "electron": "^34.5.6",
     "naudiodon": "^2.3.6",
     "nestjs-drizzle": "^1.1.6",
-    "play-sound": "^1.1.6",
     "reflect-metadata": "^0.1.13",
     "rxjs": "~7.8.0",
+    "sound-play": "^1.1.0",
     "speakertts": "^1.0.3",
     "uuid": "^13.0.0",
     "zone.js": "^0.15.1"
