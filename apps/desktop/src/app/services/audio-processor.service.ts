@@ -3,6 +3,7 @@ import sound from 'sound-play';
 import { unlinkSync } from 'fs';
 import { AudioData } from './voice-providers/audio-data.interface';
 import { Setting, SettingsService } from './settings.service';
+import { StatusEventService } from './status-event.service';
 
 @Injectable()
 export class AudioProcessorService {
@@ -10,10 +11,21 @@ export class AudioProcessorService {
     private queue: AudioData[] = [];
 
     private isProcessing = false;
-    constructor(private readonly settingsService: SettingsService) {}
+    constructor(
+      private readonly settingsService: SettingsService,
+      private readonly statusEventService: StatusEventService,
+    ) {}
+
+    getQueueSize(): number {
+        return this.queue.length;
+    }
 
     async addToQueue(audioData: AudioData) {
         this.queue.push(audioData);
+        // Emit status update
+        this.statusEventService.emitStatusUpdate({ 
+            audioQueueSize: this.queue.length 
+        });
         if (!this.isProcessing) {   
             this.logger.log('Processing queue', { queueLength: this.queue.length });
             this.processQueue();
@@ -33,10 +45,16 @@ export class AudioProcessorService {
             if (audioData) {
                 this.logger.log('Playing audio data', { audioData });
                 await this.playAudio(audioData);
+                // Emit update after playing audio
+                this.statusEventService.emitStatusUpdate({ 
+                    audioQueueSize: this.queue.length 
+                });
+                
                 this.logger.log(`Pausing between messages for ${pauseBetweenMessages}ms`);
                 await new Promise(resolve => setTimeout(resolve, pauseBetweenMessages));
             }
         }
+
         this.isProcessing = false;
         this.logger.log('Queue processed', { queueLength: this.queue.length });
     }
@@ -50,7 +68,7 @@ export class AudioProcessorService {
         } finally {
             // Delete the temporary file after playback
             try {
-                //unlinkSync(audioData.audioFilePath);
+                unlinkSync(audioData.audioFilePath);
             } catch (deleteError) {
                 this.logger.error(`Failed to delete temp file ${audioData.audioFilePath}:`, deleteError);
             }

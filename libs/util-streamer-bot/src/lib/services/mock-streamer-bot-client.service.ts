@@ -10,7 +10,8 @@ type EventCallback = (payload: { data?: any }) => void;
  */
 export class MockStreamerBotClient implements IStreamerBotClient {
   private eventSubscriptions = new Map<StreamerbotEventName, Set<EventCallback>>();
-
+  private connectedCallback!: () => void;
+  private disconnectedCallback!: (error?: any) => void;
   constructor() {
     console.log('MockStreamerBotClient initialized - using dummy connection for development');
   }
@@ -33,6 +34,18 @@ export class MockStreamerBotClient implements IStreamerBotClient {
     if (callbacks) {
       callbacks.delete(callback);
     }
+  }
+
+  onConnect(callback: () => void): void {
+    this.connectedCallback = callback;
+  }
+
+  onDisconnect(callback: (error?: any) => void): void {
+    this.disconnectedCallback = callback;
+  }
+
+  connect(): void {
+    this.connectedCallback();
   }
 
   /**

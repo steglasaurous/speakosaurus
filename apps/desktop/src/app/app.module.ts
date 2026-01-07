@@ -5,6 +5,7 @@ import { VoicesController } from './controllers/voices.controller';
 import { SpeakController } from './controllers/speak.controller';
 import { SettingsController } from './controllers/settings.controller';
 import { UsersController } from './controllers/users.controller';
+import { StatusController } from './controllers/status.controller';
 import { AudioProcessorService } from './services/audio-processor.service';
 import { SettingsService } from './services/settings.service';
 import { DrizzleModule } from 'nestjs-drizzle/sqlite';
@@ -16,6 +17,7 @@ import { UsersService } from './services/users.service';
 import { TwitchAuthService } from './services/twitch-auth.service';
 import { TwitchController } from './controllers/twitch.controller';
 import { HttpModule } from '@nestjs/axios';
+import { StatusEventService } from './services/status-event.service';
 
 @Module({
   imports: [
@@ -26,7 +28,7 @@ import { HttpModule } from '@nestjs/axios';
     }) as DynamicModule,
     HttpModule,
   ],
-  controllers: [VoicesController, SpeakController, SettingsController, UsersController, TwitchController],
+  controllers: [VoicesController, SpeakController, SettingsController, UsersController, TwitchController, StatusController],
   providers: [ 
     SpeakerttsVoiceProvider,
     {
@@ -41,6 +43,7 @@ import { HttpModule } from '@nestjs/axios';
     SpeakCommand,
     UsersService,
     TwitchAuthService,
+    StatusEventService,
   ],
 })
 export class AppModule {}

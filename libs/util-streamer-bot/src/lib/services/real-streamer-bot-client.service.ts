@@ -6,6 +6,8 @@ import { IStreamerBotClient } from './streamer-bot-client.interface';
  */
 export class RealStreamerBotClient implements IStreamerBotClient {
   private client: StreamerbotClient;
+  private connectedCallback!: () => void;
+  private disconnectedCallback!: (error?: any) => void;
 
   constructor(wsUrl: string) {
     // Parse the WebSocket URL to extract host and port
@@ -13,22 +15,27 @@ export class RealStreamerBotClient implements IStreamerBotClient {
     const host = url.hostname;
     const port = parseInt(url.port) || (url.protocol === 'wss:' ? 443 : 80);
     const scheme = url.protocol === 'wss:' ? 'wss' : 'ws';
-
+    
     this.client = new StreamerbotClient({
       host,
       port,
       scheme,
-      immediate: true,
+      immediate: false,
       autoReconnect: true,
       retries: -1, // Infinite retries
       logLevel: 'debug',
       onConnect: () => {
-        console.log('Connected to Streamer.bot');
+        this.connected();
       },
       onError: (error) => {
-        console.error('Streamer.bot connection error:', error);
+        this.disconnected(error);
       },
+
     });
+  }
+
+  connect(): void {
+    this.client.connect();
   }
 
   on(eventType: StreamerbotEventName, callback: (payload: { data?: any }) => void): void {
@@ -38,6 +45,22 @@ export class RealStreamerBotClient implements IStreamerBotClient {
   off(eventType: StreamerbotEventName, callback: (payload: { data?: any }) => void): void {
     // Need to find what the right way of doing this is.
     //this.client.off(eventType, callback);
+  }
+
+  onConnect(callback: () => void): void {
+    this.connectedCallback = callback;
+  }
+
+  onDisconnect(callback: (error?: any) => void): void {
+    this.disconnectedCallback = callback;
+  }
+
+  private connected(): void {
+    this.connectedCallback();
+  }
+
+  private disconnected(error: any): void {
+    this.disconnectedCallback(error);
   }
 }
 

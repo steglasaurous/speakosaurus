@@ -20,6 +20,8 @@ An app to provide TTS to twitch streams (or anything supported by streamerbot)
 - [ ] Voicelist: Create filters that can help pair down the voice selection
   - [ ] azure voices: add filters for locale, gender
   - [ ] groups: add ability to "roll up" groups, make it easier to find voices in other groups by scrolling
+- [ ] Review all settings UIs, make sure they're consistent with how they save
+- [ ] In settings, etc, pin save bar to top when scrolling
 
 - [ ] Try packaging up and running electron app on its own, ensure I can distribute it
 - [ ] Figure out how automatic upgrades works

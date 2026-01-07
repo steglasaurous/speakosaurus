@@ -12,13 +12,20 @@ export interface StreamerBotEvent {
 export class StreamerBotService {
   private client: IStreamerBotClient;
   private eventSubject = new Subject<StreamerBotEvent>();
+  private connectedSubject = new Subject<boolean>();
   private subscribedEvents = new Set<string>();
 
+  
   /**
    * Observable that emits StreamerBot events.
    * Subscribe to this to receive events from StreamerBot.
    */
   public readonly events$: Observable<StreamerBotEvent> = this.eventSubject.asObservable();
+  /**
+   * Observable that emits the connection status of StreamerBot.
+   * Subscribe to this to receive connection status updates.
+   */
+  public readonly connected$: Observable<boolean> = this.connectedSubject.asObservable();
 
   constructor(
     private wsUrl = 'ws://localhost:8080', 
@@ -30,6 +37,16 @@ export class StreamerBotService {
     } else {
       this.client = new RealStreamerBotClient(this.wsUrl);
     }
+    this.client.onConnect(() => {
+      this.connectedSubject.next(true);
+    });
+    this.client.onDisconnect((error) => {
+      this.connectedSubject.next(false);
+    });
+  }
+
+  connect(): void {
+    this.client.connect();
   }
 
   subscribeToEvent(eventType: StreamerbotEventName): void {

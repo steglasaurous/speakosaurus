@@ -18,5 +18,24 @@ export interface IStreamerBotClient {
    * @param callback The callback function to remove
    */
   off(eventType: StreamerbotEventName, callback: (payload: { data?: any }) => void): void;
+
+  /**
+   * When streamer.bot is connected.
+   * 
+   * @param callback 
+   */
+  onConnect(callback: () => void): void;
+
+  /**
+   * When streamer.bot is disconnected.
+   * 
+   * @param callback 
+   */
+  onDisconnect(callback: (error?: any) => void): void;
+
+  /**
+   * Connect to streamer.bot.
+   */
+  connect(): void;
 }
 

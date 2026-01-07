@@ -1,0 +1,31 @@
+<div class="status-bar">
+  <div class="status-item">
+    <span class="status-label">Streamer.bot:</span>
+    <span [class.connected]="status.streamerBotConnected" [class.disconnected]="!status.streamerBotConnected" class="status-indicator">
+      {{ status.streamerBotConnected ? 'Connected' : 'Disconnected' }}
+    </span>
+  </div>
+
+  <div class="status-item">
+    <span class="status-label">Render Queue:</span>
+    <span class="status-value">{{ status.pendingMessages }}</span>
+  </div>
+  <div class="status-item">
+    <span class="status-label">Play Queue:</span>
+    <span class="status-value">{{ status.audioQueueSize }}</span>
+  </div>
+
+  <div class="status-item mode-selector">
+    <span class="status-label">Mode:</span>
+    <select 
+      [value]="status.mode" 
+      (change)="onModeChange($any($event.target).value)"
+      class="mode-select"
+    >
+      <option *ngFor="let option of modeOptions" [value]="option">
+        {{ option }}
+      </option>
+    </select>
+  </div>
+</div>
+

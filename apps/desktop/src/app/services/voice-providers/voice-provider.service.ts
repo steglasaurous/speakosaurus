@@ -11,18 +11,21 @@ import { TTSMonsterVoiceProvider } from "./providers/tts-monster.voice-provider"
 import { HttpService } from "@nestjs/axios";
 import { TTSMonsterUnofficialVoiceProvider } from "./providers/tts-monster-unofficial.voice-provider";
 import { AzureVoiceProvider } from "./providers/azure.voice-provider";
+import { StatusEventService } from "../status-event.service";
 
 @Injectable()
 export class VoiceProviderService implements OnModuleInit {
     private cachedVoices: Voice[] | null = null;
     private logger: Logger = new Logger(VoiceProviderService.constructor.name);
     private voiceProviders: VoiceProvider[] = [];
+    private pendingMessages = 0;
 
     constructor(
         @Inject(VOICE_PROVIDERS) private readonly initialVoiceProviders: VoiceProvider[],
         private readonly audioProcessorService: AudioProcessorService,
         private readonly settingsService: SettingsService,
-        private readonly httpService: HttpService
+        private readonly httpService: HttpService,
+        private readonly statusEventService: StatusEventService,
     ) {
         // Start with the initial providers (typically just SpeakerttsVoiceProvider)
         this.voiceProviders = [...this.initialVoiceProviders];
@@ -80,7 +83,27 @@ export class VoiceProviderService implements OnModuleInit {
             throw new Error(`Voice provider '${voice.providerName}' not found`);
         }
         this.logger.log('Getting rendered message', { message, voice });
-        return await provider.getRenderedMessage(message, voice);
+        this.pendingMessages++;
+        // Emit update
+        this.statusEventService.emitStatusUpdate({ 
+            pendingMessages: this.pendingMessages 
+        });
+        try {
+            const audioData = await provider.getRenderedMessage(message, voice);
+            this.pendingMessages--;
+            // Emit update
+            this.statusEventService.emitStatusUpdate({ 
+                pendingMessages: this.pendingMessages 
+            });
+            return audioData;
+        } catch (error) {
+            this.pendingMessages--;
+            // Emit update
+            this.statusEventService.emitStatusUpdate({ 
+                pendingMessages: this.pendingMessages 
+            });
+            throw error;
+        }
     }
 
     /**
@@ -210,5 +233,12 @@ export class VoiceProviderService implements OnModuleInit {
             // Clear cache so voices are refreshed
             this.cachedVoices = null;
         }
+    }
+
+    /**
+     * Get the number of messages currently being rendered (pending audio generation)
+     */
+    getPendingMessagesCount(): number {
+        return this.pendingMessages;
     }
 }

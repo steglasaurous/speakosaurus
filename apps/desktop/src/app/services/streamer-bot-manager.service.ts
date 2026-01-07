@@ -1,19 +1,28 @@
-import { Injectable, Logger, OnModuleInit } from '@nestjs/common';
+import { Injectable, Logger, OnModuleInit, OnModuleDestroy } from '@nestjs/common';
 import { StreamerBotService, StreamerBotEvent } from '@streamtools/util-streamer-bot';
 import { SettingsService, Setting } from './settings.service';
-import { Subject, Observable } from 'rxjs';
+import { Subject, Observable, Subscription } from 'rxjs';
+import { StatusEventService } from './status-event.service';
 
 @Injectable()
-export class StreamerBotManagerService implements OnModuleInit {
+export class StreamerBotManagerService implements OnModuleInit, OnModuleDestroy {
     private streamerBotService: StreamerBotService | null = null;
     private logger: Logger = new Logger(StreamerBotManagerService.constructor.name);
     private eventSubject = new Subject<StreamerBotEvent>();
+    private connectedSubject = new Subject<boolean>();
     private currentSubscription: any = null;
+    private connectedStatusSubscription: Subscription | null = null;
+    private isConnected = false;
+    private lastEventTime: number | null = null;
 
     // Expose events$ observable that stays consistent even when underlying service changes
     public readonly events$: Observable<StreamerBotEvent> = this.eventSubject.asObservable();
-
-    constructor(private readonly settingsService: SettingsService) {}
+    public readonly connected$: Observable<boolean> = this.connectedSubject.asObservable();
+    
+    constructor(
+      private readonly settingsService: SettingsService,
+      private readonly statusEventService: StatusEventService,
+    ) {}
 
     async onModuleInit() {
         // Initialize StreamerBotService with settings
@@ -64,6 +73,21 @@ export class StreamerBotManagerService implements OnModuleInit {
         try {
             const useMock = process.env.STREAMERBOT_USE_MOCK === 'true';
             this.streamerBotService = new StreamerBotService(wsUrl, useMock);
+            
+            // Subscribe to connection status changes and emit to status event service
+            if (this.connectedStatusSubscription) {
+                this.connectedStatusSubscription.unsubscribe();
+            }
+            this.connectedStatusSubscription = this.streamerBotService.connected$.subscribe((connected: boolean) => {
+                this.isConnected = connected;
+                this.connectedSubject.next(connected);
+                // Emit status update
+                this.statusEventService.emitStatusUpdate({ 
+                    streamerBotConnected: connected 
+                });
+            });
+
+            this.streamerBotService.connect();
 
             // Subscribe to events
             this.streamerBotService.subscribeToEvent('Twitch.ChatMessage');
@@ -72,10 +96,16 @@ export class StreamerBotManagerService implements OnModuleInit {
             // Forward events from the underlying service to our subject
             this.currentSubscription = this.streamerBotService.events$.subscribe({
                 next: (event: StreamerBotEvent) => {
+                    this.isConnected = true;
+                    this.lastEventTime = Date.now();
                     this.eventSubject.next(event);
                 },
                 error: (error: any) => {
                     this.logger.warn('Streamerbot event stream error', error);
+                    // Consider disconnected if we haven't received events in 30 seconds
+                    if (this.lastEventTime && Date.now() - this.lastEventTime > 30000) {
+                        this.isConnected = false;
+                    }
                 },
             });
 
@@ -83,6 +113,23 @@ export class StreamerBotManagerService implements OnModuleInit {
         } catch (error) {
             this.logger.error('Failed to initialize StreamerBotService', error);
             this.streamerBotService = null;
+            this.isConnected = false;
+        }
+    }
+
+    /**
+     * Get the current connection status to Streamer.bot
+     */
+    getConnectionStatus(): boolean {
+        return this.isConnected;
+    }
+
+    onModuleDestroy() {
+        if (this.connectedStatusSubscription) {
+            this.connectedStatusSubscription.unsubscribe();
+        }
+        if (this.currentSubscription) {
+            this.currentSubscription.unsubscribe();
         }
     }
 }
