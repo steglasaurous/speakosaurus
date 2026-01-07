@@ -90,6 +90,13 @@ export class SpeakCommand {
             case 'off': {
                 return;
             }
+            case 'always': {
+                // Check if the line starts with an exclamation point.  If it does, ignore it.
+                if (data.message.message.startsWith('!')) {
+                    return;
+                }
+                break;
+            }
         }
 
         let message = await this.sanitizeMessage(data);
