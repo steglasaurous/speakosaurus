@@ -5,6 +5,7 @@ import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { UsersService, User, CustomIntro } from '../../services/users.service';
 import { VoicesService, Voice } from '../../services/voices.service';
+import { SettingsService } from '../../services/settings.service';
 import { forkJoin } from 'rxjs';
 import { VoiceSelectorComponent } from '../voice-selector/voice-selector.component';
 
@@ -31,10 +32,12 @@ export class UserDetailComponent implements OnInit {
   saving = false;
   error: string | null = null;
   playingTtsName = false;
+  playingIntros: Set<number> = new Set();
 
   private router = inject(Router);
   private usersService = inject(UsersService);
   private voicesService = inject(VoicesService);
+  private settingsService = inject(SettingsService);
   private route = inject(ActivatedRoute);
   private http = inject(HttpClient);
   private apiUrl = 'http://localhost:3000/api';
@@ -143,6 +146,75 @@ export class UserDetailComponent implements OnInit {
         console.error('Error playing TTS name:', error);
         this.playingTtsName = false;
         this.error = 'Failed to play TTS name';
+      },
+    });
+  }
+
+  playIntro(index: number): void {
+    const intro = this.customIntros[index];
+    if (!intro || !intro.introText || this.playingIntros.has(index)) {
+      return;
+    }
+
+    this.playingIntros.add(index);
+
+    // Get the default intro voice from settings
+    this.settingsService.getSetting('defaultIntroVoice').subscribe({
+      next: (setting) => {
+        const speakPayload: any = {
+          message: intro.introText,
+        };
+
+        // If default intro voice is set, use it; otherwise use default voice
+        if (setting && setting.value) {
+          try {
+            const voiceData = JSON.parse(setting.value);
+            if (voiceData.voiceId && voiceData.providerName) {
+              speakPayload.voiceProvider = voiceData.providerName;
+              speakPayload.voiceId = voiceData.voiceId;
+            }
+          } catch (error) {
+            console.warn('Failed to parse default intro voice setting', error);
+            // Will fall back to default voice
+          }
+        }
+
+        this.http.post(`${this.apiUrl}/speak`, speakPayload).subscribe({
+          next: () => {
+            console.log('Intro queued for playback');
+            // Estimate duration based on text length
+            const estimatedDuration = Math.max(2000, (intro.introText.length / 10) * 1000);
+            setTimeout(() => {
+              this.playingIntros.delete(index);
+            }, estimatedDuration);
+          },
+          error: (error) => {
+            console.error('Error playing intro:', error);
+            this.playingIntros.delete(index);
+            this.error = 'Failed to play intro';
+          },
+        });
+      },
+      error: (error) => {
+        console.error('Error getting default intro voice setting:', error);
+        // Fall back to using default voice (no voice parameters)
+        const speakPayload: any = {
+          message: intro.introText,
+        };
+        this.http.post(`${this.apiUrl}/speak`, speakPayload).subscribe({
+          next: () => {
+            console.log('Intro queued for playback');
+            const estimatedDuration = Math.max(2000, (intro.introText.length / 10) * 1000);
+            setTimeout(() => {
+              this.playingIntros.delete(index);
+            }, estimatedDuration);
+          },
+          error: (err) => {
+            console.error('Error playing intro:', err);
+            this.playingIntros.delete(index);
+            this.error = 'Failed to play intro';
+          },
+        });
       },
     });
   }

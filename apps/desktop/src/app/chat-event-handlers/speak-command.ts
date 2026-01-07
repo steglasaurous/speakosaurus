@@ -104,11 +104,53 @@ export class SpeakCommand {
         this.lastMessageTime = Date.now();
     }
 
-    handleFirstWord(data: any) {
-        // FIXME: Implement this.
-        console.log('first word');
-        console.log(data);
-        console.log('**********************************************************');
+    async handleFirstWord(data: any) {
+        // Get the user record
+        let user = await this.usersService.getUser(data.user.id);
+        if (!user) {
+            // Create a new user record with defaults if it doesn't exist
+            this.logger.log(`Creating new user record for first word`, { userId: data.user.id, username: data.user.name });
+            user = await this.usersService.createUser(data.user.id, data.user.name);
+        }
+
+        // Get the default intro voice from settings
+        const defaultIntroVoiceSetting = await this.settingsService.getSetting(Setting.DEFAULT_INTRO_VOICE);
+        let introVoice: Voice;
+        
+        if (defaultIntroVoiceSetting && defaultIntroVoiceSetting.value) {
+            try {
+                const defaultIntroVoiceValue = JSON.parse(defaultIntroVoiceSetting.value);
+                const voice = await this.voiceProviderService.getVoice(defaultIntroVoiceValue.voiceId, defaultIntroVoiceValue.providerName);
+                if (voice) {
+                    introVoice = voice;
+                } else {
+                    // Voice not found, fall back to default
+                    this.logger.log('Default intro voice not found, falling back to default voice');
+                    introVoice = await this.voiceProviderService.getDefaultVoice();
+                }
+            } catch (error) {
+                this.logger.warn('Failed to parse default intro voice setting, falling back to default voice', error);
+                introVoice = await this.voiceProviderService.getDefaultVoice();
+            }
+        } else {
+            // No intro voice setting, use default voice
+            introVoice = await this.voiceProviderService.getDefaultVoice();
+        }
+
+        // Determine the message to speak
+        let message: string;
+        if (user.customIntros && user.customIntros.length > 0) {
+            // Pick a random custom intro
+            const randomIndex = Math.floor(Math.random() * user.customIntros.length);
+            message = user.customIntros[randomIndex].introText;
+        } else {
+            // Use default welcome message
+            const ttsName = user.ttsName || data.user.name;
+            message = `Welcome ${ttsName}`;
+        }
+
+        // Speak the welcome message
+        await this.voiceProviderService.speak(introVoice, message);
     }
 
     /**

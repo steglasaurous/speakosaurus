@@ -77,12 +77,26 @@
               <span class="intro-number">Intro #{{ i + 1 }}</span>
               <button class="delete-intro-button" (click)="removeIntro(i)">Delete</button>
             </div>
-            <textarea
-              [id]="'intro-text-' + i"
-              [attr.aria-label]="'Intro text ' + (i + 1)"
-              [(ngModel)]="intro.introText"
-              placeholder="Enter intro text..."
-            ></textarea>
+            <div class="intro-text-wrapper">
+              <textarea
+                [id]="'intro-text-' + i"
+                [attr.aria-label]="'Intro text ' + (i + 1)"
+                [(ngModel)]="intro.introText"
+                placeholder="Enter intro text..."
+              ></textarea>
+              <button
+                class="play-intro-button"
+                type="button"
+                (click)="playIntro(i)"
+                [disabled]="!intro.introText || playingIntros.has(i)"
+                [class.playing]="playingIntros.has(i)"
+                [attr.aria-label]="'Play intro ' + (i + 1)"
+                title="Play intro with default intro voice"
+              >
+                <span *ngIf="!playingIntros.has(i)">▶</span>
+                <span *ngIf="playingIntros.has(i)">⏸</span>
+              </button>
+            </div>
           </div>
           <div *ngIf="customIntros.length === 0" class="empty-intros">
             <p>No custom intros yet. Click "Add New Intro" to create one.</p>
