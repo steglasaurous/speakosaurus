@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule } from '@angular/router';
+import { RouterModule, Router } from '@angular/router';
 import { SettingsService, Setting, SettingType } from '../../services/settings.service';
 import { VoicesService, Voice } from '../../services/voices.service';
 import { TwitchService, TwitchUser } from '../../services/twitch.service';
@@ -10,9 +10,14 @@ import { forkJoin, Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { VoiceSelectorComponent } from '../voice-selector/voice-selector.component';
 
+interface SubGroupedSettings {
+  subGroup?: string;
+  settings: Setting[];
+}
+
 interface GroupedSettings {
   group: string;
-  settings: Setting[];
+  subGroups: SubGroupedSettings[];
 }
 
 @Component({
@@ -31,6 +36,9 @@ export class SettingsComponent implements OnInit {
   saving = false;
   error: string | null = null;
   successMessage: string | null = null;
+  
+  // Track original values to detect changes
+  private originalValues: { [key: string]: string | null } = {};
 
   // Voice selection for VOICE type settings
   selectedVoices: { [key: string]: Voice | null } = {};
@@ -51,6 +59,7 @@ export class SettingsComponent implements OnInit {
   private voicesService = inject(VoicesService);
   private twitchService = inject(TwitchService);
   private usersService = inject(UsersService);
+  private router = inject(Router);
 
   ngOnInit(): void {
     this.loadSettings();
@@ -61,6 +70,11 @@ export class SettingsComponent implements OnInit {
     this.settingsService.getAllSettings().subscribe({
       next: (settings) => {
         this.settings = settings;
+        // Store original values to detect changes
+        this.originalValues = {};
+        settings.forEach((setting) => {
+          this.originalValues[setting.name] = setting.value;
+        });
         // Initialize array cache for array-type settings
         this.settings
           .filter((s) => s.type === SettingType.ARRAY)
@@ -108,6 +122,7 @@ export class SettingsComponent implements OnInit {
 
 
   groupSettings(): void {
+    // First group by main group
     const grouped: { [key: string]: Setting[] } = {};
     
     this.settings.forEach((setting) => {
@@ -117,12 +132,38 @@ export class SettingsComponent implements OnInit {
       grouped[setting.group].push(setting);
     });
 
+    // Then within each group, organize by subGroup
     this.groupedSettings = Object.keys(grouped)
       .sort()
-      .map((group) => ({
-        group,
-        settings: grouped[group],
-      }));
+      .map((group) => {
+        const settings = grouped[group];
+        const subGrouped: { [key: string]: Setting[] } = {};
+        
+        settings.forEach((setting) => {
+          const subGroupKey = setting.subGroup || '';
+          if (!subGrouped[subGroupKey]) {
+            subGrouped[subGroupKey] = [];
+          }
+          subGrouped[subGroupKey].push(setting);
+        });
+
+        // Sort subgroups: empty string (no subgroup) first, then alphabetically
+        const subGroups = Object.keys(subGrouped)
+          .sort((a, b) => {
+            if (a === '') return -1;
+            if (b === '') return 1;
+            return a.localeCompare(b);
+          })
+          .map((subGroupKey) => ({
+            subGroup: subGroupKey || undefined,
+            settings: subGrouped[subGroupKey],
+          }));
+
+        return {
+          group,
+          subGroups,
+        };
+      });
   }
 
   initializeVoiceSettings(): void {
@@ -156,9 +197,8 @@ export class SettingsComponent implements OnInit {
       });
   }
 
-  getSettingsForActiveTab(): Setting[] {
-    const group = this.groupedSettings.find((g) => g.group === this.activeTab);
-    return group ? group.settings : [];
+  getSettingsForActiveTab(): GroupedSettings | null {
+    return this.groupedSettings.find((g) => g.group === this.activeTab) || null;
   }
 
   getSettingValue(setting: Setting): any {
@@ -386,58 +426,40 @@ export class SettingsComponent implements OnInit {
     }, 200);
   }
 
-  saveSetting(setting: Setting): void {
-    this.saving = true;
-    this.error = null;
-    this.successMessage = null;
-
-    const valueToSave = setting.value || setting.default || '';
-    
-    this.settingsService.updateSetting(setting.name, valueToSave).subscribe({
-      next: (updatedSetting) => {
-        setting.value = updatedSetting.value;
-        // Invalidate array cache if this is an array setting
-        if (setting.type === SettingType.ARRAY) {
-          delete this.arrayCache[setting.name];
-          // Re-initialize cache with new value
-          try {
-            const parsed = JSON.parse(updatedSetting.value || '[]');
-            this.arrayCache[setting.name] = Array.isArray(parsed) ? parsed : [];
-          } catch {
-            this.arrayCache[setting.name] = [];
-          }
-        }
-        // Invalidate user list cache if this is a userList setting
-        if (setting.type === SettingType.USER_LIST) {
-          delete this.arrayCache[setting.name];
-          // Re-initialize cache with new value
-          try {
-            const parsed = JSON.parse(updatedSetting.value || '[]');
-            this.arrayCache[setting.name] = Array.isArray(parsed) ? parsed : [];
-          } catch {
-            this.arrayCache[setting.name] = [];
-          }
-        }
-        this.successMessage = `${setting.displayName} saved successfully`;
-        this.saving = false;
-        setTimeout(() => {
-          this.successMessage = null;
-        }, 3000);
-      },
-      error: (error) => {
-        console.error('Error saving setting:', error);
-        this.error = `Failed to save ${setting.displayName}`;
-        this.saving = false;
-      },
-    });
-  }
 
   saveAllSettings(): void {
     this.saving = true;
     this.error = null;
     this.successMessage = null;
 
-    const saveObservables = this.settings.map((setting) =>
+    // Filter settings to only save those that have changed
+    const settingsToSave = this.settings.filter((setting) => {
+      const currentValue = setting.value || null;
+      const originalValue = this.originalValues[setting.name] || null;
+      
+      // Skip if value hasn't changed
+      if (currentValue === originalValue) {
+        return false;
+      }
+      
+      // Skip if current value is empty/null and original was also empty/null
+      if (!currentValue && !originalValue) {
+        return false;
+      }
+      
+      return true;
+    });
+
+    if (settingsToSave.length === 0) {
+      this.successMessage = 'No changes to save';
+      this.saving = false;
+      setTimeout(() => {
+        this.successMessage = null;
+      }, 3000);
+      return;
+    }
+
+    const saveObservables = settingsToSave.map((setting) =>
       this.settingsService.updateSetting(
         setting.name,
         setting.value || setting.default || ''
@@ -446,7 +468,11 @@ export class SettingsComponent implements OnInit {
 
     forkJoin(saveObservables).subscribe({
       next: () => {
-        this.successMessage = 'All settings saved successfully';
+        // Update original values after successful save
+        settingsToSave.forEach((setting) => {
+          this.originalValues[setting.name] = setting.value;
+        });
+        this.successMessage = `${settingsToSave.length} setting${settingsToSave.length === 1 ? '' : 's'} saved successfully`;
         this.saving = false;
         setTimeout(() => {
           this.successMessage = null;
@@ -458,6 +484,25 @@ export class SettingsComponent implements OnInit {
         this.saving = false;
       },
     });
+  }
+
+  hasUnsavedChanges(): boolean {
+    return this.settings.some((setting) => {
+      const currentValue = setting.value || null;
+      const originalValue = this.originalValues[setting.name] || null;
+      return currentValue !== originalValue;
+    });
+  }
+
+  onBackClick(event: Event): void {
+    event.preventDefault();
+    if (this.hasUnsavedChanges()) {
+      const confirmed = confirm('You have unsaved changes. Are you sure you want to discard them and go back?');
+      if (!confirmed) {
+        return;
+      }
+    }
+    this.router.navigate(['/users']);
   }
 }
 

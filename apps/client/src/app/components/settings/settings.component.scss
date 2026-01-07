@@ -13,6 +13,9 @@
   display: flex;
   align-items: center;
   justify-content: space-between;
+  position: sticky;
+  top: 48px; // Height of status bar (0.75rem top + ~1.5rem content + 0.75rem bottom ≈ 3rem)
+  z-index: 99; // Lower than status bar's z-index of 100
 }
 
 .header-left {
@@ -126,6 +129,23 @@ h1 {
 
 .tab-content {
   padding: 24px;
+}
+
+.subgroup-container {
+  margin-bottom: 32px;
+}
+
+.subgroup-container:last-child {
+  margin-bottom: 0;
+}
+
+.subgroup-header {
+  font-size: 18px;
+  font-weight: 600;
+  color: #1d1d1f;
+  margin: 0 0 16px 0;
+  padding-bottom: 8px;
+  border-bottom: 2px solid #e5e5e7;
 }
 
 .setting-item {

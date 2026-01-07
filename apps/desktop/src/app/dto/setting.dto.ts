@@ -15,6 +15,12 @@ export class SettingDto implements SettingDefinition {
   })
   group: string;
 
+  @ApiPropertyOptional({
+    description: 'Sub-group of the setting for visual grouping',
+    example: 'Azure',
+  })
+  subGroup?: string;
+
   @ApiProperty({
     description: 'Description of the setting',
     example: 'The theme of the application',

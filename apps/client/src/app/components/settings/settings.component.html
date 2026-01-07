@@ -1,7 +1,7 @@
 <div class="container">
   <div class="header">
     <div class="header-left">
-      <a class="back-button" [routerLink]="['/users']">
+      <a class="back-button" (click)="onBackClick($event)" style="cursor: pointer;">
         <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
         </svg>
@@ -11,9 +11,9 @@
     <button 
       class="save-all-button" 
       (click)="saveAllSettings()" 
-      [disabled]="saving || loading"
+      [disabled]="saving || loading || !hasUnsavedChanges()"
     >
-      {{ saving ? 'Saving...' : 'Save All' }}
+      {{ saving ? 'Saving...' : 'Save Changes' }}
     </button>
   </div>
 
@@ -42,21 +42,17 @@
     </div>
 
     <div class="tab-content">
-      <div *ngFor="let setting of getSettingsForActiveTab()" class="setting-item">
-        <div class="setting-header">
-          <label [for]="'setting-' + setting.name" class="setting-label">
-            {{ setting.displayName }}
-            <span *ngIf="setting.required" class="required-indicator">*</span>
-          </label>
-          <button
-            class="save-setting-button"
-            (click)="saveSetting(setting)"
-            [disabled]="saving"
-          >
-            Save
-          </button>
-        </div>
-        <p class="setting-description">{{ setting.description }}</p>
+      <ng-container *ngIf="getSettingsForActiveTab()">
+        <div *ngFor="let subGroup of getSettingsForActiveTab()!.subGroups" class="subgroup-container">
+          <h3 *ngIf="subGroup.subGroup" class="subgroup-header">{{ subGroup.subGroup }}</h3>
+          <div *ngFor="let setting of subGroup.settings" class="setting-item">
+            <div class="setting-header">
+              <label [for]="'setting-' + setting.name" class="setting-label">
+                {{ setting.displayName }}
+                <span *ngIf="setting.required" class="required-indicator">*</span>
+              </label>
+            </div>
+            <p class="setting-description">{{ setting.description }}</p>
 
         <!-- STRING type -->
         <div *ngIf="setting.type === 'string'" class="form-group">
@@ -100,8 +96,8 @@
           <select
             [id]="'setting-' + setting.name"
             class="form-select"
-            [value]="getSettingValue(setting)"
-            (change)="onSettingChange(setting, $any($event.target).value)"
+            [ngModel]="getSettingValue(setting)"
+            (ngModelChange)="onSettingChange(setting, $event)"
           >
             <option *ngFor="let option of setting.options" [value]="option">
               {{ option }}
@@ -253,7 +249,9 @@
             </div>
           </div>
         </div>
-      </div>
+          </div>
+        </div>
+      </ng-container>
     </div>
   </div>
 </div>

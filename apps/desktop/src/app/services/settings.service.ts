@@ -46,6 +46,11 @@ export interface SettingDefinition {
    * Used to determine what group to display the setting in (UI)l
    */
   group: string;
+
+  /**
+   * To group settings visually in the UI.
+   */
+  subGroup?: string;
   description: string;
 
   type: SettingType;
@@ -164,20 +169,23 @@ export class SettingsService {
       name: Setting.TTS_MONSTER_UNOFFICIAL_USER_ID,
       displayName: 'TTS MonsterUnofficial User ID',
       group: 'TTS Providers',
-      description: 'The user ID for the tts.monsterUnofficial API',
+      subGroup: 'Unofficial TTS Monster',
+      description: 'The user ID for the tts.monster Unofficial API',
       type: SettingType.STRING,
     },
     {
       name: Setting.TTS_MONSTER_UNOFFICIAL_API_KEY,
       displayName: 'TTS MonsterUnofficial API Key',
       group: 'TTS Providers',
-      description: 'The API key for the tts.monsterUnofficial API',
+      subGroup: 'Unofficial TTS Monster',
+      description: 'The API key for the tts.monster Unofficial API',
       type: SettingType.STRING,
     },
     {
       name: Setting.AZURE_SPEECH_KEY,
       displayName: 'Azure Speech Key',
       group: 'TTS Providers',
+      subGroup: 'Azure',
       description: 'The API key for the Azure Speech API',
       type: SettingType.STRING,
     },
@@ -185,6 +193,7 @@ export class SettingsService {
       name: Setting.AZURE_SPEECH_REGION,
       displayName: 'Azure Speech Region',
       group: 'TTS Providers',
+      subGroup: 'Azure',
       description: 'The region for the Azure Speech API',
       type: SettingType.STRING,
     },
@@ -192,6 +201,7 @@ export class SettingsService {
       name: Setting.AZURE_ENDPOINT,
       displayName: 'Azure Endpoint',
       group: 'TTS Providers',
+      subGroup: 'Azure',
       description: 'The endpoint for the Azure Speech API',
       type: SettingType.STRING,
     },
