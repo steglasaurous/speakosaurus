@@ -36,16 +36,23 @@ export class SpeakController {
   })
   async speak(@Body() speakDto: SpeakDto): Promise<{ success: boolean; message: string }> {
     try {
-      // Get the voice
-      const voice = await this.voiceProviderService.getVoice(
-        speakDto.voiceId,
-        speakDto.voiceProvider,
-      );
+      let voice;
 
-      if (!voice) {
-        throw new NotFoundException(
-          `Voice with ID '${speakDto.voiceId}' not found in provider '${speakDto.voiceProvider}'`,
+      // If voice parameters are provided, use them; otherwise fall back to default voice
+      if (speakDto.voiceId && speakDto.voiceProvider) {
+        voice = await this.voiceProviderService.getVoice(
+          speakDto.voiceId,
+          speakDto.voiceProvider,
         );
+
+        if (!voice) {
+          throw new NotFoundException(
+            `Voice with ID '${speakDto.voiceId}' not found in provider '${speakDto.voiceProvider}'`,
+          );
+        }
+      } else {
+        // Use default voice when voice parameters are not provided
+        voice = await this.voiceProviderService.getDefaultVoice();
       }
 
       // Get the rendered audio message

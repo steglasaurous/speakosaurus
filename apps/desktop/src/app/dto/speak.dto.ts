@@ -2,16 +2,18 @@ import { ApiProperty } from '@nestjs/swagger';
 
 export class SpeakDto {
   @ApiProperty({
-    description: 'Name of the voice provider',
+    description: 'Name of the voice provider. If not provided, the default voice will be used.',
     example: 'elevenlabs',
+    required: false,
   })
-  voiceProvider: string;
+  voiceProvider?: string;
 
   @ApiProperty({
-    description: 'Unique identifier for the voice to use',
+    description: 'Unique identifier for the voice to use. If not provided, the default voice will be used.',
     example: 'JBFqnCBsd6RMkjVDRZzb',
+    required: false,
   })
-  voiceId: string;
+  voiceId?: string;
 
   @ApiProperty({
     description: 'The message text to be converted to speech',

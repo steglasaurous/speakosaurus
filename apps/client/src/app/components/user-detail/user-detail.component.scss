@@ -149,6 +149,58 @@ textarea:focus {
   border-color: #007aff;
 }
 
+.tts-name-input-wrapper {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.tts-name-input-wrapper input {
+  flex: 1;
+}
+
+.play-tts-button {
+  background: transparent;
+  border: 1px solid #e5e5e7;
+  border-radius: 8px;
+  width: 44px;
+  height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  font-size: 14px;
+  color: #007aff;
+  padding: 0;
+}
+
+.play-tts-button:hover:not(:disabled) {
+  background: #f5f5f7;
+  border-color: #007aff;
+}
+
+.play-tts-button:active:not(:disabled) {
+  background: #e8f4fd;
+}
+
+.play-tts-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.play-tts-button.playing {
+  background: #007aff;
+  border-color: #007aff;
+  color: white;
+}
+
+.play-tts-button.playing:hover {
+  background: #0051d5;
+  border-color: #0051d5;
+}
+
 textarea {
   resize: vertical;
   min-height: 100px;

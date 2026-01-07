@@ -2,6 +2,7 @@ import { Component, inject, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
+import { HttpClient } from '@angular/common/http';
 import { UsersService, User, CustomIntro } from '../../services/users.service';
 import { VoicesService, Voice } from '../../services/voices.service';
 import { forkJoin } from 'rxjs';
@@ -29,11 +30,14 @@ export class UserDetailComponent implements OnInit {
   loading = false;
   saving = false;
   error: string | null = null;
+  playingTtsName = false;
 
   private router = inject(Router);
   private usersService = inject(UsersService);
   private voicesService = inject(VoicesService);
   private route = inject(ActivatedRoute);
+  private http = inject(HttpClient);
+  private apiUrl = 'http://localhost:3000/api';
 
   ngOnInit(): void {
     this.twitchUserId = this.route.snapshot.paramMap.get('twitchUserId') || '';
@@ -104,6 +108,43 @@ export class UserDetailComponent implements OnInit {
         },
       });
     }
+  }
+
+  playTtsName(): void {
+    if (!this.ttsName || this.playingTtsName) {
+      return;
+    }
+
+    this.playingTtsName = true;
+
+    // Build payload with optional voice parameters
+    const speakPayload: any = {
+      message: this.ttsName,
+    };
+
+    // Only include voice parameters if a voice is selected
+    if (this.selectedVoice) {
+      speakPayload.voiceProvider = this.selectedVoice.providerName;
+      speakPayload.voiceId = this.selectedVoice.voiceId;
+    }
+    // If no voice is selected, the API will use the default voice
+
+    this.http.post(`${this.apiUrl}/speak`, speakPayload).subscribe({
+      next: () => {
+        console.log('TTS name queued for playback');
+        // Reset playing state after a delay (we can't easily detect when it finishes)
+        // Estimate duration based on text length (roughly 150 words per minute)
+        const estimatedDuration = Math.max(2000, (this.ttsName.length / 10) * 1000);
+        setTimeout(() => {
+          this.playingTtsName = false;
+        }, estimatedDuration);
+      },
+      error: (error) => {
+        console.error('Error playing TTS name:', error);
+        this.playingTtsName = false;
+        this.error = 'Failed to play TTS name';
+      },
+    });
   }
 
   saveChanges(): void {

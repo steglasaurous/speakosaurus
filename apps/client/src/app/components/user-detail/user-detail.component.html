@@ -41,12 +41,26 @@
           TTS Name
           <span class="label-hint">The name that will be used when speaking this user's messages</span>
         </label>
-        <input
-          type="text"
-          id="tts-name"
-          placeholder="Enter TTS name..."
-          [(ngModel)]="ttsName"
-        >
+        <div class="tts-name-input-wrapper">
+          <input
+            type="text"
+            id="tts-name"
+            placeholder="Enter TTS name..."
+            [(ngModel)]="ttsName"
+          >
+          <button
+            class="play-tts-button"
+            type="button"
+            (click)="playTtsName()"
+            [disabled]="!ttsName || playingTtsName"
+            [class.playing]="playingTtsName"
+            [attr.aria-label]="'Play TTS name: ' + ttsName"
+            title="Play TTS name"
+          >
+            <span *ngIf="!playingTtsName">▶</span>
+            <span *ngIf="playingTtsName">⏸</span>
+          </button>
+        </div>
       </div>
     </div>
 
