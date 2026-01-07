@@ -69,7 +69,7 @@ export class SpeakCommand {
                 const triggers = JSON.parse(triggerCommands.value);
                 let triggerFound = false;
                 for (const trigger of triggers) {
-                    if (data.message.message.toLowerCase().startsWith(trigger.toLowerCase())) {
+                    if (data.message.message.toLowerCase().startsWith(trigger.toLowerCase() + ' ')) {
                         triggerFound = true;
                         break;
                     }
