@@ -1,4 +1,4 @@
-import { sqliteTable, text } from 'drizzle-orm/sqlite-core';
+import { sqliteTable, text, integer } from 'drizzle-orm/sqlite-core';
 
 export const settings = sqliteTable('settings', {
   name: text('name').notNull(),
@@ -12,6 +12,8 @@ export const users = sqliteTable('users', {
   ttsName: text('tts_name'),
   ttsProviderName: text('tts_provider_name'),
   ttsVoiceId: text('tts_voice_id'),
+  // Whether to disable welcoming this user on first words
+  disableWelcome: integer('disable_welcome', { mode: 'boolean' }),
 });
 
 export const customIntros = sqliteTable('custom_intros', {

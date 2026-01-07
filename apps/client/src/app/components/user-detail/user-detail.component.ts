@@ -25,6 +25,7 @@ export class UserDetailComponent implements OnInit {
 
   // Form fields
   ttsName = '';
+  disableWelcome = false;
   customIntros: CustomIntro[] = [];
 
   // Loading and error states
@@ -33,6 +34,12 @@ export class UserDetailComponent implements OnInit {
   error: string | null = null;
   playingTtsName = false;
   playingIntros: Set<number> = new Set();
+
+  // Track original values to detect changes
+  private originalTtsName: string | null = null;
+  private originalDisableWelcome: boolean | null = null;
+  private originalVoice: { providerName: string; voiceId: string } | null = null;
+  private originalCustomIntros: CustomIntro[] = [];
 
   private router = inject(Router);
   private usersService = inject(UsersService);
@@ -59,7 +66,16 @@ export class UserDetailComponent implements OnInit {
       next: (user) => {
         this.user = user;
         this.ttsName = user.ttsName || '';
-        this.customIntros = [...(user.customIntros || [])];
+        this.disableWelcome = user.disableWelcome || false;
+        this.customIntros = [...(user.customIntros || [])].map(intro => ({ ...intro }));
+        
+        // Store original values to detect changes
+        this.originalTtsName = user.ttsName || null;
+        this.originalDisableWelcome = user.disableWelcome || false;
+        this.originalVoice = user.ttsProviderName && user.ttsVoiceId
+          ? { providerName: user.ttsProviderName, voiceId: user.ttsVoiceId }
+          : null;
+        this.originalCustomIntros = [...(user.customIntros || [])].map(intro => ({ ...intro }));
         
         // Set selected voice if user has one
         if (user.ttsProviderName && user.ttsVoiceId) {
@@ -70,6 +86,8 @@ export class UserDetailComponent implements OnInit {
               ) || null;
             },
           });
+        } else {
+          this.selectedVoice = null;
         }
         
         this.loading = false;
@@ -227,6 +245,7 @@ export class UserDetailComponent implements OnInit {
 
     const updates: any = {
       ttsName: this.ttsName || undefined,
+      disableWelcome: this.disableWelcome || undefined,
     };
 
     if (this.selectedVoice) {
@@ -283,6 +302,75 @@ export class UserDetailComponent implements OnInit {
         this.saving = false;
       },
     });
+  }
+
+  hasUnsavedChanges(): boolean {
+    // Check TTS name
+    const currentTtsName = this.ttsName || null;
+    if (currentTtsName !== this.originalTtsName) {
+      return true;
+    }
+
+    // Check disableWelcome
+    if (this.disableWelcome !== this.originalDisableWelcome) {
+      return true;
+    }
+
+    // Check voice selection
+    const currentVoice = this.selectedVoice
+      ? { providerName: this.selectedVoice.providerName, voiceId: this.selectedVoice.voiceId }
+      : null;
+    const originalVoiceProvider = this.originalVoice?.providerName || null;
+    const originalVoiceId = this.originalVoice?.voiceId || null;
+    const currentVoiceProvider = currentVoice?.providerName || null;
+    const currentVoiceId = currentVoice?.voiceId || null;
+    
+    if (originalVoiceProvider !== currentVoiceProvider || originalVoiceId !== currentVoiceId) {
+      return true;
+    }
+
+    // Check custom intros
+    // Compare lengths first
+    if (this.customIntros.length !== this.originalCustomIntros.length) {
+      return true;
+    }
+
+    // Compare each intro
+    for (let i = 0; i < this.customIntros.length; i++) {
+      const current = this.customIntros[i];
+      const original = this.originalCustomIntros.find(intro => intro.id === current.id);
+      
+      // New intro (temp ID) or intro not found in original
+      if (current.id.startsWith('temp-') || !original) {
+        return true;
+      }
+      
+      // Intro text changed
+      if (current.introText !== original.introText) {
+        return true;
+      }
+    }
+
+    // Check if any original intros were removed
+    for (const original of this.originalCustomIntros) {
+      const found = this.customIntros.find(intro => intro.id === original.id);
+      if (!found) {
+        return true;
+      }
+    }
+
+    return false;
+  }
+
+  onBackClick(event: Event): void {
+    event.preventDefault();
+    if (this.hasUnsavedChanges()) {
+      const confirmed = confirm('You have unsaved changes. Are you sure you want to discard them and go back?');
+      if (!confirmed) {
+        return;
+      }
+    }
+    this.router.navigate(['/users']);
   }
 }
 

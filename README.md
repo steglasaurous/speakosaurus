@@ -9,12 +9,12 @@ An app to provide TTS to twitch streams (or anything supported by streamerbot)
 
 # TODO
 
-- [ ] Create a status bar that includes pending renders, pending audio to play queue size, a quick way to switch modes
+- [x] Create a status bar that includes pending renders, pending audio to play queue size, a quick way to switch modes
 - [ ] Create a "speaker playground" that lets the user say anything in any voice
 - [ ] Some voice volumes aren't very loud - add a volume slider and per-voice volumes
-- [ ] Intros: Write intros into twitch chat as text
 - [ ] Instead of depending on streamer.bot for chat, use twurple to connect to chat directly.
   - [ ] Ensure that twitch tokens / refresh tokens are as long lived as possible
+- [ ] Intros: Write intros into twitch chat as text
 - [ ] Design how mods can connect and use app (API bridge?)
 - [ ] disable intros for users, and disable globally
 - [ ] Voicelist: Create filters that can help pair down the voice selection

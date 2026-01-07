@@ -1,4 +1,4 @@
-import { Component, inject, OnInit, OnDestroy, ChangeDetectorRef } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -33,6 +33,9 @@ export class UserListComponent implements OnInit, OnDestroy {
   isPollingAuth = false;
   pollingSubscription: { unsubscribe: () => void } | null = null;
   
+  @ViewChild('twitchSearchInput', { static: false }) twitchSearchInput!: ElementRef<HTMLInputElement>;
+  private shouldRefocusInput = false;
+  
   private usersService = inject(UsersService);
   private voicesService = inject(VoicesService);
   twitchService = inject(TwitchService); // Made public for template access
@@ -58,11 +61,27 @@ export class UserListComponent implements OnInit, OnDestroy {
         next: (users) => {
           this.twitchSearchResults = users;
           this.isSearchingTwitch = false;
+          // Refocus the input after results are updated
+          this.shouldRefocusInput = true;
+          setTimeout(() => {
+            if (this.shouldRefocusInput && this.twitchSearchInput?.nativeElement) {
+              this.twitchSearchInput.nativeElement.focus();
+              this.shouldRefocusInput = false;
+            }
+          }, 0);
         },
         error: (error) => {
           console.error('Error searching Twitch users:', error);
           this.isSearchingTwitch = false;
           this.twitchSearchResults = [];
+          // Refocus the input after error
+          this.shouldRefocusInput = true;
+          setTimeout(() => {
+            if (this.shouldRefocusInput && this.twitchSearchInput?.nativeElement) {
+              this.twitchSearchInput.nativeElement.focus();
+              this.shouldRefocusInput = false;
+            }
+          }, 0);
         },
       });
   }

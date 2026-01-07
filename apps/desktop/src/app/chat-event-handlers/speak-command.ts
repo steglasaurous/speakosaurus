@@ -132,6 +132,12 @@ export class SpeakCommand {
             user = await this.usersService.createUser(data.user.id, data.user.name);
         }
 
+        // Check if welcoming is disabled for this user
+        if (user.disableWelcome) {
+            this.logger.log('Welcome disabled for user, skipping first word', { userId: data.user.id, username: data.user.name });
+            return;
+        }
+
         // Get the default intro voice from settings
         const defaultIntroVoiceSetting = await this.settingsService.getSetting(Setting.DEFAULT_INTRO_VOICE);
         let introVoice: Voice;

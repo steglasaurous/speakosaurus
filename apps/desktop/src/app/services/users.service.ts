@@ -61,6 +61,7 @@ export class UsersService {
         ttsName?: string;
         ttsProviderName?: string;
         ttsVoiceId?: string;
+        disableWelcome?: boolean;
     }): Promise<any> {
         const [updated] = await this.drizzleService.db
             .update(schema.users as any)

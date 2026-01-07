@@ -51,6 +51,12 @@ export class UserDto {
   })
   ttsVoiceId?: string;
 
+  @ApiPropertyOptional({
+    description: 'Whether to disable welcoming this user on first words',
+    example: false,
+  })
+  disableWelcome?: boolean;
+
   @ApiProperty({
     description: 'Custom intro texts for this user',
     type: [CustomIntroDto],
@@ -76,6 +82,12 @@ export class UpdateUserDto {
     example: 'voice-123',
   })
   ttsVoiceId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Whether to disable welcoming this user on first words',
+    example: false,
+  })
+  disableWelcome?: boolean;
 }
 
 export class CreateCustomIntroDto {

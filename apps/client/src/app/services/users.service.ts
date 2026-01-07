@@ -14,6 +14,7 @@ export interface User {
   ttsName?: string;
   ttsProviderName?: string;
   ttsVoiceId?: string;
+  disableWelcome?: boolean;
   customIntros: CustomIntro[];
 }
 
@@ -21,6 +22,7 @@ export interface UpdateUserRequest {
   ttsName?: string;
   ttsProviderName?: string;
   ttsVoiceId?: string;
+  disableWelcome?: boolean;
 }
 
 export interface CreateCustomIntroRequest {

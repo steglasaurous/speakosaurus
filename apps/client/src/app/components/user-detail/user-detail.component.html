@@ -1,7 +1,16 @@
 <div class="container">
   <div class="header">
     <div class="header-left">
-      <a class="back-button" [routerLink]="['/users']">
+      <a 
+        class="back-button" 
+        (click)="onBackClick($event)" 
+        (keyup.enter)="onBackClick($event)"
+        (keyup.space)="onBackClick($event)"
+        tabindex="0"
+        role="button"
+        style="cursor: pointer;"
+        aria-label="Go back to users list"
+      >
         <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
         </svg>
@@ -64,6 +73,7 @@
       </div>
     </div>
 
+
     <div class="form-section">
       <h2 class="section-title">Custom Intros</h2>
       <div class="form-group">
@@ -105,6 +115,25 @@
         <button class="add-intro-button" (click)="addIntro()">+ Add New Intro</button>
       </div>
     </div>
+    <div class="form-section">
+      <h2 class="section-title">Welcome Settings</h2>
+      <div class="form-group">
+        <label class="toggle-label">
+          <input
+            type="checkbox"
+            id="disable-welcome"
+            [(ngModel)]="disableWelcome"
+            class="toggle-input"
+          >
+          <span class="toggle-slider"></span>
+          <span class="toggle-text">
+            Disable Welcome on First Words
+            <span class="label-hint">When enabled, this user will not be welcomed when they speak for the first time</span>
+          </span>
+        </label>
+      </div>
+    </div>
+
   </div>
 </div>
 
