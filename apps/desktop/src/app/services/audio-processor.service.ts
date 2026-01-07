@@ -14,7 +14,7 @@ export class AudioProcessorService {
 
     async addToQueue(audioData: AudioData) {
         this.queue.push(audioData);
-        if (!this.isProcessing) {
+        if (!this.isProcessing) {   
             this.logger.log('Processing queue', { queueLength: this.queue.length });
             this.processQueue();
         }
@@ -43,7 +43,7 @@ export class AudioProcessorService {
 
     private async playAudio(audioData: AudioData): Promise<void> {
         try {
-            await sound.play(audioData.audioFilePath);
+            await sound.play(audioData.audioFilePath, 1.0);
         } catch (err) {
             this.logger.error('Error playing audio', err);
             throw err;
