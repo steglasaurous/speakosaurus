@@ -7,8 +7,9 @@ import {
   Param,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
-import { ApiOperation, ApiParam, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import {
   UserDto,
   UpdateUserDto,
@@ -26,15 +27,24 @@ export class UsersController {
 
   @Get()
   @ApiOperation({
-    summary: 'Get all users',
-    description: 'Returns an array of all users with their custom intros',
+    summary: 'Get all users or search users',
+    description: 'Returns an array of all users with their custom intros, or searches users if query parameter is provided',
+  })
+  @ApiQuery({
+    name: 'query',
+    required: false,
+    description: 'Search query to filter users by username or TTS name',
+    example: 'john',
   })
   @ApiResponse({
     status: 200,
     description: 'Successfully retrieved list of users',
     type: [UserDto],
   })
-  async getAllUsers(): Promise<UserDto[]> {
+  async getAllUsers(@Query('query') query?: string): Promise<UserDto[]> {
+    if (query) {
+      return await this.usersService.searchUsers(query);
+    }
     const result = await this.usersService.getAllUsers();
     return result;
   }

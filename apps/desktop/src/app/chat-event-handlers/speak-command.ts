@@ -40,6 +40,12 @@ export class SpeakCommand {
     }
 
     async handleChatMessage(data: any) {
+        // Check if user is in the ignore list
+        if (await this.isUserIgnored(data.user.name)) {
+            this.logger.log('User is in ignore list, skipping message', { userId: data.user.id, username: data.user.name });
+            return;
+        }
+
         // Look for a matching user record.
         let user = await this.usersService.getUser(data.user.id);
         let voice: Voice | null = null;
@@ -105,6 +111,12 @@ export class SpeakCommand {
     }
 
     async handleFirstWord(data: any) {
+        // Check if user is in the ignore list
+        if (await this.isUserIgnored(data.user.name)) {
+            this.logger.log('User is in ignore list, skipping first word', { userId: data.user.id, username: data.user.name });
+            return;
+        }
+
         // Get the user record
         let user = await this.usersService.getUser(data.user.id);
         if (!user) {
@@ -182,5 +194,31 @@ export class SpeakCommand {
         }
 
         return output;
+    }
+
+    /**
+     * Check if a user is in the ignored users list
+     * @param username - The username to check (case-insensitive)
+     * @returns true if the user is ignored, false otherwise
+     */
+    private async isUserIgnored(username: string): Promise<boolean> {
+        try {
+            const ignoredUsersSetting = await this.settingsService.getSetting(Setting.IGNORED_USERS);
+            if (!ignoredUsersSetting || !ignoredUsersSetting.value) {
+                return false;
+            }
+
+            const ignoredUsers: string[] = JSON.parse(ignoredUsersSetting.value);
+            if (!Array.isArray(ignoredUsers)) {
+                return false;
+            }
+
+            // Check if the username (lowercase) is in the ignored list
+            const usernameLower = username.toLowerCase();
+            return ignoredUsers.some(ignoredUser => ignoredUser.toLowerCase() === usernameLower);
+        } catch (error) {
+            this.logger.warn('Error checking ignored users list', error);
+            return false;
+        }
     }
 }

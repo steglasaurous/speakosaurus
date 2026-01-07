@@ -4,7 +4,10 @@ import { FormsModule } from '@angular/forms';
 import { RouterModule } from '@angular/router';
 import { SettingsService, Setting, SettingType } from '../../services/settings.service';
 import { VoicesService, Voice } from '../../services/voices.service';
-import { forkJoin } from 'rxjs';
+import { TwitchService, TwitchUser } from '../../services/twitch.service';
+import { UsersService, User } from '../../services/users.service';
+import { forkJoin, Subject } from 'rxjs';
+import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { VoiceSelectorComponent } from '../voice-selector/voice-selector.component';
 
 interface GroupedSettings {
@@ -35,8 +38,19 @@ export class SettingsComponent implements OnInit {
   // Cached array values to prevent re-parsing on every change detection
   arrayCache: { [key: string]: string[] } = {};
 
+  // User list search state per setting
+  userListSearchQueries: { [key: string]: string } = {};
+  userListSearchResults: { [key: string]: TwitchUser[] } = {};
+  userListLocalUsers: { [key: string]: User[] } = {};
+  userListSearching: { [key: string]: boolean } = {};
+  userListShowDropdown: { [key: string]: boolean } = {};
+  userListDropdownAbove: { [key: string]: boolean } = {};
+  userListSearchSubjects: { [key: string]: Subject<string> } = {};
+
   private settingsService = inject(SettingsService);
   private voicesService = inject(VoicesService);
+  private twitchService = inject(TwitchService);
+  private usersService = inject(UsersService);
 
   ngOnInit(): void {
     this.loadSettings();
@@ -57,6 +71,25 @@ export class SettingsComponent implements OnInit {
             } catch {
               this.arrayCache[setting.name] = [];
             }
+          });
+        // Initialize user list cache for userList-type settings
+        this.settings
+          .filter((s) => s.type === SettingType.USER_LIST)
+          .forEach((setting) => {
+            try {
+              const parsed = JSON.parse(setting.value || '[]');
+              this.arrayCache[setting.name] = Array.isArray(parsed) ? parsed : [];
+            } catch {
+              this.arrayCache[setting.name] = [];
+            }
+            // Initialize search state
+            this.userListSearchQueries[setting.name] = '';
+            this.userListSearchResults[setting.name] = [];
+            this.userListLocalUsers[setting.name] = [];
+            this.userListSearching[setting.name] = false;
+            this.userListShowDropdown[setting.name] = false;
+            this.userListDropdownAbove[setting.name] = false;
+            this.initializeUserListSearch(setting.name);
           });
         this.groupSettings();
         if (this.groupedSettings.length > 0 && !this.activeTab) {
@@ -116,7 +149,7 @@ export class SettingsComponent implements OnInit {
                 },
               });
             }
-          } catch (e) {
+          } catch {
             // Invalid JSON, ignore
           }
         }
@@ -140,7 +173,7 @@ export class SettingsComponent implements OnInit {
     
     if (setting.type === SettingType.BOOLEAN) {
       stringValue = value ? 'true' : 'false';
-    } else if (setting.type === SettingType.ARRAY || setting.type === SettingType.JSON) {
+    } else if (setting.type === SettingType.ARRAY || setting.type === SettingType.JSON || setting.type === SettingType.USER_LIST) {
       stringValue = typeof value === 'string' ? value : JSON.stringify(value);
     } else {
       stringValue = String(value);
@@ -203,6 +236,156 @@ export class SettingsComponent implements OnInit {
     return index;
   }
 
+  // User list methods
+  initializeUserListSearch(settingName: string): void {
+    if (!this.userListSearchSubjects[settingName]) {
+      this.userListSearchSubjects[settingName] = new Subject<string>();
+      
+      this.userListSearchSubjects[settingName]
+        .pipe(
+          debounceTime(300),
+          distinctUntilChanged(),
+          switchMap((query: string) => {
+            if (!query || query.trim() === '') {
+              this.userListSearchResults[settingName] = [];
+              this.userListLocalUsers[settingName] = [];
+              this.userListSearching[settingName] = false;
+              return forkJoin({
+                local: this.usersService.searchUsers(''),
+                twitch: this.twitchService.searchUsers(''),
+              });
+            }
+            this.userListSearching[settingName] = true;
+            // Search both local users and Twitch users in parallel
+            return forkJoin({
+              local: this.usersService.searchUsers(query),
+              twitch: this.twitchService.searchUsers(query),
+            });
+          })
+        )
+        .subscribe({
+          next: (results) => {
+            this.userListLocalUsers[settingName] = results.local || [];
+            this.userListSearchResults[settingName] = results.twitch || [];
+            this.userListSearching[settingName] = false;
+          },
+          error: (error) => {
+            console.error('Error searching users:', error);
+            this.userListSearchResults[settingName] = [];
+            this.userListLocalUsers[settingName] = [];
+            this.userListSearching[settingName] = false;
+          },
+        });
+    }
+  }
+
+  onUserListSearchInput(setting: Setting, query: string): void {
+    this.userListSearchQueries[setting.name] = query;
+    const shouldShow = query.trim().length > 0;
+    this.userListShowDropdown[setting.name] = shouldShow;
+    
+    if (shouldShow) {
+      // Check available space and position dropdown accordingly
+      setTimeout(() => this.checkDropdownPosition(setting.name), 0);
+    }
+    
+    if (this.userListSearchSubjects[setting.name]) {
+      this.userListSearchSubjects[setting.name].next(query);
+    }
+  }
+
+  checkDropdownPosition(settingName: string): void {
+    const inputId = `setting-${settingName}-search`;
+    const inputElement = document.getElementById(inputId);
+    if (!inputElement) {
+      return;
+    }
+
+    const inputRect = inputElement.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const spaceBelow = viewportHeight - inputRect.bottom;
+    const spaceAbove = inputRect.top;
+    const estimatedDropdownHeight = 300; // max-height
+
+    // Position dropdown above if there's not enough space below but enough space above
+    this.userListDropdownAbove[settingName] = 
+      spaceBelow < estimatedDropdownHeight && spaceAbove > spaceBelow;
+  }
+
+  addUserToList(setting: Setting, twitchUser: TwitchUser): void {
+    const userList = this.parseUserListValue(setting);
+    const username = twitchUser.login.toLowerCase();
+    
+    // Check if user already in list
+    if (!userList.includes(username)) {
+      userList.push(username);
+      this.syncUserListToSetting(setting);
+    }
+    
+    // Clear search
+    this.userListSearchQueries[setting.name] = '';
+    this.userListShowDropdown[setting.name] = false;
+    this.userListSearchResults[setting.name] = [];
+    this.userListLocalUsers[setting.name] = [];
+  }
+
+  addLocalUserToList(setting: Setting, user: User): void {
+    const userList = this.parseUserListValue(setting);
+    const username = user.twitchUsername.toLowerCase();
+    
+    // Check if user already in list
+    if (!userList.includes(username)) {
+      userList.push(username);
+      this.syncUserListToSetting(setting);
+    }
+    
+    // Clear search
+    this.userListSearchQueries[setting.name] = '';
+    this.userListShowDropdown[setting.name] = false;
+    this.userListSearchResults[setting.name] = [];
+    this.userListLocalUsers[setting.name] = [];
+  }
+
+  removeUserFromList(setting: Setting, index: number): void {
+    const userList = this.parseUserListValue(setting);
+    userList.splice(index, 1);
+    this.syncUserListToSetting(setting);
+  }
+
+  parseUserListValue(setting: Setting): string[] {
+    // Use cached array if available, otherwise parse and cache
+    if (!this.arrayCache[setting.name]) {
+      try {
+        const parsed = JSON.parse(setting.value || '[]');
+        this.arrayCache[setting.name] = Array.isArray(parsed) ? parsed : [];
+      } catch {
+        this.arrayCache[setting.name] = [];
+      }
+    }
+    return this.arrayCache[setting.name];
+  }
+
+  syncUserListToSetting(setting: Setting): void {
+    // Update the setting value from the cached array
+    setting.value = JSON.stringify(this.arrayCache[setting.name] || []);
+  }
+
+
+  onUserListFocus(setting: Setting): void {
+    this.userListShowDropdown[setting.name] = (this.userListSearchQueries[setting.name] || '').trim().length > 0;
+    if (this.userListShowDropdown[setting.name]) {
+      // Check available space when focusing
+      setTimeout(() => this.checkDropdownPosition(setting.name), 0);
+    }
+  }
+
+  onUserListBlur(setting: Setting): void {
+    // Delay hiding dropdown to allow click events
+    setTimeout(() => {
+      this.userListShowDropdown[setting.name] = false;
+    }, 200);
+  }
+
   saveSetting(setting: Setting): void {
     this.saving = true;
     this.error = null;
@@ -215,6 +398,17 @@ export class SettingsComponent implements OnInit {
         setting.value = updatedSetting.value;
         // Invalidate array cache if this is an array setting
         if (setting.type === SettingType.ARRAY) {
+          delete this.arrayCache[setting.name];
+          // Re-initialize cache with new value
+          try {
+            const parsed = JSON.parse(updatedSetting.value || '[]');
+            this.arrayCache[setting.name] = Array.isArray(parsed) ? parsed : [];
+          } catch {
+            this.arrayCache[setting.name] = [];
+          }
+        }
+        // Invalidate user list cache if this is a userList setting
+        if (setting.type === SettingType.USER_LIST) {
           delete this.arrayCache[setting.name];
           // Re-initialize cache with new value
           try {

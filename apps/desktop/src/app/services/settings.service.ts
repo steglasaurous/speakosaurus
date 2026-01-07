@@ -24,6 +24,7 @@ export enum Setting {
   AZURE_SPEECH_KEY = 'azureSpeechKey',
   AZURE_SPEECH_REGION = 'azureSpeechRegion',
   AZURE_ENDPOINT = 'azureEndpoint',
+  IGNORED_USERS = 'ignoredUsers',
 }
 
 export enum SettingType {
@@ -35,6 +36,7 @@ export enum SettingType {
   ENUM = 'enum',
   // This will render a voice selector in the UI.
   VOICE = 'voice',
+  USER_LIST = 'userList',
 }
 
 export interface SettingDefinition {
@@ -192,6 +194,14 @@ export class SettingsService {
       group: 'TTS Providers',
       description: 'The endpoint for the Azure Speech API',
       type: SettingType.STRING,
+    },
+    {
+      name: Setting.IGNORED_USERS,
+      displayName: 'Ignored Users',
+      group: 'General',
+      description: 'The users to ignore for TTS',
+      type: SettingType.USER_LIST,
+      default: '[]',
     },
   ];
 

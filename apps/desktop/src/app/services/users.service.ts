@@ -1,6 +1,6 @@
 import { DrizzleService } from "nestjs-drizzle/sqlite";
 import * as schema from "../database/schema";
-import { eq } from "drizzle-orm";
+import { eq, inArray } from "drizzle-orm";
 import { Injectable } from "@nestjs/common";
 
 @Injectable()
@@ -128,6 +128,49 @@ export class UsersService {
             .returning();
 
         return updated;
+    }
+
+    async searchUsers(query: string): Promise<any[]> {
+        if (!query || query.trim() === '') {
+            return [];
+        }
+
+        // Get all users and filter in memory for simplicity and safety
+        // This is fine for typical use cases with reasonable number of users
+        const allUsers = await this.drizzleService.db
+            .select()
+            .from(schema.users as any);
+
+        const searchLower = query.trim().toLowerCase();
+        const filteredUsers = allUsers
+            .filter(user => 
+                user.twitchUsername.toLowerCase().includes(searchLower) ||
+                (user.ttsName && user.ttsName.toLowerCase().includes(searchLower))
+            )
+            .slice(0, 20);
+
+        // Get custom intros for filtered users
+        const userIds = filteredUsers.map(u => u.twitchUserId);
+        const allIntros = userIds.length > 0
+            ? await this.drizzleService.db
+                .select()
+                .from(schema.customIntros as any)
+                .where(inArray(schema.customIntros.twitchUserId, userIds) as any)
+            : [];
+
+        // Group intros by twitchUserId
+        const introsByUserId = allIntros.reduce((acc, intro) => {
+            if (!acc[intro.twitchUserId]) {
+                acc[intro.twitchUserId] = [];
+            }
+            acc[intro.twitchUserId].push(intro);
+            return acc;
+        }, {} as Record<string, any[]>);
+
+        return filteredUsers.map(user => ({
+            ...user,
+            customIntros: introsByUserId[user.twitchUserId] || [],
+        }));
     }
 
     static ttsFriendlyUsername(username: string): string {

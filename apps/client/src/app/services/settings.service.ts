@@ -10,6 +10,7 @@ export enum SettingType {
   JSON = 'json',
   ENUM = 'enum',
   VOICE = 'voice',
+  USER_LIST = 'userList',
 }
 
 export interface Setting {

@@ -163,6 +163,96 @@
           >
           </app-voice-selector>
         </div>
+
+        <!-- USER_LIST type -->
+        <div *ngIf="setting.type === 'userList'" class="form-group">
+          <div class="user-list-container">
+            <!-- Current users list -->
+            <div class="user-list-items">
+              <div
+                *ngFor="let username of parseUserListValue(setting); let i = index; trackBy: trackByIndex"
+                class="user-list-item"
+              >
+                <span class="user-list-username">{{ username }}</span>
+                <button
+                  class="remove-user-button"
+                  (click)="removeUserFromList(setting, i)"
+                  type="button"
+                  title="Remove user"
+                >
+                  ×
+                </button>
+              </div>
+            </div>
+
+            <!-- Auto-complete input -->
+            <div class="user-list-autocomplete-wrapper">
+              <input
+                type="text"
+                class="form-input user-list-search-input"
+                [id]="'setting-' + setting.name + '-search'"
+                [value]="userListSearchQueries[setting.name] || ''"
+                (input)="onUserListSearchInput(setting, $any($event.target).value)"
+                (focus)="onUserListFocus(setting)"
+                (blur)="onUserListBlur(setting)"
+                placeholder="Search for Twitch users..."
+              >
+              <div *ngIf="userListSearching[setting.name]" class="user-list-loading">
+                <div class="spinner-small"></div>
+              </div>
+
+              <!-- Dropdown results -->
+              <div
+                *ngIf="userListShowDropdown[setting.name] && ((userListLocalUsers[setting.name] && userListLocalUsers[setting.name].length > 0) || (userListSearchResults[setting.name] && userListSearchResults[setting.name].length > 0))"
+                class="user-list-dropdown"
+                [class.user-list-dropdown-above]="userListDropdownAbove[setting.name]"
+              >
+                <!-- Local users group -->
+                <div *ngIf="userListLocalUsers[setting.name] && userListLocalUsers[setting.name].length > 0" class="user-list-group">
+                  <div class="user-list-group-header">Users in System</div>
+                  <div
+                    *ngFor="let user of userListLocalUsers[setting.name]"
+                    class="user-list-dropdown-item"
+                    (mousedown)="addLocalUserToList(setting, user); $event.preventDefault()"
+                  >
+                    <div class="user-list-dropdown-info">
+                      <div class="user-list-dropdown-name">{{ user.twitchUsername }}</div>
+                      <div *ngIf="user.ttsName && user.ttsName !== user.twitchUsername" class="user-list-dropdown-login">{{ user.ttsName }}</div>
+                    </div>
+                  </div>
+                </div>
+
+                <!-- Twitch users group -->
+                <div *ngIf="userListSearchResults[setting.name] && userListSearchResults[setting.name].length > 0" class="user-list-group">
+                  <div class="user-list-group-header">Twitch Users</div>
+                  <div
+                    *ngFor="let twitchUser of userListSearchResults[setting.name]"
+                    class="user-list-dropdown-item"
+                    (mousedown)="addUserToList(setting, twitchUser); $event.preventDefault()"
+                  >
+                    <img
+                      *ngIf="twitchUser.profile_image_url"
+                      [src]="twitchUser.profile_image_url"
+                      [alt]="twitchUser.display_name"
+                      class="user-list-avatar"
+                    >
+                    <div class="user-list-dropdown-info">
+                      <div class="user-list-dropdown-name">{{ twitchUser.display_name }}</div>
+                      <div class="user-list-dropdown-login">&#64;{{ twitchUser.login }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              <div
+                *ngIf="userListShowDropdown[setting.name] && !userListSearching[setting.name] && (!userListLocalUsers[setting.name] || userListLocalUsers[setting.name].length === 0) && (!userListSearchResults[setting.name] || userListSearchResults[setting.name].length === 0) && (userListSearchQueries[setting.name] || '').trim().length > 0"
+                class="user-list-dropdown-empty"
+                [class.user-list-dropdown-above]="userListDropdownAbove[setting.name]"
+              >
+                No users found
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>

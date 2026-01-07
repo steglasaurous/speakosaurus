@@ -1,6 +1,6 @@
 import { inject, Injectable } from '@angular/core';
-import { HttpClient } from '@angular/common/http';
-import { Observable } from 'rxjs';
+import { HttpClient, HttpParams } from '@angular/common/http';
+import { Observable, of } from 'rxjs';
 
 export interface CustomIntro {
   id: string;
@@ -46,6 +46,15 @@ export class UsersService {
 
   getAllUsers(): Observable<User[]> {
     return this.http.get<User[]>(`${this.apiUrl}/users`);
+  }
+
+  searchUsers(query: string): Observable<User[]> {
+    if (!query || query.trim() === '') {
+      return of([]);
+    }
+
+    const params = new HttpParams().set('query', query);
+    return this.http.get<User[]>(`${this.apiUrl}/users`, { params });
   }
 
   getUser(twitchUserId: string): Observable<User> {
