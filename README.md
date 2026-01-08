@@ -9,19 +9,12 @@ An app to provide TTS to twitch streams (or anything supported by streamerbot)
 
 # TODO
 
-- [x] Create a status bar that includes pending renders, pending audio to play queue size, a quick way to switch modes
-- [ ] Create a "speaker playground" that lets the user say anything in any voice
-- [ ] Some voice volumes aren't very loud - add a volume slider and per-voice volumes
-- [ ] Instead of depending on streamer.bot for chat, use twurple to connect to chat directly.
-  - [ ] Ensure that twitch tokens / refresh tokens are as long lived as possible
-- [ ] Intros: Write intros into twitch chat as text
+- [ ] bug: look at changing streamer bot url if it properly disconnects/destroys the object or if it ends up making multiple connections. Fix.
 - [ ] Design how mods can connect and use app (API bridge?)
-- [ ] disable intros for users, and disable globally
 - [ ] Voicelist: Create filters that can help pair down the voice selection
   - [ ] azure voices: add filters for locale, gender
   - [ ] groups: add ability to "roll up" groups, make it easier to find voices in other groups by scrolling
 - [ ] Review all settings UIs, make sure they're consistent with how they save
-- [ ] In settings, etc, pin save bar to top when scrolling
 
 - [ ] Try packaging up and running electron app on its own, ensure I can distribute it
 - [ ] Figure out how automatic upgrades works
@@ -33,9 +26,17 @@ An app to provide TTS to twitch streams (or anything supported by streamerbot)
 - [x] Implement azure integration
 - [x] !stomp matches !s
 - [x] Add a list of ignored users to not welcome or read tts
+- [x] Create a status bar that includes pending renders, pending audio to play queue size, a quick way to switch modes
+- [x] Intros: Write intros into twitch chat as text
+  - [x] Implement triggering user-specified streamerbot actions when useful events happen
+    - [x] first words (generic welcome text, custom intro)
+- [x] In settings, etc, pin save bar to top when scrolling
 
 Later
 
+- [ ] Some voice volumes aren't very loud - add a volume slider and per-voice volumes
+- [ ] Create a "speaker playground" that lets the user say anything in any voice
+- [ ] disable intros for users, and disable globally
 - [ ] Implement amazon polly integration
 - [ ] Implement google integration
 - [ ] Create setting to allow selecting default output device
