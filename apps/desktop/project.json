@@ -29,7 +29,14 @@
         "outputPath": "dist/apps/desktop",
         "main": "apps/desktop/src/main.ts",
         "tsConfig": "apps/desktop/tsconfig.app.json",
-        "assets": ["apps/desktop/src/assets"]
+        "assets": [
+          "apps/desktop/src/assets",
+          {
+            "input": "drizzle",
+            "glob": "**/*",
+            "output": "drizzle"
+          }
+        ]
       },
       "configurations": {
         "production": {

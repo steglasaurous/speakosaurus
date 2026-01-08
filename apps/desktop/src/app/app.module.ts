@@ -19,12 +19,13 @@ import { TwitchController } from './controllers/twitch.controller';
 import { StreamerBotController } from './controllers/streamerbot.controller';
 import { HttpModule } from '@nestjs/axios';
 import { StatusEventService } from './services/status-event.service';
+import { MigrationService } from './services/migration.service';
 
 @Module({
   imports: [
     DrizzleModule.forRoot({
       schema,
-      url: './database.sqlite',
+      url: MigrationService.getDatabasePath(),
       driver: 'sqlite',
     }) as DynamicModule,
     HttpModule,

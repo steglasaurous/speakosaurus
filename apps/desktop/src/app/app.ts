@@ -8,6 +8,7 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { Logger } from '@nestjs/common';
+import { MigrationService } from './services/migration.service';
 
 export default class App {
   // Keep a global reference of the window object, if you don't, the window will
@@ -58,6 +59,17 @@ export default class App {
   }
 
   private static async startNestApp() {
+    // Run migrations before initializing NestJS
+    Logger.log('🔄 Checking for database migrations...');
+    const migrationSuccess = await MigrationService.runMigrations();
+    
+    if (!migrationSuccess) {
+      // Logger.error('⚠️  Migrations failed, but continuing with app startup');
+      Logger.error('Migrations failed');
+      throw new Error('Migrations failed');
+      // Consider showing a user notification here in production
+    }
+
     const app = await NestFactory.create(AppModule);
     const globalPrefix = 'api';
     app.setGlobalPrefix(globalPrefix);
