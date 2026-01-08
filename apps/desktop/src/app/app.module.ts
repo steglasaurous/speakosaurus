@@ -16,6 +16,7 @@ import { SpeakerttsVoiceProvider } from './services/voice-providers/providers/sp
 import { UsersService } from './services/users.service';
 import { TwitchAuthService } from './services/twitch-auth.service';
 import { TwitchController } from './controllers/twitch.controller';
+import { StreamerBotController } from './controllers/streamerbot.controller';
 import { HttpModule } from '@nestjs/axios';
 import { StatusEventService } from './services/status-event.service';
 
@@ -28,7 +29,7 @@ import { StatusEventService } from './services/status-event.service';
     }) as DynamicModule,
     HttpModule,
   ],
-  controllers: [VoicesController, SpeakController, SettingsController, UsersController, TwitchController, StatusController],
+  controllers: [VoicesController, SpeakController, SettingsController, UsersController, TwitchController, StatusController, StreamerBotController],
   providers: [ 
     SpeakerttsVoiceProvider,
     {

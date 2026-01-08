@@ -1,4 +1,4 @@
-import { StreamerbotEventName } from '@streamerbot/client';
+import { DoActionResponse, GetActionsResponse, StreamerbotEventName } from '@streamerbot/client';
 import { Subject, Observable } from 'rxjs';
 import { IStreamerBotClient } from './streamer-bot-client.interface';
 import { RealStreamerBotClient } from './real-streamer-bot-client.service';
@@ -14,7 +14,6 @@ export class StreamerBotService {
   private eventSubject = new Subject<StreamerBotEvent>();
   private connectedSubject = new Subject<boolean>();
   private subscribedEvents = new Set<string>();
-
   
   /**
    * Observable that emits StreamerBot events.
@@ -60,6 +59,14 @@ export class StreamerBotService {
         this.eventSubject.next({ eventType, data: payload.data });
       }
     });
+  }
+
+  getActions(): Promise<GetActionsResponse> {
+    return this.client.getActions();
+  }
+
+  triggerAction(actionId: string, args: Record<string, any>): Promise<DoActionResponse> {
+    return this.client.triggerAction(actionId, args);
   }
 
   /**

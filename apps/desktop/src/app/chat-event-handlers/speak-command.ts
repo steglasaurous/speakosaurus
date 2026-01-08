@@ -174,6 +174,22 @@ export class SpeakCommand {
             message = `Welcome ${ttsName}`;
         }
 
+        // Trigger StreamerBot action if configured
+        const streamerBotActionIntroSetting = await this.settingsService.getSetting(Setting.STREAMERBOT_ACTION_INTRO);
+        if (streamerBotActionIntroSetting && streamerBotActionIntroSetting.value) {
+            const actionId = streamerBotActionIntroSetting.value;
+            const username = user.ttsName || data.user.name;
+            try {
+                await this.streamerBotManagerService.triggerAction(actionId, {
+                    username: username,
+                    message: message,
+                });
+                this.logger.log('Triggered StreamerBot intro action', { actionId, username, message });
+            } catch (error) {
+                this.logger.warn('Failed to trigger StreamerBot intro action', error);
+            }
+        }
+
         // Speak the welcome message
         await this.voiceProviderService.speak(introVoice, message);
     }

@@ -160,6 +160,65 @@
           </app-voice-selector>
         </div>
 
+        <!-- STREAMERBOT_ACTION type -->
+        <div *ngIf="setting.type === 'streamerbotAction'" class="form-group">
+          <div class="streamerbot-action-container">
+            <!-- Auto-complete input -->
+            <div class="streamerbot-action-autocomplete-wrapper">
+              <input
+                type="text"
+                class="form-input streamerbot-action-search-input"
+                [id]="'setting-' + setting.name + '-search'"
+                [value]="streamerBotActionSearchQueries[setting.name] || getStreamerBotActionDisplayName(setting) || ''"
+                (input)="onStreamerBotActionSearchInput(setting, $any($event.target).value)"
+                (focus)="onStreamerBotActionFocus(setting)"
+                (blur)="onStreamerBotActionBlur(setting)"
+                placeholder="Search for StreamerBot actions..."
+              >
+              <div *ngIf="streamerBotActionSearching[setting.name]" class="streamerbot-action-loading">
+                <div class="spinner-small"></div>
+              </div>
+
+              <!-- Dropdown results -->
+              <div
+                *ngIf="streamerBotActionShowDropdown[setting.name] && streamerBotActionSearchResults[setting.name] && streamerBotActionSearchResults[setting.name].length > 0"
+                class="streamerbot-action-dropdown"
+                [class.streamerbot-action-dropdown-above]="streamerBotActionDropdownAbove[setting.name]"
+              >
+                <div
+                  *ngFor="let action of streamerBotActionSearchResults[setting.name]"
+                  class="streamerbot-action-dropdown-item"
+                  (mousedown)="selectStreamerBotAction(setting, action); $event.preventDefault()"
+                >
+                  <div class="streamerbot-action-dropdown-info">
+                    <div class="streamerbot-action-dropdown-name">{{ action.name }}</div>
+                    <div *ngIf="action.group" class="streamerbot-action-dropdown-group">{{ action.group }}</div>
+                  </div>
+                </div>
+              </div>
+              <div
+                *ngIf="streamerBotActionShowDropdown[setting.name] && !streamerBotActionSearching[setting.name] && (!streamerBotActionSearchResults[setting.name] || streamerBotActionSearchResults[setting.name].length === 0) && (streamerBotActionSearchQueries[setting.name] || '').trim().length > 0"
+                class="streamerbot-action-dropdown-empty"
+                [class.streamerbot-action-dropdown-above]="streamerBotActionDropdownAbove[setting.name]"
+              >
+                No actions found
+              </div>
+            </div>
+            <!-- Display selected action -->
+            <div *ngIf="getStreamerBotActionDisplayName(setting)" class="streamerbot-action-selected">
+              <span class="streamerbot-action-selected-name">{{ getStreamerBotActionDisplayName(setting) }}</span>
+              <button
+                class="remove-streamerbot-action-button"
+                (click)="clearStreamerBotAction(setting)"
+                type="button"
+                title="Clear action"
+              >
+                ×
+              </button>
+            </div>
+          </div>
+        </div>
+
         <!-- USER_LIST type -->
         <div *ngIf="setting.type === 'userList'" class="form-group">
           <div class="user-list-container">

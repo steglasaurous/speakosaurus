@@ -3,6 +3,7 @@ import { StreamerBotService, StreamerBotEvent } from '@streamtools/util-streamer
 import { SettingsService, Setting } from './settings.service';
 import { Subject, Observable, Subscription } from 'rxjs';
 import { StatusEventService } from './status-event.service';
+import { DoActionResponse, GetActionsResponse } from '@streamerbot/client';
 
 @Injectable()
 export class StreamerBotManagerService implements OnModuleInit, OnModuleDestroy {
@@ -45,6 +46,14 @@ export class StreamerBotManagerService implements OnModuleInit, OnModuleDestroy 
         if (this.streamerBotService) {
             this.streamerBotService.subscribeToEvent(eventType as any);
         }
+    }
+
+    async getActions(): Promise<GetActionsResponse> {
+        return this.streamerBotService?.getActions() || null;
+    }
+
+    async triggerAction(actionId: string, args: Record<string, any>): Promise<DoActionResponse> {
+        return this.streamerBotService?.triggerAction(actionId, args) || null;
     }
 
     /**

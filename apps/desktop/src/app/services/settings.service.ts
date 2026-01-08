@@ -25,6 +25,7 @@ export enum Setting {
   AZURE_SPEECH_REGION = 'azureSpeechRegion',
   AZURE_ENDPOINT = 'azureEndpoint',
   IGNORED_USERS = 'ignoredUsers',
+  STREAMERBOT_ACTION_INTRO = 'streamerbotActionIntro',
 }
 
 export enum SettingType {
@@ -37,6 +38,7 @@ export enum SettingType {
   // This will render a voice selector in the UI.
   VOICE = 'voice',
   USER_LIST = 'userList',
+  STREAMERBOT_ACTION = 'streamerbotAction',
 }
 
 export interface SettingDefinition {
@@ -213,6 +215,13 @@ export class SettingsService {
       type: SettingType.USER_LIST,
       default: '[]',
     },
+    {
+      name: Setting.STREAMERBOT_ACTION_INTRO,
+      displayName: 'StreamerBot Action - Intro',
+      group: 'StreamerBot Actions',
+      description: 'The action to trigger when the user speaks for the first time. Arguments sent are username and message.',
+      type: SettingType.STREAMERBOT_ACTION,
+    }
   ];
 
   private settingsMap: Map<Setting, SettingDto> = new Map<Setting, SettingDto>();

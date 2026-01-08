@@ -11,6 +11,7 @@ export enum SettingType {
   ENUM = 'enum',
   VOICE = 'voice',
   USER_LIST = 'userList',
+  STREAMERBOT_ACTION = 'streamerbotAction',
 }
 
 export interface Setting {

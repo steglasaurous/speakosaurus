@@ -6,6 +6,7 @@ import { SettingsService, Setting, SettingType } from '../../services/settings.s
 import { VoicesService, Voice } from '../../services/voices.service';
 import { TwitchService, TwitchUser } from '../../services/twitch.service';
 import { UsersService, User } from '../../services/users.service';
+import { StreamerBotService, StreamerBotAction } from '../../services/streamerbot.service';
 import { forkJoin, Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { VoiceSelectorComponent } from '../voice-selector/voice-selector.component';
@@ -55,10 +56,20 @@ export class SettingsComponent implements OnInit {
   userListDropdownAbove: { [key: string]: boolean } = {};
   userListSearchSubjects: { [key: string]: Subject<string> } = {};
 
+  // StreamerBot action search state per setting
+  streamerBotActionSearchQueries: { [key: string]: string } = {};
+  streamerBotActionSearchResults: { [key: string]: StreamerBotAction[] } = {};
+  streamerBotActionAllActions: { [key: string]: StreamerBotAction[] } = {};
+  streamerBotActionSearching: { [key: string]: boolean } = {};
+  streamerBotActionShowDropdown: { [key: string]: boolean } = {};
+  streamerBotActionDropdownAbove: { [key: string]: boolean } = {};
+  streamerBotActionSearchSubjects: { [key: string]: Subject<string> } = {};
+
   private settingsService = inject(SettingsService);
   private voicesService = inject(VoicesService);
   private twitchService = inject(TwitchService);
   private usersService = inject(UsersService);
+  private streamerBotService = inject(StreamerBotService);
   private router = inject(Router);
 
   ngOnInit(): void {
@@ -104,6 +115,20 @@ export class SettingsComponent implements OnInit {
             this.userListShowDropdown[setting.name] = false;
             this.userListDropdownAbove[setting.name] = false;
             this.initializeUserListSearch(setting.name);
+          });
+        // Initialize StreamerBot action settings
+        this.settings
+          .filter((s) => s.type === SettingType.STREAMERBOT_ACTION)
+          .forEach((setting) => {
+            // Initialize search state
+            this.streamerBotActionSearchQueries[setting.name] = '';
+            this.streamerBotActionSearchResults[setting.name] = [];
+            this.streamerBotActionAllActions[setting.name] = [];
+            this.streamerBotActionSearching[setting.name] = false;
+            this.streamerBotActionShowDropdown[setting.name] = false;
+            this.streamerBotActionDropdownAbove[setting.name] = false;
+            // Load actions - this will populate allActions which is used by getStreamerBotActionDisplayName
+            this.initializeStreamerBotActionSearch(setting.name);
           });
         this.groupSettings();
         if (this.groupedSettings.length > 0 && !this.activeTab) {
@@ -426,6 +451,125 @@ export class SettingsComponent implements OnInit {
     }, 200);
   }
 
+  // StreamerBot action methods
+  initializeStreamerBotActionSearch(settingName: string): void {
+    // Load all actions once
+    this.streamerBotActionSearching[settingName] = true;
+    this.streamerBotService.getActions().subscribe({
+      next: (actions) => {
+        this.streamerBotActionAllActions[settingName] = actions || [];
+        this.streamerBotActionSearching[settingName] = false;
+      },
+      error: (error) => {
+        console.error('Error loading StreamerBot actions:', error);
+        this.streamerBotActionAllActions[settingName] = [];
+        this.streamerBotActionSearching[settingName] = false;
+      },
+    });
+
+    if (!this.streamerBotActionSearchSubjects[settingName]) {
+      this.streamerBotActionSearchSubjects[settingName] = new Subject<string>();
+      
+      this.streamerBotActionSearchSubjects[settingName]
+        .pipe(
+          debounceTime(300),
+          distinctUntilChanged(),
+        )
+        .subscribe({
+          next: (query: string) => {
+            this.filterStreamerBotActions(settingName, query);
+          },
+        });
+    }
+  }
+
+  filterStreamerBotActions(settingName: string, query: string): void {
+    const allActions = this.streamerBotActionAllActions[settingName] || [];
+    const lowerQuery = query.toLowerCase().trim();
+    
+    if (!lowerQuery) {
+      this.streamerBotActionSearchResults[settingName] = [];
+      return;
+    }
+
+    this.streamerBotActionSearchResults[settingName] = allActions.filter((action) =>
+      action.name.toLowerCase().includes(lowerQuery) ||
+      (action.group && action.group.toLowerCase().includes(lowerQuery))
+    );
+  }
+
+  onStreamerBotActionSearchInput(setting: Setting, query: string): void {
+    this.streamerBotActionSearchQueries[setting.name] = query;
+    const shouldShow = query.trim().length > 0;
+    this.streamerBotActionShowDropdown[setting.name] = shouldShow;
+    
+    if (shouldShow) {
+      // Check available space and position dropdown accordingly
+      setTimeout(() => this.checkStreamerBotActionDropdownPosition(setting.name), 0);
+    }
+    
+    if (this.streamerBotActionSearchSubjects[setting.name]) {
+      this.streamerBotActionSearchSubjects[setting.name].next(query);
+    }
+  }
+
+  checkStreamerBotActionDropdownPosition(settingName: string): void {
+    const inputId = `setting-${settingName}-search`;
+    const inputElement = document.getElementById(inputId);
+    if (!inputElement) {
+      return;
+    }
+
+    const inputRect = inputElement.getBoundingClientRect();
+    const viewportHeight = window.innerHeight;
+    const spaceBelow = viewportHeight - inputRect.bottom;
+    const spaceAbove = inputRect.top;
+    const estimatedDropdownHeight = 300; // max-height
+
+    // Position dropdown above if there's not enough space below but enough space above
+    this.streamerBotActionDropdownAbove[settingName] = 
+      spaceBelow < estimatedDropdownHeight && spaceAbove > spaceBelow;
+  }
+
+  selectStreamerBotAction(setting: Setting, action: StreamerBotAction): void {
+    // Save the action's id
+    setting.value = action.id;
+    
+    // Clear search
+    this.streamerBotActionSearchQueries[setting.name] = '';
+    this.streamerBotActionShowDropdown[setting.name] = false;
+    this.streamerBotActionSearchResults[setting.name] = [];
+  }
+
+  clearStreamerBotAction(setting: Setting): void {
+    setting.value = '';
+  }
+
+  getStreamerBotActionDisplayName(setting: Setting): string {
+    if (!setting.value) {
+      return '';
+    }
+    
+    // Find the action by id in the cached actions
+    const allActions = this.streamerBotActionAllActions[setting.name] || [];
+    const action = allActions.find((a) => a.id === setting.value);
+    return action ? action.name : '';
+  }
+
+  onStreamerBotActionFocus(setting: Setting): void {
+    this.streamerBotActionShowDropdown[setting.name] = (this.streamerBotActionSearchQueries[setting.name] || '').trim().length > 0;
+    if (this.streamerBotActionShowDropdown[setting.name]) {
+      // Check available space when focusing
+      setTimeout(() => this.checkStreamerBotActionDropdownPosition(setting.name), 0);
+    }
+  }
+
+  onStreamerBotActionBlur(setting: Setting): void {
+    // Delay hiding dropdown to allow click events
+    setTimeout(() => {
+      this.streamerBotActionShowDropdown[setting.name] = false;
+    }, 200);
+  }
 
   saveAllSettings(): void {
     this.saving = true;

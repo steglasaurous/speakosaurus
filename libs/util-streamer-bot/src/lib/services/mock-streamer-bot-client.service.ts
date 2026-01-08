@@ -1,5 +1,5 @@
 import { Injectable } from '@angular/core';
-import { StreamerbotEventName } from '@streamerbot/client';
+import { DoActionResponse, GetActionsResponse, StreamerbotEventName } from '@streamerbot/client';
 import { IStreamerBotClient } from './streamer-bot-client.interface';
 
 type EventCallback = (payload: { data?: any }) => void;
@@ -46,6 +46,24 @@ export class MockStreamerBotClient implements IStreamerBotClient {
 
   connect(): void {
     this.connectedCallback();
+  }
+
+  async getActions(): Promise<GetActionsResponse> {
+    return {
+      id: 'mock_action_id',
+      status: 'ok',
+      actions: [],
+      count: 0,
+    };
+  }
+
+  async triggerAction(actionId: string, args: Record<string, any>): Promise<DoActionResponse> {
+    return {
+      id: 'mock_action_id',
+      status: 'ok',
+      args,
+      customEventResponseArgs: {},
+    };
   }
 
   /**

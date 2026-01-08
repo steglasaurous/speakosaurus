@@ -1,4 +1,4 @@
-import { StreamerbotClient, StreamerbotEventName } from '@streamerbot/client';
+import { DoActionResponse, GetActionsResponse, StreamerbotClient, StreamerbotEventName } from '@streamerbot/client';
 import { IStreamerBotClient } from './streamer-bot-client.interface';
 
 /**
@@ -34,6 +34,14 @@ export class RealStreamerBotClient implements IStreamerBotClient {
     });
   }
 
+  async getActions(): Promise<GetActionsResponse> {
+    return this.client.getActions();
+  }
+
+  async triggerAction(actionId: string, args: Record<string, any>): Promise<DoActionResponse> {
+    return this.client.doAction(actionId, args);
+  }
+
   connect(): void {
     this.client.connect();
   }
@@ -46,6 +54,8 @@ export class RealStreamerBotClient implements IStreamerBotClient {
     // Need to find what the right way of doing this is.
     //this.client.off(eventType, callback);
   }
+
+  
 
   onConnect(callback: () => void): void {
     this.connectedCallback = callback;
