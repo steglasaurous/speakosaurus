@@ -72,10 +72,25 @@ export class StreamerBotManagerService implements OnModuleInit, OnModuleDestroy 
         const urlSetting = await this.settingsService.getSetting(Setting.STREAMERBOT_WEBSOCKET_URL);
         const wsUrl = urlSetting?.value || urlSetting?.default || 'ws://localhost:8080';
 
+        // Disconnect and cleanup old service if it exists
+        if (this.streamerBotService) {
+            try {
+                await this.streamerBotService.disconnect();
+            } catch (error) {
+                this.logger.warn('Error disconnecting old StreamerBotService', error);
+            }
+        }
+
         // Unsubscribe from old service if it exists
         if (this.currentSubscription) {
             this.currentSubscription.unsubscribe();
             this.currentSubscription = null;
+        }
+
+        // Unsubscribe from connection status if it exists
+        if (this.connectedStatusSubscription) {
+            this.connectedStatusSubscription.unsubscribe();
+            this.connectedStatusSubscription = null;
         }
 
         // Create new service
@@ -84,9 +99,6 @@ export class StreamerBotManagerService implements OnModuleInit, OnModuleDestroy 
             this.streamerBotService = new StreamerBotService(wsUrl, useMock);
             
             // Subscribe to connection status changes and emit to status event service
-            if (this.connectedStatusSubscription) {
-                this.connectedStatusSubscription.unsubscribe();
-            }
             this.connectedStatusSubscription = this.streamerBotService.connected$.subscribe((connected: boolean) => {
                 this.isConnected = connected;
                 this.connectedSubject.next(connected);
@@ -133,12 +145,22 @@ export class StreamerBotManagerService implements OnModuleInit, OnModuleDestroy 
         return this.isConnected;
     }
 
-    onModuleDestroy() {
+    async onModuleDestroy() {
+        // Unsubscribe from subscriptions
         if (this.connectedStatusSubscription) {
             this.connectedStatusSubscription.unsubscribe();
         }
         if (this.currentSubscription) {
             this.currentSubscription.unsubscribe();
+        }
+        
+        // Disconnect the service
+        if (this.streamerBotService) {
+            try {
+                await this.streamerBotService.disconnect();
+            } catch (error) {
+                this.logger.warn('Error disconnecting StreamerBotService on destroy', error);
+            }
         }
     }
 }

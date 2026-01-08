@@ -48,6 +48,10 @@ export class StreamerBotService {
     this.client.connect();
   }
 
+  async disconnect(): Promise<void> {
+    await this.client.disconnect();
+  }
+
   subscribeToEvent(eventType: StreamerbotEventName): void {
     if (this.subscribedEvents.has(eventType)) {
       return; // Already subscribed

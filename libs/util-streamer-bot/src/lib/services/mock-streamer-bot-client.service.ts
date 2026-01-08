@@ -48,6 +48,13 @@ export class MockStreamerBotClient implements IStreamerBotClient {
     this.connectedCallback();
   }
 
+  async disconnect(): Promise<void> {
+    // For mock client, just call the disconnected callback
+    if (this.disconnectedCallback) {
+      this.disconnectedCallback();
+    }
+  }
+
   async getActions(): Promise<GetActionsResponse> {
     return {
       id: 'mock_action_id',

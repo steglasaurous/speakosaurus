@@ -46,6 +46,10 @@ export class RealStreamerBotClient implements IStreamerBotClient {
     this.client.connect();
   }
 
+  async disconnect(): Promise<void> {
+    await this.client.disconnect();
+  }
+
   on(eventType: StreamerbotEventName, callback: (payload: { data?: any }) => void): void {
     this.client.on(eventType, callback);
   }

@@ -51,5 +51,10 @@ export interface IStreamerBotClient {
    * Connect to streamer.bot.
    */
   connect(): void;
+
+  /**
+   * Disconnect from streamer.bot.
+   */
+  disconnect(): Promise<void>;
 }
 
