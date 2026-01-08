@@ -8,8 +8,11 @@ import {
   Post,
   Put,
   Query,
+  Sse,
 } from '@nestjs/common';
 import { ApiOperation, ApiParam, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
+import { Observable, from, merge } from 'rxjs';
+import { map } from 'rxjs/operators';
 import {
   UserDto,
   UpdateUserDto,
@@ -18,12 +21,16 @@ import {
   UpdateCustomIntroDto,
 } from '../dto/user.dto';
 import { UsersService } from '../services/users.service';
+import { UserEventService, UserEvent, InitialUsersEvent } from '../services/user-event.service';
 
 @ApiTags('users')
 @Controller('users')
 export class UsersController {
   private readonly logger = new Logger(UsersController.name);
-  constructor(private readonly usersService: UsersService) {}
+  constructor(
+    private readonly usersService: UsersService,
+    private readonly userEventService: UserEventService,
+  ) {}
 
   @Get()
   @ApiOperation({
@@ -47,6 +54,52 @@ export class UsersController {
     }
     const result = await this.usersService.getAllUsers();
     return result;
+  }
+
+  @Get('stream')
+  @Sse('users-stream')
+  @ApiOperation({
+    summary: 'Stream user updates via Server-Sent Events',
+    description: 'Returns a stream of user updates. Sends initial user list immediately, then updates when users are created or updated.',
+  })
+  streamUsers(): Observable<{ data: UserEvent | InitialUsersEvent }> {
+    // Get initial users list
+    const getCurrentUsers = async (): Promise<UserDto[]> => {
+      try {
+        return await this.usersService.getAllUsers();
+      } catch (error) {
+        this.logger.error('Error getting initial users for SSE stream', error);
+        return [];
+      }
+    };
+
+    // Create observable from user event service
+    const userUpdates$ = this.userEventService.userUpdates$.pipe(
+      map((event) => {
+        try {
+          return { data: event };
+        } catch (error) {
+          this.logger.error('Error serializing user event for SSE', error);
+          // Return a safe empty event to prevent stream errors
+          return { data: { type: 'initial', users: [] } as InitialUsersEvent };
+        }
+      }),
+    );
+
+    // Send initial users list immediately
+    const initialUsers$ = from(getCurrentUsers()).pipe(
+      map((users) => {
+        try {
+          return { data: { type: 'initial', users } as InitialUsersEvent };
+        } catch (error) {
+          this.logger.error('Error serializing initial users for SSE', error);
+          return { data: { type: 'initial', users: [] } as InitialUsersEvent };
+        }
+      }),
+    );
+
+    // Merge initial users with updates
+    return merge(initialUsers$, userUpdates$);
   }
 
   @Post()

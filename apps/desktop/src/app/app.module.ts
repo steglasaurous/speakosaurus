@@ -19,6 +19,7 @@ import { TwitchController } from './controllers/twitch.controller';
 import { StreamerBotController } from './controllers/streamerbot.controller';
 import { HttpModule } from '@nestjs/axios';
 import { StatusEventService } from './services/status-event.service';
+import { UserEventService } from './services/user-event.service';
 import { MigrationService } from './services/migration.service';
 
 @Module({
@@ -46,6 +47,7 @@ import { MigrationService } from './services/migration.service';
     UsersService,
     TwitchAuthService,
     StatusEventService,
+    UserEventService,
   ],
 })
 export class AppModule {}

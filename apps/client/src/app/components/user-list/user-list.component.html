@@ -35,7 +35,7 @@
 
     <!-- Device Code Authentication -->
     <div *ngIf="!isAuthenticated && !deviceCodeInfo && !isPollingAuth" class="auth-prompt">
-      <p>You need to authenticate with Twitch to search for users. Make sure your Twitch Client ID is configured in settings.</p>
+      <p>You need to authenticate with Twitch to search for users.</p>
       <button type="button" class="auth-button" (click)="startDeviceCodeFlow()">Authenticate with Twitch</button>
     </div>
 

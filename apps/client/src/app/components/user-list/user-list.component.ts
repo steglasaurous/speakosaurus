@@ -2,7 +2,7 @@ import { Component, inject, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, Ele
 import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
-import { Subject, firstValueFrom } from 'rxjs';
+import { Subject, firstValueFrom, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { UsersService, User } from '../../services/users.service';
 import { VoicesService, Voice } from '../../services/voices.service';
@@ -41,11 +41,23 @@ export class UserListComponent implements OnInit, OnDestroy {
   twitchService = inject(TwitchService); // Made public for template access
   private cdr = inject(ChangeDetectorRef);
   private voices: Voice[] = [];
+  private usersSubscription?: Subscription;
 
   ngOnInit(): void {
     this.loadVoices();
-    this.loadUsers();
     this.checkAuthStatus();
+    
+    // Subscribe to real-time user updates via SSE
+    this.usersSubscription = this.usersService.users$.subscribe({
+      next: (users) => {
+        this.users = this.sortUsers(users);
+        this.filterUsers();
+        this.cdr.detectChanges();
+      },
+      error: (error) => {
+        console.error('Error in user stream:', error);
+      },
+    });
 
     // Set up Twitch search debouncing
     this.twitchSearchSubject
@@ -104,19 +116,6 @@ export class UserListComponent implements OnInit, OnDestroy {
       },
       error: (error) => {
         console.error('Error loading voices:', error);
-      },
-    });
-  }
-
-  loadUsers(): void {
-    this.usersService.getAllUsers().subscribe({
-      next: (users) => {
-        this.users = this.sortUsers(users);
-        this.filterUsers();
-        this.cdr.detectChanges(); // Ensure change detection runs
-      },
-      error: (error) => {
-        console.error('Error loading users:', error);
       },
     });
   }
@@ -267,14 +266,8 @@ export class UserListComponent implements OnInit, OnDestroy {
       );
 
       if (newUser) {
-        // Add the new user to the list immediately (optimistic update)
-        this.users.push(newUser);
-        this.users = this.sortUsers(this.users); // Re-sort after adding
-        this.filterUsers();
-        this.cdr.detectChanges();
-        
-        // Also reload from server to ensure we have the latest data
-        this.loadUsers();
+        // Optimistic update - SSE will provide the authoritative update
+        // The SSE stream will automatically update the list when the backend emits the event
         // Close search and clear
         // this.showTwitchSearch = false;
         // this.twitchSearchQuery = '';
@@ -306,6 +299,7 @@ export class UserListComponent implements OnInit, OnDestroy {
 
   ngOnDestroy(): void {
     this.stopPolling();
+    this.usersSubscription?.unsubscribe();
   }
 }
 

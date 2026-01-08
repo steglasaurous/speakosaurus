@@ -72,7 +72,18 @@ export class SpeakCommand {
                     this.logger.warn('Mode is set to trigger, but trigger commands are not set');
                     return;
                 }
-                const triggers = JSON.parse(triggerCommands.value);
+                let triggers: string[];
+                try {
+                    // Replacing double backslashes with single backslashes to avoid JSON parsing errors.
+                    triggers = JSON.parse(triggerCommands.value.replace('\\\\', '\\'));
+                    if (!Array.isArray(triggers)) {
+                        this.logger.warn('Trigger commands is not an array, ignoring message', { triggerCommands: triggerCommands.value });
+                        return;
+                    }
+                } catch (error) {
+                    this.logger.error('Error parsing trigger commands JSON', { error, triggerCommands: triggerCommands.value });
+                    return;
+                }
                 let triggerFound = false;
                 for (const trigger of triggers) {
                     if (data.message.message.toLowerCase().startsWith(trigger.toLowerCase() + ' ')) {
@@ -215,7 +226,18 @@ export class SpeakCommand {
             this.logger.warn('Trigger commands not found, returning original message');
             return output;
         }
-        const triggers = JSON.parse(triggerCommands.value);
+        let triggers: string[];
+        try {
+            // Replacing double backslashes with single backslashes to avoid JSON parsing errors.
+            triggers = JSON.parse(triggerCommands.value.replace('\\\\', '\\'));
+            if (!Array.isArray(triggers)) {
+                this.logger.warn('Trigger commands is not an array, returning original message', { triggerCommands: triggerCommands.value });
+                return output;
+            }
+        } catch (error) {
+            this.logger.error('Error parsing trigger commands JSON in sanitizeMessage', { error, triggerCommands: triggerCommands.value });
+            return output;
+        }
         for (const trigger of triggers) {
             if (output.startsWith(trigger + ' ')) {
                 output = output.replace(trigger + ' ', '');

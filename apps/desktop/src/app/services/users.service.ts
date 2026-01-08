@@ -2,11 +2,13 @@ import { DrizzleService } from "nestjs-drizzle/sqlite";
 import * as schema from "../database/schema";
 import { eq, inArray } from "drizzle-orm";
 import { Injectable } from "@nestjs/common";
+import { UserEventService } from "./user-event.service";
 
 @Injectable()
 export class UsersService {
     constructor(
         private readonly drizzleService: DrizzleService<typeof schema>,
+        private readonly userEventService: UserEventService,
     ) {}
 
     async getUser(twitchUserId: string): Promise<any> {
@@ -26,9 +28,21 @@ export class UsersService {
             .from(schema.customIntros as any)
             .where(eq(schema.customIntros.twitchUserId, twitchUserId) as any);
 
+        // Map intros to ensure proper type structure
+        const customIntros = intros.map(intro => ({
+            id: intro.id,
+            twitchUserId: intro.twitchUserId,
+            introText: intro.introText,
+        }));
+
         return {
-            ...user,
-            customIntros: intros,
+            twitchUserId: user.twitchUserId,
+            twitchUsername: user.twitchUsername,
+            ttsName: user.ttsName || undefined,
+            ttsProviderName: user.ttsProviderName || undefined,
+            ttsVoiceId: user.ttsVoiceId || undefined,
+            disableWelcome: user.disableWelcome || undefined,
+            customIntros: customIntros,
         };
     }
 
@@ -42,17 +56,26 @@ export class UsersService {
             .select()
             .from(schema.customIntros as any);
 
-        // Group intros by twitchUserId
+        // Group intros by twitchUserId and map to proper structure
         const introsByUserId = allIntros.reduce((acc, intro) => {
             if (!acc[intro.twitchUserId]) {
                 acc[intro.twitchUserId] = [];
             }
-            acc[intro.twitchUserId].push(intro);
+            acc[intro.twitchUserId].push({
+                id: intro.id,
+                twitchUserId: intro.twitchUserId,
+                introText: intro.introText,
+            });
             return acc;
-        }, {} as Record<string, any[]>);
+        }, {} as Record<string, Array<{ id: string; twitchUserId: string; introText: string }>>);
 
         return users.map(user => ({
-            ...user,
+            twitchUserId: user.twitchUserId,
+            twitchUsername: user.twitchUsername,
+            ttsName: user.ttsName || undefined,
+            ttsProviderName: user.ttsProviderName || undefined,
+            ttsVoiceId: user.ttsVoiceId || undefined,
+            disableWelcome: user.disableWelcome || undefined,
             customIntros: introsByUserId[user.twitchUserId] || [],
         }));
     }
@@ -79,10 +102,28 @@ export class UsersService {
             .from(schema.customIntros as any)
             .where(eq(schema.customIntros.twitchUserId, twitchUserId) as any);
 
-        return {
-            ...updated,
-            customIntros: intros,
+        // Map intros to ensure proper type structure
+        const customIntros = intros.map(intro => ({
+            id: intro.id,
+            twitchUserId: intro.twitchUserId,
+            introText: intro.introText,
+        }));
+
+        // Create a plain object to ensure proper serialization
+        const user = {
+            twitchUserId: updated.twitchUserId,
+            twitchUsername: updated.twitchUsername,
+            ttsName: updated.ttsName || undefined,
+            ttsProviderName: updated.ttsProviderName || undefined,
+            ttsVoiceId: updated.ttsVoiceId || undefined,
+            disableWelcome: updated.disableWelcome || undefined,
+            customIntros: customIntros,
         };
+
+        // Emit user updated event
+        this.userEventService.emitUserUpdated(user);
+
+        return user;
     }
 
     async createUser(twitchUserId: string, twitchUsername: string): Promise<any> {
@@ -95,10 +136,21 @@ export class UsersService {
             })
             .returning();
 
-        return {
-            ...user,
+        // Create a plain object to ensure proper serialization
+        const userWithIntros = {
+            twitchUserId: user.twitchUserId,
+            twitchUsername: user.twitchUsername,
+            ttsName: user.ttsName || undefined,
+            ttsProviderName: user.ttsProviderName || undefined,
+            ttsVoiceId: user.ttsVoiceId || undefined,
+            disableWelcome: user.disableWelcome || undefined,
             customIntros: [],
         };
+
+        // Emit user created event
+        this.userEventService.emitUserCreated(userWithIntros);
+
+        return userWithIntros;
     }
 
     async addCustomIntro(twitchUserId: string, introText: string): Promise<any> {
@@ -159,17 +211,26 @@ export class UsersService {
                 .where(inArray(schema.customIntros.twitchUserId, userIds) as any)
             : [];
 
-        // Group intros by twitchUserId
+        // Group intros by twitchUserId and map to proper structure
         const introsByUserId = allIntros.reduce((acc, intro) => {
             if (!acc[intro.twitchUserId]) {
                 acc[intro.twitchUserId] = [];
             }
-            acc[intro.twitchUserId].push(intro);
+            acc[intro.twitchUserId].push({
+                id: intro.id,
+                twitchUserId: intro.twitchUserId,
+                introText: intro.introText,
+            });
             return acc;
-        }, {} as Record<string, any[]>);
+        }, {} as Record<string, Array<{ id: string; twitchUserId: string; introText: string }>>);
 
         return filteredUsers.map(user => ({
-            ...user,
+            twitchUserId: user.twitchUserId,
+            twitchUsername: user.twitchUsername,
+            ttsName: user.ttsName || undefined,
+            ttsProviderName: user.ttsProviderName || undefined,
+            ttsVoiceId: user.ttsVoiceId || undefined,
+            disableWelcome: user.disableWelcome || undefined,
             customIntros: introsByUserId[user.twitchUserId] || [],
         }));
     }
