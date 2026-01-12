@@ -1,6 +1,7 @@
-import { Component } from '@angular/core';
+import { Component, inject } from '@angular/core';
 import { RouterModule } from '@angular/router';
 import { StatusBarComponent } from './components/status-bar/status-bar.component';
+import { AudioService } from './services/audio.service';
 
 @Component({
   imports: [RouterModule, StatusBarComponent],
@@ -10,4 +11,5 @@ import { StatusBarComponent } from './components/status-bar/status-bar.component
 })
 export class App {
   protected title = 'client';
+  private audioService = inject(AudioService);
 }
