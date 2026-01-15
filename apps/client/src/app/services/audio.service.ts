@@ -153,6 +153,19 @@ export class AudioService implements OnDestroy {
     return supportedFormats.includes(format.toLowerCase());
   }
 
+  private getMimeType(format: string): string {
+    const formatLower = format.toLowerCase();
+    const mimeTypes: Record<string, string> = {
+      'wav': 'audio/wav',
+      'wave': 'audio/wav',
+      'mp3': 'audio/mpeg',
+      'm4a': 'audio/mp4',
+      'ogg': 'audio/ogg',
+      'opus': 'audio/ogg; codecs=opus',
+    };
+    return mimeTypes[formatLower] || `audio/${format}`;
+  }
+
   private async playWithWebAudioAPI(arrayBuffer: ArrayBuffer): Promise<void> {
     if (!this.audioContext) {
       throw new Error('AudioContext not available');
@@ -194,8 +207,9 @@ export class AudioService implements OnDestroy {
   }
 
   private playWithHTML5Audio(arrayBuffer: ArrayBuffer, format: string): Promise<void> {
-    // Create blob URL from array buffer
-    const blob = new Blob([arrayBuffer], { type: `audio/${format}` });
+    // Create blob URL from array buffer with proper MIME type
+    const mimeType = this.getMimeType(format);
+    const blob = new Blob([arrayBuffer], { type: mimeType });
     const url = URL.createObjectURL(blob);
 
     // Create audio element
