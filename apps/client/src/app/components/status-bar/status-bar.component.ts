@@ -1,5 +1,6 @@
 import { Component, OnInit, OnDestroy, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { RouterModule } from '@angular/router';
 import { StatusService, Status } from '../../services/status.service';
 import { SettingsService } from '../../services/settings.service';
 import { Subscription } from 'rxjs';
@@ -7,7 +8,7 @@ import { Subscription } from 'rxjs';
 @Component({
   selector: 'app-status-bar',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, RouterModule],
   templateUrl: './status-bar.component.html',
   styleUrl: './status-bar.component.scss',
 })
