@@ -27,8 +27,56 @@ export class MigrationService {
   static getMigrationsPath(): string {
     if (app.isPackaged) {
       // In packaged app, migrations are in the app's resources directory
-      // process.resourcesPath points to the resources folder outside the asar
-      return join(process.resourcesPath || app.getAppPath(), 'drizzle');
+      // Try multiple possible locations for packaged apps
+      
+      // 1. First try: resources/drizzle (outside asar, where assets are typically placed)
+      // process.resourcesPath is set by Electron and points to the resources folder
+      let resourcesPath = process.resourcesPath;
+      if (!resourcesPath) {
+        // Fallback: calculate from execPath (executable location)
+        // Structure: .../win-unpacked/SpeakManager2.exe -> .../win-unpacked/resources
+        resourcesPath = join(process.execPath, '..', '..', 'resources');
+      }
+      const resourcesDrizzlePath = join(resourcesPath, 'drizzle');
+      Logger.log(`Checking migrations path: ${resourcesDrizzlePath}`);
+      if (existsSync(resourcesDrizzlePath)) {
+        Logger.log(`✅ Found migrations at: ${resourcesDrizzlePath}`);
+        return resourcesDrizzlePath;
+      }
+      
+      // 2. Try: app.asar.unpacked/drizzle (if unpacked)
+      const appPath = app.getAppPath();
+      if (appPath.includes('app.asar')) {
+        const unpackedPath = appPath.replace('app.asar', 'app.asar.unpacked');
+        const unpackedDrizzlePath = join(unpackedPath, 'drizzle');
+        Logger.log(`Checking migrations path: ${unpackedDrizzlePath}`);
+        if (existsSync(unpackedDrizzlePath)) {
+          Logger.log(`✅ Found migrations at: ${unpackedDrizzlePath}`);
+          return unpackedDrizzlePath;
+        }
+      }
+      
+      // 3. Try: relative to app path (in case drizzle is in the asar)
+      const asarDrizzlePath = join(appPath, 'drizzle');
+      Logger.log(`Checking migrations path: ${asarDrizzlePath}`);
+      if (existsSync(asarDrizzlePath)) {
+        Logger.log(`✅ Found migrations at: ${asarDrizzlePath}`);
+        return asarDrizzlePath;
+      }
+      
+      // 4. Log all attempted paths for debugging
+      Logger.warn(`⚠️ Migrations not found. Attempted paths:`);
+      Logger.warn(`  1. ${resourcesDrizzlePath}`);
+      if (appPath.includes('app.asar')) {
+        Logger.warn(`  2. ${appPath.replace('app.asar', 'app.asar.unpacked')}/drizzle`);
+      }
+      Logger.warn(`  3. ${asarDrizzlePath}`);
+      Logger.warn(`  process.resourcesPath: ${process.resourcesPath}`);
+      Logger.warn(`  app.getAppPath(): ${appPath}`);
+      Logger.warn(`  __dirname: ${__dirname}`);
+      
+      // Last resort: return resources path (will fail with clear error if not found)
+      return resourcesDrizzlePath;
     } else {
       // In development/build mode, try multiple possible locations
       // 1. First try: dist/apps/desktop/drizzle (where assets are copied during build)

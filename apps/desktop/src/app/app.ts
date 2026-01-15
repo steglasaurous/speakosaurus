@@ -3,6 +3,7 @@ import { rendererAppName, rendererAppPort } from './constants';
 import { environment } from '../environments/environment';
 import { join } from 'path';
 import { format } from 'url';
+import { existsSync } from 'fs';
 import { NestFactory } from '@nestjs/core';
 // import { ElectronIPCTransport } from 'nestjs-electron-ipc-transport';
 import { AppModule } from './app.module';
@@ -51,10 +52,29 @@ export default class App {
     // initialization and is ready to create browser windows.
     // Some APIs can only be used after this event occurs.
     if (rendererAppName) {
-      await App.startNestApp();
+      try {
+        await App.startNestApp();
 
-      App.initMainWindow();
-      App.loadMainWindow();
+        App.initMainWindow();
+        App.loadMainWindow();
+      } catch (error) {
+        Logger.error('Failed to start application:', error);
+        if (error instanceof Error) {
+          Logger.error('Error message:', error.message);
+          Logger.error('Error stack:', error.stack);
+        }
+        // Show error to user in production
+        if (App.application.isPackaged && App.mainWindow) {
+          App.mainWindow.webContents.executeJavaScript(`
+            alert('Failed to start application: ${error instanceof Error ? error.message : String(error)}');
+          `).catch(() => {
+            // If we can't show alert, at least log it
+            console.error('Failed to show error dialog');
+          });
+        }
+        // Re-throw to trigger error handlers
+        throw error;
+      }
     }
   }
 
@@ -123,13 +143,29 @@ export default class App {
         contextIsolation: true,
         backgroundThrottling: false,
         preload: join(__dirname, 'main.preload.js'),
+        webSecurity: true, // Keep web security enabled for production
       },
     });
     App.mainWindow.setMenu(null);
     App.mainWindow.center();
 
+    // Add error handlers for debugging
+    App.mainWindow.webContents.on('did-fail-load', (event, errorCode, errorDescription, validatedURL) => {
+      Logger.error(`Window failed to load: ${errorDescription} (code: ${errorCode})`);
+      Logger.error(`Failed URL: ${validatedURL}`);
+    });
+
+    App.mainWindow.webContents.on('did-finish-load', () => {
+      Logger.log('Window finished loading');
+    });
+
+    App.mainWindow.webContents.on('dom-ready', () => {
+      Logger.log('DOM ready');
+    });
+
     // if main window is ready to show, close the splash window and show the main window
     App.mainWindow.once('ready-to-show', () => {
+      Logger.log('Window ready to show');
       App.mainWindow.show();
     });
 
@@ -153,13 +189,46 @@ export default class App {
     if (!App.application.isPackaged) {
       App.mainWindow.loadURL(`http://localhost:${rendererAppPort}`);
     } else {
-      App.mainWindow.loadURL(
-        format({
-          pathname: join(__dirname, '..', rendererAppName, 'index.html'),
-          protocol: 'file:',
-          slashes: true,
-        }),
-      );
+      // In packaged app, try multiple possible locations for the client app
+      // Angular's new build system outputs to a 'browser' subdirectory
+      const possiblePaths = [
+        join(__dirname, '..', rendererAppName, 'browser', 'index.html'), // app.asar/client/browser/index.html (Angular new build)
+        join(__dirname, '..', rendererAppName, 'index.html'), // app.asar/client/index.html (fallback)
+      ];
+
+      // Find the first path that exists
+      let indexPath: string | null = null;
+      for (const path of possiblePaths) {
+        Logger.log(`Checking if client exists at: ${path}`);
+        if (existsSync(path)) {
+          indexPath = path;
+          Logger.log(`✅ Found client at: ${path}`);
+          break;
+        } else {
+          Logger.warn(`❌ Client not found at: ${path}`);
+        }
+      }
+
+      if (!indexPath) {
+        Logger.error('❌ Could not find client index.html in any expected location');
+        Logger.error(`Searched paths:`);
+        possiblePaths.forEach((path, index) => {
+          Logger.error(`  ${index + 1}. ${path}`);
+        });
+        Logger.error(`__dirname: ${__dirname}`);
+        Logger.error(`app.getAppPath(): ${App.application.getAppPath()}`);
+        // Still try to load the first path to get a proper error message
+        indexPath = possiblePaths[0];
+      }
+
+      const url = format({
+        pathname: indexPath,
+        protocol: 'file:',
+        slashes: true,
+      });
+
+      Logger.log(`Loading client from: ${url}`);
+      App.mainWindow.loadURL(url);
     }
   }
 

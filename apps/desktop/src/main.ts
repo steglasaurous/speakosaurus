@@ -1,6 +1,5 @@
 import SquirrelEvents from './app/events/squirrel.events';
 import ElectronEvents from './app/events/electron.events';
-import UpdateEvents from './app/events/update.events';
 import { app, BrowserWindow } from 'electron';
 import App from './app/app';
 
@@ -24,7 +23,28 @@ export default class Main {
       // UpdateEvents.initAutoUpdateService();
     }
   }
+
+  static setupErrorHandlers() {
+    // Handle uncaught exceptions
+    process.on('uncaughtException', (error: Error) => {
+      console.error('Uncaught Exception:', error);
+      console.error('Stack:', error.stack);
+      // In production, you might want to show a dialog or log to file
+    });
+
+    // Handle unhandled promise rejections
+    process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
+      console.error('Unhandled Promise Rejection:', reason);
+      if (reason instanceof Error) {
+        console.error('Stack:', reason.stack);
+      }
+      // In production, you might want to show a dialog or log to file
+    });
+  }
 }
+
+// Setup error handlers first
+Main.setupErrorHandlers();
 
 // handle setup events as quickly as possible
 Main.initialize();

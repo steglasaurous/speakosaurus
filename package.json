@@ -28,7 +28,17 @@
   "private": true,
   "build": {
     "productName": "SpeakManager2",
-    "appId": "com.speakmanager2.app"
+    "appId": "com.speakmanager2.app",
+    "win": {
+      "sign": false
+    },
+    "extraResources": [
+      {
+        "from": "dist/apps/desktop/drizzle",
+        "to": "drizzle",
+        "filter": ["**/*"]
+      }
+    ]
   },
   "dependencies": {
     "@angular/common": "~20.0.0",
