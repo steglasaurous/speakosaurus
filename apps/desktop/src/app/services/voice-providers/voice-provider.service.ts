@@ -47,7 +47,14 @@ export class VoiceProviderService implements OnModuleInit {
         
         const output: Voice[] = [];
         for (const provider of this.voiceProviders) {
-            const voices = await provider.getVoices();
+            let voices: Voice[] = [];
+            try {
+                voices = await provider.getVoices();
+            } catch (error) {
+                this.logger.error(`Failed to get voices from provider ${provider.providerName}`, error);
+                continue;
+            }
+            
             for (const voice of voices) {
                 output.push(voice);
             }

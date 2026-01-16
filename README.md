@@ -9,10 +9,9 @@ An app to provide TTS to twitch streams (or anything supported by streamerbot)
 
 # TODO
 
-- [x] bug: look at changing streamer bot url if it properly disconnects/destroys the object or if it ends up making multiple connections. Fix.
-- [x] Have SSE endpoint send updates to user list when new users are added or changed
-- [ ] Move audio playback into the renderer process
-- [ ] Try packaging up and running electron app on its own, ensure I can distribute it
+- [ ] Add a welcome "wizard" to setup connection to streamer.bot on first run
+- [x] put password type on api key fields
+- [ ] for API keys, create documentation on how to get them for each service
 - [ ] Design how mods can connect and use app (API bridge?)
 - [ ] Voicelist: Create filters that can help pair down the voice selection
   - [ ] azure voices: add filters for locale, gender
@@ -21,6 +20,10 @@ An app to provide TTS to twitch streams (or anything supported by streamerbot)
 
 - [ ] Figure out how automatic upgrades works
 
+- [x] bug: look at changing streamer bot url if it properly disconnects/destroys the object or if it ends up making multiple connections. Fix.
+- [x] Have SSE endpoint send updates to user list when new users are added or changed
+- [x] Move audio playback into the renderer process
+- [x] Try packaging up and running electron app on its own, ensure I can distribute it
 - [x] Move speech provider details into settings
 - [x] Move streamer.bot details into settings
 - [x] Implement settings page to manage general settings

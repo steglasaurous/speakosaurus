@@ -24,6 +24,7 @@ export interface Setting {
   default?: string;
   options?: string[];
   optionDescriptions?: { [key: string]: string };
+  sensitive?: boolean;
   required?: boolean;
   value: string | null;
 }

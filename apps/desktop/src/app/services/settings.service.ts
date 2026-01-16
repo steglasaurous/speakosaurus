@@ -65,6 +65,10 @@ export interface SettingDefinition {
    * If an enum type, this maps option values to their descriptions for display in the UI.
    */
   optionDescriptions?: { [key: string]: string };
+  /**
+   * If true, the setting value should be displayed as a password field (for API keys, passwords, etc.).
+   */
+  sensitive?: boolean;
   required?: boolean;
   /**
    * The value of the setting in the database, if present. Otherwise is populated by default, if set.
@@ -158,15 +162,19 @@ export class SettingsService {
       name: Setting.ELEVENLABS_API_KEY,
       displayName: 'ElevenLabs API Key',
       group: 'TTS Providers',
+      subGroup: 'ElevenLabs',
       description: 'The API key for the elevenlabs API',
       type: SettingType.STRING,
+      sensitive: true,
     },
     {
       name: Setting.TTS_MONSTER_API_KEY,
       displayName: 'TTS Monster API Key',
       group: 'TTS Providers',
+      subGroup: 'TTS Monster',
       description: 'The API key for the tts.monster API',
       type: SettingType.STRING,
+      sensitive: true,
     },
     {
       name: Setting.TWITCH_CLIENT_ID,
@@ -191,6 +199,7 @@ export class SettingsService {
       subGroup: 'Unofficial TTS Monster',
       description: 'The API key for the tts.monster Unofficial API',
       type: SettingType.STRING,
+      sensitive: true,
     },
     {
       name: Setting.AZURE_SPEECH_KEY,
@@ -199,6 +208,7 @@ export class SettingsService {
       subGroup: 'Azure',
       description: 'The API key for the Azure Speech API',
       type: SettingType.STRING,
+      sensitive: true,
     },
     {
       name: Setting.AZURE_SPEECH_REGION,

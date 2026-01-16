@@ -65,6 +65,9 @@ export class SettingsComponent implements OnInit {
   streamerBotActionDropdownAbove: { [key: string]: boolean } = {};
   streamerBotActionSearchSubjects: { [key: string]: Subject<string> } = {};
 
+  // Track visibility state for sensitive settings
+  sensitiveSettingsVisible: { [key: string]: boolean } = {};
+
   private settingsService = inject(SettingsService);
   private voicesService = inject(VoicesService);
   private twitchService = inject(TwitchService);
@@ -647,6 +650,14 @@ export class SettingsComponent implements OnInit {
       }
     }
     this.router.navigate(['/users']);
+  }
+
+  toggleSensitiveVisibility(setting: Setting): void {
+    this.sensitiveSettingsVisible[setting.name] = !this.sensitiveSettingsVisible[setting.name];
+  }
+
+  isSensitiveVisible(setting: Setting): boolean {
+    return this.sensitiveSettingsVisible[setting.name] || false;
   }
 }
 

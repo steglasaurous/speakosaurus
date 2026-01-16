@@ -52,6 +52,12 @@ export class SettingDto implements SettingDefinition {
   optionDescriptions?: { [key: string]: string };
 
   @ApiPropertyOptional({
+    description: 'Whether the setting is sensitive and should be displayed as a password field',
+    example: true,
+  })
+  sensitive?: boolean;
+
+  @ApiPropertyOptional({
     description: 'Required of the setting',
     example: true,
   })
