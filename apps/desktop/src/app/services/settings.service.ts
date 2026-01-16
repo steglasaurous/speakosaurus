@@ -61,6 +61,10 @@ export interface SettingDefinition {
    * If an enum type, this lists the valid options.
    */
   options?: string[];
+  /**
+   * If an enum type, this maps option values to their descriptions for display in the UI.
+   */
+  optionDescriptions?: { [key: string]: string };
   required?: boolean;
   /**
    * The value of the setting in the database, if present. Otherwise is populated by default, if set.
@@ -73,6 +77,15 @@ export class SettingsService {
   // Consider typing these as SettingDto objects? Just make sure the API interface can only modify the value part.
   private settingDefinitions: SettingDefinition[] = [
     {
+      name: Setting.STREAMERBOT_WEBSOCKET_URL,
+      displayName: 'StreamerBot WebSocket URL',
+      group: 'General',
+      description: 'The URL of the streamerbot websocket server. Ex: ws://localhost:8080.  StreamerBot is used to get chat messages and trigger actions and is required for this app to function.',
+      type: SettingType.STRING,
+      default: 'ws://localhost:8080',
+      required: true,
+    },
+    {
       name: Setting.MODE,
       displayName: 'TTS Mode',
       group: 'General',
@@ -80,6 +93,11 @@ export class SettingsService {
       type: SettingType.ENUM,
       default: 'trigger',
       options: ['trigger', 'off', 'always'],
+      optionDescriptions: {
+        'trigger': 'only read a message when it contains a trigger command',
+        'off': 'no TTS messages should be read',
+        'always': 'read all chat messages',
+      },
       required: true,
     },
     {
@@ -135,15 +153,6 @@ export class SettingsService {
       description: 'How long to pause between playing messages in milliseconds',
       type: SettingType.NUMBER,
       default: '1000',
-    },
-    {
-      name: Setting.STREAMERBOT_WEBSOCKET_URL,
-      displayName: 'StreamerBot WebSocket URL',
-      group: 'Streaming',
-      description: 'The URL of the streamerbot websocket server. Ex: ws://localhost:8080',
-      type: SettingType.STRING,
-      default: 'ws://localhost:8080',
-      required: true,
     },
     {
       name: Setting.ELEVENLABS_API_KEY,

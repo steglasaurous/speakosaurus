@@ -100,7 +100,7 @@
             (ngModelChange)="onSettingChange(setting, $event)"
           >
             <option *ngFor="let option of setting.options" [value]="option">
-              {{ option }}
+              {{ option }}{{ setting.optionDescriptions && setting.optionDescriptions[option] ? ' - ' + setting.optionDescriptions[option] : '' }}
             </option>
           </select>
         </div>

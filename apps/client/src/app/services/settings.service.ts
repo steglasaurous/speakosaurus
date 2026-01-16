@@ -23,6 +23,7 @@ export interface Setting {
   type: SettingType;
   default?: string;
   options?: string[];
+  optionDescriptions?: { [key: string]: string };
   required?: boolean;
   value: string | null;
 }

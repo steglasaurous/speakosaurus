@@ -46,6 +46,12 @@ export class SettingDto implements SettingDefinition {
   options?: string[];
 
   @ApiPropertyOptional({
+    description: 'Descriptions for enum options, mapping option values to their descriptions',
+    example: { 'trigger': 'only read a message when it contains a trigger command' },
+  })
+  optionDescriptions?: { [key: string]: string };
+
+  @ApiPropertyOptional({
     description: 'Required of the setting',
     example: true,
   })
