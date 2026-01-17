@@ -140,7 +140,9 @@
   <div class="users-list">
     <div *ngIf="filteredUsers.length === 0" class="empty-state">
       <div class="empty-state-icon">👤</div>
-      <p>No users found</p>
+      <p>No users found.  <br>
+        Users will be added when they write something in chat, or use the Add User button above to add users manually.
+      </p>
     </div>
     <a
       *ngFor="let user of filteredUsers"

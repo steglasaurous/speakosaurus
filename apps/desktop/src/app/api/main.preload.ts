@@ -15,6 +15,7 @@ export interface AudioPlayData {
 contextBridge.exposeInMainWorld('electron', {
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   platform: process.platform,
+  openExternal: (url: string) => ipcRenderer.invoke('open-external-url', url),
 });
 
 contextBridge.exposeInMainWorld(

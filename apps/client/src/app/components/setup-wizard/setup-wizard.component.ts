@@ -125,7 +125,16 @@ export class SetupWizardComponent implements OnInit {
   }
 
   openStreamerBotWebsite(): void {
-    // Using window.open for Electron apps
-    window.open('https://streamer.bot', '_blank');
+    // Check if we're in Electron and use the IPC bridge to open in default browser
+    if (typeof window !== 'undefined' && (window as any).electron?.openExternal) {
+      (window as any).electron.openExternal('https://streamer.bot').catch((error: any) => {
+        console.error('Error opening external URL:', error);
+        // Fallback to window.open if IPC fails
+        window.open('https://streamer.bot', '_blank');
+      });
+    } else {
+      // Fallback for non-Electron environments (e.g., web browser)
+      window.open('https://streamer.bot', '_blank');
+    }
   }
 }

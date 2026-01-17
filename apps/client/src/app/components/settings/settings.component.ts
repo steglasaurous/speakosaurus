@@ -108,7 +108,8 @@ export class SettingsComponent implements OnInit {
           .filter((s) => s.type === SettingType.ARRAY)
           .forEach((setting) => {
             try {
-              const parsed = JSON.parse(setting.value || '[]');
+              const valueToParse = setting.value || setting.default || '[]';
+              const parsed = JSON.parse(valueToParse);
               this.arrayCache[setting.name] = Array.isArray(parsed) ? parsed : [];
             } catch {
               this.arrayCache[setting.name] = [];
@@ -119,7 +120,8 @@ export class SettingsComponent implements OnInit {
           .filter((s) => s.type === SettingType.USER_LIST)
           .forEach((setting) => {
             try {
-              const parsed = JSON.parse(setting.value || '[]');
+              const valueToParse = setting.value || setting.default || '[]';
+              const parsed = JSON.parse(valueToParse);
               this.arrayCache[setting.name] = Array.isArray(parsed) ? parsed : [];
             } catch {
               this.arrayCache[setting.name] = [];
@@ -287,7 +289,8 @@ export class SettingsComponent implements OnInit {
     // Use cached array if available, otherwise parse and cache
     if (!this.arrayCache[setting.name]) {
       try {
-        const parsed = JSON.parse(setting.value || '[]');
+        const valueToParse = setting.value || setting.default || '[]';
+        const parsed = JSON.parse(valueToParse);
         this.arrayCache[setting.name] = Array.isArray(parsed) ? parsed : [];
       } catch {
         this.arrayCache[setting.name] = [];
@@ -443,7 +446,8 @@ export class SettingsComponent implements OnInit {
     // Use cached array if available, otherwise parse and cache
     if (!this.arrayCache[setting.name]) {
       try {
-        const parsed = JSON.parse(setting.value || '[]');
+        const valueToParse = setting.value || setting.default || '[]';
+        const parsed = JSON.parse(valueToParse);
         this.arrayCache[setting.name] = Array.isArray(parsed) ? parsed : [];
       } catch {
         this.arrayCache[setting.name] = [];

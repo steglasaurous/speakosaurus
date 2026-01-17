@@ -109,7 +109,7 @@ export class SettingsService {
       name: Setting.TRIGGER_COMMANDS,
       displayName: 'Trigger Commands',
       group: 'General',
-      description: 'The commands that will trigger TTS - typically start with an ! excalamation ex: !s',
+      description: 'The commands that will trigger TTS - typically start with an ! exclamation ex: !s',
       type: SettingType.ARRAY,
       default: '["!s", "!\\"", "!say"]',
     },
@@ -157,7 +157,7 @@ export class SettingsService {
       group: 'General',
       description: 'How long to pause between playing messages in milliseconds',
       type: SettingType.NUMBER,
-      default: '1000',
+      default: '1', // Set to 1ms which seems reasonable for most cases
     },
     {
       name: Setting.ELEVENLABS_API_KEY,
@@ -181,7 +181,7 @@ export class SettingsService {
       name: Setting.TWITCH_CLIENT_ID,
       displayName: 'Twitch Client ID',
       default: '6ash2utgzo1hns22mle8v6g21q1qf0',
-      group: 'Twitch',
+      group: 'Internal',
       description: 'Your Twitch application Client ID. Get one from https://dev.twitch.tv/console/apps',
       type: SettingType.STRING,
     },

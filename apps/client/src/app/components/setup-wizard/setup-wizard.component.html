@@ -21,7 +21,7 @@
     <!-- Step 1: StreamerBot URL -->
     <div *ngIf="currentStep === SetupStep.StreamerBotUrl" class="setup-step">
       <div class="step-icon">
-        <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
         </svg>
       </div>
@@ -59,7 +59,10 @@
             [disabled]="loading || saving"
           >
           <p class="form-help">
-            The WebSocket URL where StreamerBot is running (usually ws://localhost:8080)
+            The WebSocket URL where StreamerBot is running (usually ws://localhost:8080). 
+            <br>
+            <br>
+            Note: To enable the websocket server, in Streamer.bot navigate to Servers/Clients -> WebSocket Server, enable "Auto Start" and click "Start Server".
           </p>
         </div>
 
@@ -72,7 +75,7 @@
     <!-- Step 2: TTS Providers Info -->
     <div *ngIf="currentStep === SetupStep.TtsProviders" class="setup-step">
       <div class="step-icon">
-        <svg width="64" height="64" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
         </svg>
       </div>
