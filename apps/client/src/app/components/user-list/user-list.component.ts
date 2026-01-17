@@ -226,8 +226,19 @@ export class UserListComponent implements OnInit, OnDestroy {
   }
 
   openVerificationUri(): void {
-    if (this.deviceCodeInfo?.verificationUri) {
-      window.open(this.deviceCodeInfo.verificationUri, '_blank');
+    const verificationUri = this.deviceCodeInfo?.verificationUri;
+    if (verificationUri) {
+      // Check if we're in Electron and use the IPC bridge to open in default browser
+      if (typeof window !== 'undefined' && (window as any).electron?.openExternal) {
+        (window as any).electron.openExternal(verificationUri).catch((error: any) => {
+          console.error('Error opening external URL:', error);
+          // Fallback to window.open if IPC fails
+          window.open(verificationUri, '_blank');
+        });
+      } else {
+        // Fallback for non-Electron environments (e.g., web browser)
+        window.open(verificationUri, '_blank');
+      }
     }
   }
 

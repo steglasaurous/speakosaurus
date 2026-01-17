@@ -192,6 +192,14 @@ h1 {
 
 .twitch-search-header {
   margin-bottom: 20px;
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.twitch-search-header-content {
+  flex: 1;
 }
 
 .twitch-search-header h2 {
@@ -203,6 +211,23 @@ h1 {
 .twitch-search-subtitle {
   color: #86868b;
   font-size: 14px;
+}
+
+.close-button {
+  background: #e5e5e7;
+  color: #1d1d1f;
+  border: none;
+  cursor: pointer;
+  padding: 8px 16px;
+  border-radius: 6px;
+  font-size: 14px;
+  font-weight: 500;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.close-button:hover {
+  background: #d1d1d6;
 }
 
 .twitch-search-input-wrapper {

@@ -6,16 +6,16 @@
     </div>
     <div class="header-actions">
       <button
+        *ngIf="!showTwitchSearch"
         type="button"
         class="add-user-button"
         (click)="toggleTwitchSearch()"
-        [class.active]="showTwitchSearch"
         title="Add Twitch User"
       >
         <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
         </svg>
-        <span>{{ showTwitchSearch ? 'Cancel' : 'Add User' }}</span>
+        <span>Add User</span>
       </button>
     </div>
   </div>
@@ -23,8 +23,18 @@
   <!-- Twitch Search Panel -->
   <div *ngIf="showTwitchSearch" class="twitch-search-panel">
     <div class="twitch-search-header">
-      <h2>Search Twitch Users</h2>
-      <p class="twitch-search-subtitle">Search for Twitch users to add to your list</p>
+      <div class="twitch-search-header-content">
+        <h2>Search Twitch Users</h2>
+        <p class="twitch-search-subtitle">Search for Twitch users to add to your list</p>
+      </div>
+      <button
+        type="button"
+        class="close-button"
+        (click)="toggleTwitchSearch()"
+        title="Close"
+      >
+        Close
+      </button>
     </div>
 
     <!-- Device Code Authentication -->
@@ -46,7 +56,7 @@
         <button type="button" class="open-url-button" (click)="openVerificationUri()">
           Open Verification URL
         </button>
-        <a [href]="deviceCodeInfo.verificationUri" target="_blank" rel="noopener noreferrer" class="verification-url">
+        <a [href]="deviceCodeInfo.verificationUri" (click)="openVerificationUri(); $event.preventDefault()" rel="noopener noreferrer" class="verification-url">
           {{ deviceCodeInfo.verificationUri }}
         </a>
       </div>
