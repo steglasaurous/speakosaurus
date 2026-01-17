@@ -54,6 +54,12 @@ export interface SettingDefinition {
    * To group settings visually in the UI.
    */
   subGroup?: string;
+  /**
+   * Optional HTML description/instructions for the subgroup.
+   * This is typically set on the first setting of a subgroup to provide
+   * context and instructions (e.g., how to get an API key).
+   */
+  subGroupDescription?: string;
   description: string;
 
   type: SettingType;
@@ -164,6 +170,15 @@ export class SettingsService {
       displayName: 'ElevenLabs API Key',
       group: 'TTS Providers',
       subGroup: 'ElevenLabs',
+      subGroupDescription: `
+        <p>ElevenLabs provides high-quality text-to-speech voices. To use ElevenLabs:</p>
+        <ol>
+          <li>Visit <a href="https://elevenlabs.io" target="_blank" rel="noopener noreferrer">elevenlabs.io</a> and create an account</li>
+          <li>Navigate to your profile settings</li>
+          <li>Copy your API key from the API section</li>
+          <li>Paste it in the field below</li>
+        </ol>
+      `,
       description: 'The API key for the elevenlabs API',
       type: SettingType.STRING,
       sensitive: true,
@@ -173,6 +188,15 @@ export class SettingsService {
       displayName: 'TTS Monster API Key',
       group: 'TTS Providers',
       subGroup: 'TTS Monster',
+      subGroupDescription: `
+        <p>TTS Monster is a text-to-speech service. To get your API key:</p>
+        <ol>
+          <li>Visit <a href="https://tts.monster" target="_blank" rel="noopener noreferrer">tts.monster</a></li>
+          <li>Sign up or log in to your account</li>
+          <li>Go to your account settings or API section</li>
+          <li>Copy your API key and paste it below</li>
+        </ol>
+      `,
       description: 'The API key for the tts.monster API',
       type: SettingType.STRING,
       sensitive: true,
@@ -190,6 +214,15 @@ export class SettingsService {
       displayName: 'TTS MonsterUnofficial User ID',
       group: 'TTS Providers',
       subGroup: 'Unofficial TTS Monster',
+      subGroupDescription: `
+        <p>Unofficial TTS Monster API requires both a User ID and API Key. To obtain these:</p>
+        <ol>
+          <li>Visit the TTS Monster website or documentation</li>
+          <li>Follow the instructions for accessing the unofficial API</li>
+          <li>Retrieve your User ID and API Key</li>
+          <li>Enter both values in the fields below</li>
+        </ol>
+      `,
       description: 'The user ID for the tts.monster Unofficial API',
       type: SettingType.STRING,
     },
@@ -207,6 +240,16 @@ export class SettingsService {
       displayName: 'Azure Speech Key',
       group: 'TTS Providers',
       subGroup: 'Azure',
+      subGroupDescription: `
+        <p>Azure Speech Services provides text-to-speech capabilities. To set up Azure Speech:</p>
+        <ol>
+          <li>Go to the <a href="https://portal.azure.com" target="_blank" rel="noopener noreferrer">Azure Portal</a></li>
+          <li>Create a Speech resource or use an existing one</li>
+          <li>Copy your Speech Key and Region from the resource overview</li>
+          <li>If using a custom endpoint, enter it in the Endpoint field</li>
+          <li>Paste your credentials in the fields below</li>
+        </ol>
+      `,
       description: 'The API key for the Azure Speech API',
       type: SettingType.STRING,
       sensitive: true,

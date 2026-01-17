@@ -21,6 +21,12 @@ export class SettingDto implements SettingDefinition {
   })
   subGroup?: string;
 
+  @ApiPropertyOptional({
+    description: 'Optional HTML description/instructions for the subgroup. Typically set on the first setting of a subgroup.',
+    example: '<p>Instructions for setting up this provider...</p>',
+  })
+  subGroupDescription?: string;
+
   @ApiProperty({
     description: 'Description of the setting',
     example: 'The theme of the application',

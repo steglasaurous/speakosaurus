@@ -45,6 +45,12 @@
       <ng-container *ngIf="getSettingsForActiveTab()">
         <div *ngFor="let subGroup of getSettingsForActiveTab()!.subGroups" class="subgroup-container">
           <h3 *ngIf="subGroup.subGroup" class="subgroup-header">{{ subGroup.subGroup }}</h3>
+          <div 
+            *ngIf="getSubGroupDescription(getSettingsForActiveTab()!.group, subGroup.subGroup)" 
+            class="subgroup-description"
+            [innerHTML]="getSubGroupDescription(getSettingsForActiveTab()!.group, subGroup.subGroup)"
+            (click)="onSubGroupDescriptionClick($event)"
+          ></div>
           <div *ngFor="let setting of subGroup.settings" class="setting-item">
             <div class="setting-header">
               <label [for]="'setting-' + setting.name" class="setting-label">

@@ -19,6 +19,7 @@ export interface Setting {
   displayName: string;
   group: string;
   subGroup?: string;
+  subGroupDescription?: string;
   description: string;
   type: SettingType;
   default?: string;

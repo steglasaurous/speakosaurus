@@ -2,6 +2,7 @@ import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
+import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
 import { SettingsService, Setting, SettingType } from '../../services/settings.service';
 import { VoicesService, Voice } from '../../services/voices.service';
 import { TwitchService, TwitchUser } from '../../services/twitch.service';
@@ -68,6 +69,9 @@ export class SettingsComponent implements OnInit {
   // Track visibility state for sensitive settings
   sensitiveSettingsVisible: { [key: string]: boolean } = {};
 
+  // Cache of subgroup descriptions extracted from settings
+  private subGroupDescriptionCache: { [key: string]: string } = {};
+
   private settingsService = inject(SettingsService);
   private voicesService = inject(VoicesService);
   private twitchService = inject(TwitchService);
@@ -75,6 +79,7 @@ export class SettingsComponent implements OnInit {
   private streamerBotService = inject(StreamerBotService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
+  private sanitizer = inject(DomSanitizer);
 
   ngOnInit(): void {
     this.loadSettings();
@@ -102,6 +107,17 @@ export class SettingsComponent implements OnInit {
         this.originalValues = {};
         settings.forEach((setting) => {
           this.originalValues[setting.name] = setting.value;
+        });
+        // Build subgroup description cache from settings
+        this.subGroupDescriptionCache = {};
+        settings.forEach((setting) => {
+          if (setting.subGroupDescription && setting.subGroup) {
+            const key = `${setting.group}::${setting.subGroup}`;
+            // Only store if not already set (first setting with description wins)
+            if (!this.subGroupDescriptionCache[key]) {
+              this.subGroupDescriptionCache[key] = setting.subGroupDescription;
+            }
+          }
         });
         // Initialize array cache for array-type settings
         this.settings
@@ -681,6 +697,50 @@ export class SettingsComponent implements OnInit {
 
   isSensitiveVisible(setting: Setting): boolean {
     return this.sensitiveSettingsVisible[setting.name] || false;
+  }
+
+  /**
+   * Returns HTML content for a subgroup description/instructions.
+   * This extracts the description from the settings data (which comes from the backend).
+   * 
+   * @param group The main group name
+   * @param subGroup The subgroup name (optional)
+   * @returns Sanitized HTML content or null if no content is defined
+   */
+  getSubGroupDescription(group: string, subGroup?: string): SafeHtml | null {
+    const key = subGroup ? `${group}::${subGroup}` : group;
+    const html = this.subGroupDescriptionCache[key];
+    return html ? this.sanitizer.bypassSecurityTrustHtml(html) : null;
+  }
+
+  /**
+   * Handles clicks on links within subgroup descriptions.
+   * Opens external URLs in the system's default browser instead of Electron's webview.
+   * 
+   * @param event The click event
+   */
+  onSubGroupDescriptionClick(event: Event): void {
+    const target = event.target as HTMLElement;
+    const link = target.closest('a');
+    
+    if (link && link.href) {
+      event.preventDefault();
+      event.stopPropagation();
+      
+      const url = link.href;
+      
+      // Check if we're in Electron and use the IPC bridge to open in default browser
+      if (typeof window !== 'undefined' && (window as any).electron?.openExternal) {
+        (window as any).electron.openExternal(url).catch((error: any) => {
+          console.error('Error opening external URL:', error);
+          // Fallback to window.open if IPC fails
+          window.open(url, '_blank');
+        });
+      } else {
+        // Fallback for non-Electron environments (e.g., web browser)
+        window.open(url, '_blank');
+      }
+    }
   }
 }
 
