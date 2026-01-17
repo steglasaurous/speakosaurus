@@ -26,6 +26,7 @@ export enum Setting {
   AZURE_ENDPOINT = 'azureEndpoint',
   IGNORED_USERS = 'ignoredUsers',
   STREAMERBOT_ACTION_INTRO = 'streamerbotActionIntro',
+  SETUP_COMPLETED = 'setupCompleted',
 }
 
 export enum SettingType {
@@ -240,6 +241,14 @@ export class SettingsService {
       group: 'StreamerBot Actions',
       description: 'The action to trigger when the user speaks for the first time. Arguments sent are username and message.',
       type: SettingType.STREAMERBOT_ACTION,
+    },
+    {
+      name: Setting.SETUP_COMPLETED,
+      displayName: 'Setup Completed',
+      group: 'Internal',
+      description: 'Internal setting to track if initial setup has been completed',
+      type: SettingType.BOOLEAN,
+      default: 'false',
     }
   ];
 
@@ -291,7 +300,7 @@ export class SettingsService {
     if (!setting) {
       throw new Error(`Setting with name '${name}' not found`);
     }
-    
+
     // FIXME: Validate value against setting type and options
     setting.value = value;
 

@@ -1,7 +1,7 @@
 import { Component, OnInit, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { RouterModule, Router } from '@angular/router';
+import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { SettingsService, Setting, SettingType } from '../../services/settings.service';
 import { VoicesService, Voice } from '../../services/voices.service';
 import { TwitchService, TwitchUser } from '../../services/twitch.service';
@@ -74,9 +74,23 @@ export class SettingsComponent implements OnInit {
   private usersService = inject(UsersService);
   private streamerBotService = inject(StreamerBotService);
   private router = inject(Router);
+  private route = inject(ActivatedRoute);
 
   ngOnInit(): void {
     this.loadSettings();
+    
+    // Check for tab query parameter
+    this.route.queryParams.subscribe((params) => {
+      if (params['tab']) {
+        // Set active tab after settings are loaded
+        setTimeout(() => {
+          const tabExists = this.groupedSettings.some((g) => g.group === params['tab']);
+          if (tabExists) {
+            this.activeTab = params['tab'];
+          }
+        }, 100);
+      }
+    });
   }
 
   loadSettings(): void {
@@ -154,6 +168,11 @@ export class SettingsComponent implements OnInit {
     const grouped: { [key: string]: Setting[] } = {};
     
     this.settings.forEach((setting) => {
+      // Filter out internal settings group
+      if (setting.group === 'Internal') {
+        return;
+      }
+      
       if (!grouped[setting.group]) {
         grouped[setting.group] = [];
       }

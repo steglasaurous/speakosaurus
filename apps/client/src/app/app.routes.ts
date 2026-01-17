@@ -3,12 +3,17 @@ import { UserListComponent } from './components/user-list/user-list.component';
 import { UserDetailComponent } from './components/user-detail/user-detail.component';
 import { SettingsComponent } from './components/settings/settings.component';
 import { TwitchCallbackComponent } from './components/twitch-callback/twitch-callback.component';
+import { SetupWizardComponent } from './components/setup-wizard/setup-wizard.component';
 
 export const appRoutes: Route[] = [
   {
     path: '',
     redirectTo: '/users',
     pathMatch: 'full',
+  },
+  {
+    path: 'setup',
+    component: SetupWizardComponent,
   },
   {
     path: 'users',
