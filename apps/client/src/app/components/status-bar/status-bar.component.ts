@@ -3,6 +3,7 @@ import { CommonModule } from '@angular/common';
 import { RouterModule } from '@angular/router';
 import { StatusService, Status } from '../../services/status.service';
 import { SettingsService } from '../../services/settings.service';
+import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
 
 @Component({
@@ -25,6 +26,9 @@ export class StatusBarComponent implements OnInit, OnDestroy {
   private modeChangeSubscription?: Subscription;
   private statusService = inject(StatusService);
   private settingsService = inject(SettingsService);
+  private http = inject(HttpClient);
+  private apiUrl = 'http://localhost:3000/api';
+  stopInProgress = false;
 
   ngOnInit() {
     // Subscribe to real-time status updates via SSE
@@ -54,6 +58,28 @@ export class StatusBarComponent implements OnInit, OnDestroy {
           console.error('Error updating mode:', error);
         },
       });
+  }
+
+  onStopClicked(): void {
+    if (this.stopInProgress) return;
+    this.stopInProgress = true;
+
+    this.http.post(`${this.apiUrl}/speak/stop`, {}).subscribe({
+      next: (result: { success?: boolean }) => {
+        // Queue + playback are also reflected via SSE (audioQueueSize / pendingMessages).
+        // We don't force UI state here beyond disabling the button momentarily.
+        if (result?.success === false) {
+          console.warn('Stop request returned success=false');
+        }
+      },
+      error: (error) => {
+        console.error('Failed to stop speech playback:', error);
+        this.stopInProgress = false;
+      },
+      complete: () => {
+        this.stopInProgress = false;
+      },
+    });
   }
 }
 

@@ -12,6 +12,17 @@ export class AudioProcessorService {
     private queue: AudioData[] = [];
 
     private isProcessing = false;
+
+    /**
+     * Monotonically increasing value that is bumped whenever the user hits "Stop".
+     * Used to discard late render/download results that complete after Stop.
+     */
+    private stopEpoch = 0;
+    /**
+     * Monotonically increasing run identifier used to cancel an in-flight `processQueue()` loop.
+     * When `processingRunId` changes, the loop exits as soon as possible.
+     */
+    private processingRunId = 0;
     constructor(
       private readonly settingsService: SettingsService,
       private readonly statusEventService: StatusEventService,
@@ -33,7 +44,33 @@ export class AudioProcessorService {
         }
     }
 
+    /**
+     * Stops any currently playing audio in the renderer and clears the pending queue immediately.
+     */
+    stopAll(): { success: boolean; queueSize: number } {
+        this.logger.log('Stopping all speech playback and clearing queue');
+
+        // Cancel the currently running processing loop, if any.
+        this.stopEpoch++;
+        this.processingRunId++;
+        this.isProcessing = false;
+
+        // Clear pending items.
+        this.queue = [];
+        this.statusEventService.emitStatusUpdate({ audioQueueSize: 0 });
+
+        // Tell the renderer to stop the currently playing audio.
+        this.sendStopToRenderer();
+
+        return { success: true, queueSize: 0 };
+    }
+
+    getStopEpoch(): number {
+        return this.stopEpoch;
+    }
+
     private async processQueue() {
+        const runId = ++this.processingRunId;
         this.isProcessing = true;
         let pauseBetweenMessages = 1000;
         const pauseBetweenMessagesSetting = await this.settingsService.getSetting(Setting.PAUSE_BETWEEN_MESSAGES_MS);
@@ -41,18 +78,20 @@ export class AudioProcessorService {
             pauseBetweenMessages = parseInt(pauseBetweenMessagesSetting.value ?? '1000');
         }
 
-        while (this.queue.length > 0) {
+        while (this.queue.length > 0 && runId === this.processingRunId) {
             const audioData = this.queue.shift();
             if (audioData) {
+                // Capture epoch at the moment we decide to play this item.
+                const stopEpochAtPlay = this.stopEpoch;
                 this.logger.log('Playing audio data', { audioData });
-                await this.playAudio(audioData);
+                await this.playAudio(audioData, stopEpochAtPlay);
                 // Emit update after playing audio
                 this.statusEventService.emitStatusUpdate({ 
                     audioQueueSize: this.queue.length 
                 });
                 
                 this.logger.log(`Pausing between messages for ${pauseBetweenMessages}ms`);
-                await new Promise(resolve => setTimeout(resolve, pauseBetweenMessages));
+                await this.sleepInterruptible(pauseBetweenMessages, runId);
             }
         }
 
@@ -60,7 +99,18 @@ export class AudioProcessorService {
         this.logger.log('Queue processed', { queueLength: this.queue.length });
     }
 
-    private async playAudio(audioData: AudioData): Promise<void> {
+    private async sleepInterruptible(ms: number, runId: number): Promise<void> {
+        // Wake periodically so we can exit quickly on `stopAll()`.
+        const start = Date.now();
+        const stepMs = 50;
+
+        while (Date.now() - start < ms) {
+            if (runId !== this.processingRunId) return;
+            await new Promise(resolve => setTimeout(resolve, Math.min(stepMs, ms - (Date.now() - start))));
+        }
+    }
+
+    private async playAudio(audioData: AudioData, stopEpochAtPlay: number): Promise<void> {
         try {
             // Read audio file and convert to base64
             const audioBuffer = readFileSync(audioData.audioFilePath);
@@ -68,6 +118,16 @@ export class AudioProcessorService {
             
             // Determine audio format from file extension
             const format = extname(audioData.audioFilePath).slice(1).toLowerCase(); // Remove leading dot
+
+            // If Stop was requested after we captured `stopEpochAtPlay`, suppress playback.
+            // (Prevents `audio:play` from being sent just as the user hits Stop.)
+            if (stopEpochAtPlay !== this.stopEpoch) {
+                this.logger.log('Suppressing audio:play due to stop epoch change', {
+                    stopEpochAtPlay,
+                    stopEpochNow: this.stopEpoch,
+                });
+                return;
+            }
             
             // Send audio data to renderer process via IPC
             if (App.mainWindow && !App.mainWindow.isDestroyed()) {
@@ -100,6 +160,14 @@ export class AudioProcessorService {
             } catch (deleteError) {
                 this.logger.error(`Failed to delete temp file ${audioData.audioFilePath}:`, deleteError);
             }
+        }
+    }
+
+    private sendStopToRenderer(): void {
+        if (App.mainWindow && !App.mainWindow.isDestroyed()) {
+            App.mainWindow.webContents.send('audio:stop');
+        } else {
+            this.logger.warn('Main window not available, cannot send audio stop IPC');
         }
     }
 }

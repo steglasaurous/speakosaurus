@@ -15,17 +15,23 @@
     <span class="status-value">{{ status.audioQueueSize }}</span>
   </div>
 
-  <div class="status-item mode-selector">
-    <span class="status-label">Mode:</span>
-    <select 
-      [value]="status.mode" 
-      (change)="onModeChange($any($event.target).value)"
-      class="mode-select"
-    >
-      <option *ngFor="let option of modeOptions" [value]="option">
-        {{ option }}
-      </option>
-    </select>
+  <div class="right-controls">
+    <button class="stop-button" (click)="onStopClicked()" [disabled]="stopInProgress" title="Stop all speech">
+      Stop
+    </button>
+
+    <div class="status-item mode-selector">
+      <span class="status-label">Mode:</span>
+      <select 
+        [value]="status.mode" 
+        (change)="onModeChange($any($event.target).value)"
+        class="mode-select"
+      >
+        <option *ngFor="let option of modeOptions" [value]="option">
+          {{ option }}
+        </option>
+      </select>
+    </div>
   </div>
 
   <a [routerLink]="['/settings']" class="settings-button" title="Settings">

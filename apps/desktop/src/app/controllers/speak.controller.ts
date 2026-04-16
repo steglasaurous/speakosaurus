@@ -6,7 +6,7 @@ import { PreviewDto } from '../dto/preview.dto';
 import { AudioProcessorService } from '../services/audio-processor.service';
 import { HttpService } from '@nestjs/axios';
 import { firstValueFrom } from 'rxjs';
-import { writeFileSync } from 'fs';
+import { unlinkSync, writeFileSync } from 'fs';
 import { join } from 'path';
 import { tmpdir } from 'os';
 import { v4 as uuid } from 'uuid';
@@ -36,6 +36,7 @@ export class SpeakController {
   })
   async speak(@Body() speakDto: SpeakDto): Promise<{ success: boolean; message: string }> {
     try {
+      const stopEpochAtRequestStart = this.audioProcessorService.getStopEpoch();
       let voice;
 
       // If voice parameters are provided, use them; otherwise fall back to default voice
@@ -60,6 +61,20 @@ export class SpeakController {
         voice,
         speakDto.message,
       );
+
+      // If Stop was triggered while the provider was rendering/downloading,
+      // discard the result instead of enqueuing it for playback.
+      if (stopEpochAtRequestStart !== this.audioProcessorService.getStopEpoch()) {
+        try {
+          unlinkSync(audioData.audioFilePath);
+        } catch {
+          // Best-effort cleanup; ignore if temp file already went away.
+        }
+        return {
+          success: false,
+          message: 'Speech render discarded due to stop',
+        };
+      }
 
       // Add to playback queue
       await this.audioProcessorService.addToQueue(audioData);
@@ -91,6 +106,7 @@ export class SpeakController {
   })
   async preview(@Body() previewDto: PreviewDto): Promise<{ success: boolean; message: string }> {
     try {
+      const stopEpochAtRequestStart = this.audioProcessorService.getStopEpoch();
       // Get the voice
       const voice = await this.voiceProviderService.getVoice(
         previewDto.voiceId,
@@ -148,6 +164,20 @@ export class SpeakController {
         );
       }
 
+      // If Stop was triggered while the preview audio was rendering/downloading,
+      // discard it instead of enqueuing it for playback.
+      if (stopEpochAtRequestStart !== this.audioProcessorService.getStopEpoch()) {
+        try {
+          unlinkSync(audioData.audioFilePath);
+        } catch {
+          // Best-effort cleanup; ignore if temp file already went away.
+        }
+        return {
+          success: false,
+          message: 'Preview render discarded due to stop',
+        };
+      }
+
       // Add to playback queue
       await this.audioProcessorService.addToQueue(audioData);
 
@@ -161,6 +191,24 @@ export class SpeakController {
       }
       throw error;
     }
+  }
+
+  @Post('stop')
+  @ApiOperation({
+    summary: 'Stop all speech and clear pending queue',
+    description: 'Stops the renderer currently playing audio immediately and clears any queued speech items.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Speech playback stopped and queue cleared',
+  })
+  async stopAllSpeech(): Promise<{ success: boolean; queueSize: number; message: string }> {
+    const result = this.audioProcessorService.stopAll();
+    return {
+      success: result.success,
+      queueSize: result.queueSize,
+      message: 'Stopped playback and cleared pending queue',
+    };
   }
 }
 

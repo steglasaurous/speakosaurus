@@ -18,6 +18,8 @@ declare global {
     AppBridge?: {
       onAudioPlay: (callback: (data: AudioPlayData) => void) => void;
       removeAudioPlayListener: () => void;
+      onAudioStop: (callback: () => void) => void;
+      removeAudioStopListener: () => void;
     };
   }
 }
@@ -32,6 +34,7 @@ export class AudioService implements OnDestroy {
   private audioQueue: AudioPlayData[] = [];
   private pauseBetweenMessages = 1000;
   private audioPlayListener: ((data: AudioPlayData) => void) | null = null;
+  private audioStopListener: (() => void) | null = null;
   private ngZone = inject(NgZone);
   private settingsService = inject(SettingsService);
   constructor() {
@@ -62,6 +65,13 @@ export class AudioService implements OnDestroy {
         });
       };
       window.AppBridge.onAudioPlay(this.audioPlayListener);
+
+      this.audioStopListener = () => {
+        this.ngZone.run(() => {
+          this.stopAllPlayback();
+        });
+      };
+      window.AppBridge.onAudioStop(this.audioStopListener);
     } else {
       console.warn('AppBridge not available, audio playback will not work');
     }
@@ -98,6 +108,38 @@ export class AudioService implements OnDestroy {
 
     // Start processing queue
     this.processQueue();
+  }
+
+  /**
+   * Stops currently playing audio and clears any queued audio immediately.
+   * Called when the backend triggers an IPC `audio:stop`.
+   */
+  private stopAllPlayback(): void {
+    // Clear pending queue and stop any future processing.
+    this.audioQueue = [];
+    this.isPlaying = false;
+
+    if (!this.currentAudioSource) return;
+
+    // Stop whatever is currently playing.
+    if (this.currentAudioSource instanceof AudioBufferSourceNode) {
+      try {
+        this.currentAudioSource.stop();
+      } catch {
+        // Source may have already ended.
+      }
+    } else if (this.currentAudioSource instanceof HTMLAudioElement) {
+      try {
+        this.currentAudioSource.pause();
+        this.currentAudioSource.currentTime = 0;
+        // Resolve the awaiting promise in `playWithHTML5Audio` by manually firing `ended`.
+        this.currentAudioSource.dispatchEvent(new Event('ended'));
+      } catch {
+        // Ignore stop errors.
+      }
+    }
+
+    this.currentAudioSource = null;
   }
 
   private async processQueue(): Promise<void> {
@@ -256,6 +298,10 @@ export class AudioService implements OnDestroy {
     // Remove IPC listener
     if (typeof window !== 'undefined' && window.AppBridge && this.audioPlayListener) {
       window.AppBridge.removeAudioPlayListener();
+    }
+
+    if (typeof window !== 'undefined' && window.AppBridge && this.audioStopListener) {
+      window.AppBridge.removeAudioStopListener();
     }
   }
 }

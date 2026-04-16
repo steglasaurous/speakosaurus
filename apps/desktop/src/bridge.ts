@@ -27,5 +27,13 @@ contextBridge.exposeInMainWorld(
         removeAudioPlayListener: () => {
             ipcRenderer.removeAllListeners('audio:play');
         },
+        onAudioStop: (callback: () => void) => {
+            ipcRenderer.on('audio:stop', () => {
+                callback();
+            });
+        },
+        removeAudioStopListener: () => {
+            ipcRenderer.removeAllListeners('audio:stop');
+        },
     },
 );

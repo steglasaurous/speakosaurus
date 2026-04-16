@@ -9,17 +9,21 @@ An app to provide TTS to twitch streams (or anything supported by streamerbot)
 
 # TODO
 
-- [ ] Add a welcome "wizard" to setup connection to streamer.bot on first run
-- [x] put password type on api key fields
-- [ ] for API keys, create documentation on how to get them for each service
 - [ ] Design how mods can connect and use app (API bridge?)
 - [ ] Voicelist: Create filters that can help pair down the voice selection
   - [ ] azure voices: add filters for locale, gender
   - [ ] groups: add ability to "roll up" groups, make it easier to find voices in other groups by scrolling
+- [ ] for API keys, create documentation on how to get them for each service
+  - [ ] Azure
+  - [ ] Elevenlabs
+  - [ ] tts.monster
+  - [ ] unofficial tts.monster
 - [ ] Review all settings UIs, make sure they're consistent with how they save
 
 - [ ] Figure out how automatic upgrades works
 
+- [x] Add a welcome "wizard" to setup connection to streamer.bot on first run
+- [x] put password type on api key fields
 - [x] bug: look at changing streamer bot url if it properly disconnects/destroys the object or if it ends up making multiple connections. Fix.
 - [x] Have SSE endpoint send updates to user list when new users are added or changed
 - [x] Move audio playback into the renderer process
