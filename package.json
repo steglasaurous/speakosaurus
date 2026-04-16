@@ -27,7 +27,7 @@
   },
   "private": true,
   "build": {
-    "productName": "SpeakManager2",
+    "productName": "speakmanager2",
     "appId": "com.speakmanager2.app",
     "win": {
       "sign": false
