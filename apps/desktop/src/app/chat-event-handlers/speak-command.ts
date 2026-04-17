@@ -67,33 +67,7 @@ export class SpeakCommand {
         const mode = await this.settingsService.getSetting('mode');
         switch (mode.value) {
             case 'trigger': {
-                const triggerCommands = await this.settingsService.getSetting('triggerCommands');
-                if (!triggerCommands) {
-                    this.logger.warn('Mode is set to trigger, but trigger commands are not set');
-                    return;
-                }
-                let triggers: string[];
-                try {
-                    // Replacing double backslashes with single backslashes to avoid JSON parsing errors.
-                    triggers = JSON.parse(triggerCommands.value.replace('\\\\', '\\'));
-                    if (!Array.isArray(triggers)) {
-                        this.logger.warn('Trigger commands is not an array, ignoring message', { triggerCommands: triggerCommands.value });
-                        return;
-                    }
-                } catch (error) {
-                    this.logger.error('Error parsing trigger commands JSON', { error, triggerCommands: triggerCommands.value });
-                    return;
-                }
-                let triggerFound = false;
-                for (const trigger of triggers) {
-                    if (data.message.message.toLowerCase().startsWith(trigger.toLowerCase() + ' ')) {
-                        triggerFound = true;
-                        break;
-                    }
-                }
-                if (!triggerFound) {
-                    // Trigger wasn't present, ignore it.
-                    this.logger.log('Trigger not found, ignoring message', { message: data.message.message, triggerCommands: triggerCommands.value });
+                if (! await this.messageContainsTrigger(data.message.message)) {
                     return;
                 }
                 break;
@@ -103,7 +77,7 @@ export class SpeakCommand {
             }
             case 'always': {
                 // Check if the line starts with an exclamation point.  If it does, ignore it.
-                if (data.message.message.startsWith('!')) {
+                if (data.message.message.startsWith('!') && ! await this.messageContainsTrigger(data.message.message)) {
                     return;
                 }
                 break;
@@ -111,7 +85,10 @@ export class SpeakCommand {
         }
 
         let message = await this.sanitizeMessage(data);
-
+        if (message.length === 0) {
+            this.logger.log('Message is empty, skipping', { userId: data.user.id, username: data.user.name });
+            return;
+        }
         const sameUserOmit = await this.settingsService.getSetting(Setting.CHAT_MESSAGE_PREFIX_OMIT_SAME_USER);
         const sameUserTimeout = await this.settingsService.getSetting(Setting.CHAT_MESSAGE_PREFIX_OMIT_SAME_USER_TIMEOUT);
 
@@ -271,5 +248,35 @@ export class SpeakCommand {
             this.logger.warn('Error checking ignored users list', error);
             return false;
         }
+    }
+
+    private async messageContainsTrigger(message: string): Promise<boolean> {
+        const triggerCommands = await this.settingsService.getSetting('triggerCommands');
+        if (!triggerCommands) {
+            this.logger.warn('Trigger commands are not set');
+            return false;
+        }
+        let triggers: string[];
+        try {
+            // Replacing double backslashes with single backslashes to avoid JSON parsing errors.
+            triggers = JSON.parse(triggerCommands.value.replace('\\\\', '\\'));
+            if (!Array.isArray(triggers)) {
+                this.logger.warn('Trigger commands is not an array, ignoring message', { triggerCommands: triggerCommands.value });
+                return false;
+            }
+        } catch (error) {
+            this.logger.error('Error parsing trigger commands JSON', { error, triggerCommands: triggerCommands.value });
+            return false;
+        }
+
+        for (const trigger of triggers) {
+            if (message.toLowerCase().startsWith(trigger.toLowerCase() + ' ')) {
+                return true;
+            }
+        }
+
+        // Trigger wasn't present, ignore it.
+        this.logger.log('Trigger not found, ignoring message', { message: message, triggerCommands: triggerCommands.value });
+        return false;
     }
 }
