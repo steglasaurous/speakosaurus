@@ -152,10 +152,12 @@ export class SpeakCommand {
 
         // Determine the message to speak
         let message: string;
+        let isCustomIntro = false;
         if (user.customIntros && user.customIntros.length > 0) {
             // Pick a random custom intro
             const randomIndex = Math.floor(Math.random() * user.customIntros.length);
             message = user.customIntros[randomIndex].introText;
+            isCustomIntro = true;
         } else {
             // Use default welcome message
             const ttsName = user.ttsName || data.user.name;
@@ -166,11 +168,12 @@ export class SpeakCommand {
         const streamerBotActionIntroSetting = await this.settingsService.getSetting(Setting.STREAMERBOT_ACTION_INTRO);
         if (streamerBotActionIntroSetting && streamerBotActionIntroSetting.value) {
             const actionId = streamerBotActionIntroSetting.value;
-            const username = user.ttsName || data.user.name;
+            const username = data.user.name;
             try {
                 await this.streamerBotManagerService.triggerAction(actionId, {
                     username: username,
                     message: message,
+                    isCustomIntro: isCustomIntro,
                 });
                 this.logger.log('Triggered StreamerBot intro action', { actionId, username, message });
             } catch (error) {
