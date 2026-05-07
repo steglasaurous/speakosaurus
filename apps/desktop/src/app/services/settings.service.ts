@@ -24,6 +24,7 @@ export enum Setting {
   AZURE_SPEECH_KEY = 'azureSpeechKey',
   AZURE_SPEECH_REGION = 'azureSpeechRegion',
   AZURE_ENDPOINT = 'azureEndpoint',
+  PIPER_HTTP_URL = 'piperHttpUrl',
   IGNORED_USERS = 'ignoredUsers',
   STREAMERBOT_ACTION_INTRO = 'streamerbotActionIntro',
   SETUP_COMPLETED = 'setupCompleted',
@@ -268,6 +269,19 @@ export class SettingsService {
       group: 'TTS Providers',
       subGroup: 'Azure',
       description: 'The endpoint for the Azure Speech API',
+      type: SettingType.STRING,
+    },
+    {
+      name: Setting.PIPER_HTTP_URL,
+      displayName: 'Piper HTTP server URL',
+      group: 'TTS Providers',
+      subGroup: 'Piper',
+      subGroupDescription: `
+        <p>Piper runs a local HTTP server (for example <code>python3 -m piper.http_server</code>).
+        Set the base URL where it listens, without a trailing path (e.g. <code>http://localhost:5000</code>).
+        Leave empty to disable Piper voices.</p>
+      `,
+      description: 'Base URL of the Piper TTS HTTP server',
       type: SettingType.STRING,
     },
     {

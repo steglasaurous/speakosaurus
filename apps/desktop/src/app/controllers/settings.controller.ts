@@ -79,6 +79,10 @@ export class SettingsController {
     if (createSettingDto.name === Setting.ELEVENLABS_API_KEY) {
       await this.voiceProviderService.updateElevenLabsProvider();
     }
+
+    if (createSettingDto.name === Setting.PIPER_HTTP_URL) {
+      await this.voiceProviderService.updatePiperProvider();
+    }
     
     // If StreamerBot WebSocket URL was updated, reconnect the service
     if (createSettingDto.name === Setting.STREAMERBOT_WEBSOCKET_URL) {
@@ -122,6 +126,10 @@ export class SettingsController {
       await this.voiceProviderService.updateElevenLabsProvider();
     }
 
+    if (name === Setting.PIPER_HTTP_URL) {
+      await this.voiceProviderService.updatePiperProvider();
+    }
+
     // If StreamerBot WebSocket URL was updated, reconnect the service
     if (name === Setting.STREAMERBOT_WEBSOCKET_URL) {
       await this.streamerBotManagerService.updateStreamerBotService();
@@ -154,6 +162,10 @@ export class SettingsController {
     // If ElevenLabs API key was deleted, update the voice provider
     if (name === Setting.ELEVENLABS_API_KEY) {
       await this.voiceProviderService.updateElevenLabsProvider();
+    }
+
+    if (name === Setting.PIPER_HTTP_URL) {
+      await this.voiceProviderService.updatePiperProvider();
     }
 
     // If StreamerBot WebSocket URL was deleted, reconnect the service (will use default)

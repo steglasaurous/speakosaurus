@@ -11,6 +11,7 @@ import { TTSMonsterVoiceProvider } from "./providers/tts-monster.voice-provider"
 import { HttpService } from "@nestjs/axios";
 import { TTSMonsterUnofficialVoiceProvider } from "./providers/tts-monster-unofficial.voice-provider";
 import { AzureVoiceProvider } from "./providers/azure.voice-provider";
+import { PiperVoiceProvider } from "./providers/piper.voice-provider";
 import { StatusEventService } from "../status-event.service";
 
 @Injectable()
@@ -37,6 +38,7 @@ export class VoiceProviderService implements OnModuleInit {
         await this.updateTTSMonsterProvider();
         await this.updateTTSMonsterUnofficialProvider();
         await this.updateAzureProvider();
+        await this.updatePiperProvider();
     }
 
     async getVoices(forceReload = false): Promise<Voice[]> {
@@ -239,6 +241,28 @@ export class VoiceProviderService implements OnModuleInit {
             this.logger.log('Azure provider not added - API key, region, or endpoint not set');
             // Clear cache so voices are refreshed
             this.cachedVoices = null;
+        }
+    }
+
+    /**
+     * Add or remove the Piper provider based on {@link Setting.PIPER_HTTP_URL}.
+     */
+    async updatePiperProvider(): Promise<void> {
+        this.voiceProviders = this.voiceProviders.filter(
+            (p) => p.providerName !== 'piper',
+        );
+
+        const urlSetting = await this.settingsService.getSetting(Setting.PIPER_HTTP_URL);
+        const baseUrl = urlSetting?.value?.trim();
+
+        if (baseUrl) {
+            const piperProvider = new PiperVoiceProvider(baseUrl, this.httpService);
+            this.voiceProviders.push(piperProvider);
+            this.cachedVoices = null;
+            this.logger.log('Piper provider added', { baseUrl });
+        } else {
+            this.cachedVoices = null;
+            this.logger.log('Piper provider not added — Piper HTTP URL not set');
         }
     }
 

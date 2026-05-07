@@ -4,6 +4,15 @@ import { app, BrowserWindow } from 'electron';
 import App from './app/app';
 import { electronAppName } from './app/constants';
 
+// Linux dev: Chromium's setuid sandbox often fails without chrome-sandbox (containers, etc.).
+// Set ELECTRON_DISABLE_SANDBOX=1 to force off on any platform when debugging packaged builds.
+if (
+  process.env.ELECTRON_DISABLE_SANDBOX === '1' ||
+  (process.platform === 'linux' && !app.isPackaged)
+) {
+  app.commandLine.appendSwitch('no-sandbox');
+}
+
 export default class Main {
   static initialize() {
     // Force a stable runtime app name so Electron resolves userData predictably.
