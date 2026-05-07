@@ -36,7 +36,9 @@
       {
         "from": "dist/apps/desktop/drizzle",
         "to": "drizzle",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ]
   },
@@ -64,7 +66,6 @@
     "drizzle-kit": "^0.31.8",
     "drizzle-orm": "^0.45.1",
     "microsoft-cognitiveservices-speech-sdk": "^1.47.0",
-    "naudiodon": "^2.3.6",
     "nestjs-drizzle": "^1.1.6",
     "reflect-metadata": "^0.1.13",
     "rxjs": "~7.8.0",
@@ -74,7 +75,6 @@
     "zone.js": "^0.15.1"
   },
   "devDependencies": {
-    "electron": "^34.5.6",
     "@angular-devkit/core": "~20.0.0",
     "@angular-devkit/schematics": "~20.0.0",
     "@angular/build": "~20.0.0",
@@ -106,6 +106,7 @@
     "@types/node": "^20.19.9",
     "@typescript-eslint/utils": "^8.40.0",
     "angular-eslint": "^20.0.0",
+    "electron": "^34.5.6",
     "eslint": "^9.8.0",
     "eslint-config-prettier": "^10.0.0",
     "eslint-plugin-playwright": "^1.6.2",
