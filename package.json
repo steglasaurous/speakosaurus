@@ -29,8 +29,13 @@
   "build": {
     "productName": "speakmanager2",
     "appId": "com.speakmanager2.app",
+    "executableName": "speakmanager2",
     "win": {
       "sign": false
+    },
+    "linux": {
+      "target": ["AppImage"],
+      "category": "Utility"
     },
     "extraResources": [
       {
