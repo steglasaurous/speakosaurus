@@ -1,5 +1,14 @@
 {
   "name": "speakmanager2",
   "productName": "speakmanager2",
-  "main": "index.js"
+  "main": "index.js",
+  "build": {
+    "executableName": "speakmanager2",
+    "appId": "com.speakmanager2.app",
+    "productName": "speakmanager2",
+    "linux": {
+      "target": ["AppImage"],
+      "category": "Utility"
+    }
+  }
 }
