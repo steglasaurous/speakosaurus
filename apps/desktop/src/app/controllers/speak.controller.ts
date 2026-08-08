@@ -52,8 +52,13 @@ export class SpeakController {
           );
         }
       } else {
-        // Use default voice when voice parameters are not provided
-        voice = await this.voiceProviderService.getDefaultVoice();
+        // Prefer a configured pronoun-specific default, then use the global default.
+        voice = await this.voiceProviderService.getPronounDefaultVoice(
+          speakDto.pronouns,
+        );
+        if (!voice) {
+          voice = await this.voiceProviderService.getDefaultVoice();
+        }
       }
 
       // Get the rendered audio message

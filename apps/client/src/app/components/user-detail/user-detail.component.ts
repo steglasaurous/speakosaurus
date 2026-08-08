@@ -25,6 +25,7 @@ export class UserDetailComponent implements OnInit {
 
   // Form fields
   ttsName = '';
+  pronouns = '';
   disableWelcome = false;
   customIntros: CustomIntro[] = [];
 
@@ -37,6 +38,7 @@ export class UserDetailComponent implements OnInit {
 
   // Track original values to detect changes
   private originalTtsName: string | null = null;
+  private originalPronouns: string | null = null;
   private originalDisableWelcome: boolean | null = null;
   private originalVoice: { providerName: string; voiceId: string } | null = null;
   private originalCustomIntros: CustomIntro[] = [];
@@ -51,7 +53,7 @@ export class UserDetailComponent implements OnInit {
 
   ngOnInit(): void {
     this.twitchUserId = this.route.snapshot.paramMap.get('twitchUserId') || '';
-    
+
     if (!this.twitchUserId) {
       this.router.navigate(['/users']);
       return;
@@ -66,17 +68,19 @@ export class UserDetailComponent implements OnInit {
       next: (user) => {
         this.user = user;
         this.ttsName = user.ttsName || '';
+        this.pronouns = user.pronouns || '';
         this.disableWelcome = user.disableWelcome || false;
         this.customIntros = [...(user.customIntros || [])].map(intro => ({ ...intro }));
-        
+
         // Store original values to detect changes
         this.originalTtsName = user.ttsName || null;
+        this.originalPronouns = user.pronouns || null;
         this.originalDisableWelcome = user.disableWelcome || false;
         this.originalVoice = user.ttsProviderName && user.ttsVoiceId
           ? { providerName: user.ttsProviderName, voiceId: user.ttsVoiceId }
           : null;
         this.originalCustomIntros = [...(user.customIntros || [])].map(intro => ({ ...intro }));
-        
+
         // Set selected voice if user has one
         if (user.ttsProviderName && user.ttsVoiceId) {
           this.voicesService.getVoices().subscribe({
@@ -89,7 +93,7 @@ export class UserDetailComponent implements OnInit {
         } else {
           this.selectedVoice = null;
         }
-        
+
         this.loading = false;
       },
       error: (error) => {
@@ -141,6 +145,7 @@ export class UserDetailComponent implements OnInit {
     // Build payload with optional voice parameters
     const speakPayload: any = {
       message: this.ttsName,
+      pronouns: this.pronouns || undefined,
     };
 
     // Only include voice parameters if a voice is selected
@@ -148,7 +153,7 @@ export class UserDetailComponent implements OnInit {
       speakPayload.voiceProvider = this.selectedVoice.providerName;
       speakPayload.voiceId = this.selectedVoice.voiceId;
     }
-    // If no voice is selected, the API will use the default voice
+    // If no voice is selected, the API will use the pronoun-specific or global default.
 
     this.http.post(`${this.apiUrl}/speak`, speakPayload).subscribe({
       next: () => {
@@ -245,6 +250,7 @@ export class UserDetailComponent implements OnInit {
 
     const updates: any = {
       ttsName: this.ttsName || undefined,
+      pronouns: this.pronouns || null,
       disableWelcome: this.disableWelcome || undefined,
     };
 
@@ -311,6 +317,12 @@ export class UserDetailComponent implements OnInit {
       return true;
     }
 
+    // Check pronouns
+    const currentPronouns = this.pronouns || null;
+    if (currentPronouns !== this.originalPronouns) {
+      return true;
+    }
+
     // Check disableWelcome
     if (this.disableWelcome !== this.originalDisableWelcome) {
       return true;
@@ -324,7 +336,7 @@ export class UserDetailComponent implements OnInit {
     const originalVoiceId = this.originalVoice?.voiceId || null;
     const currentVoiceProvider = currentVoice?.providerName || null;
     const currentVoiceId = currentVoice?.voiceId || null;
-    
+
     if (originalVoiceProvider !== currentVoiceProvider || originalVoiceId !== currentVoiceId) {
       return true;
     }
@@ -339,12 +351,12 @@ export class UserDetailComponent implements OnInit {
     for (let i = 0; i < this.customIntros.length; i++) {
       const current = this.customIntros[i];
       const original = this.originalCustomIntros.find(intro => intro.id === current.id);
-      
+
       // New intro (temp ID) or intro not found in original
       if (current.id.startsWith('temp-') || !original) {
         return true;
       }
-      
+
       // Intro text changed
       if (current.introText !== original.introText) {
         return true;

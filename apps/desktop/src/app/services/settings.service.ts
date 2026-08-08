@@ -11,6 +11,8 @@ export enum Setting {
   TRIGGER_COMMANDS = 'triggerCommands',
   DEFAULT_VOICE = 'defaultVoice',
   DEFAULT_INTRO_VOICE = 'defaultIntroVoice',
+  DEFAULT_MALE_VOICE = 'defaultMaleVoice',
+  DEFAULT_FEMALE_VOICE = 'defaultFemaleVoice',
   CHAT_MESSAGE_PREFIX = 'chatMessagePrefix',
   CHAT_MESSAGE_PREFIX_OMIT_SAME_USER = 'chatMessagePrefixOmitSameUser',
   CHAT_MESSAGE_PREFIX_OMIT_SAME_USER_TIMEOUT = 'chatMessagePrefixOmitSameUserTimeout',
@@ -124,7 +126,7 @@ export class SettingsService {
       name: Setting.DEFAULT_VOICE,
       displayName: 'Default Voice',
       group: 'General',
-      description: 'The default voice to use for TTS',
+      description: 'The default voice to use for TTS (if pronouns cannot be determined or male/female default voices are not set)',
       type: SettingType.VOICE,
     },
     {
@@ -132,6 +134,20 @@ export class SettingsService {
       displayName: 'Default Intro Voice',
       group: 'General',
       description: 'The default voice to use for intro messages',
+      type: SettingType.VOICE,
+    },
+    {
+      name: Setting.DEFAULT_MALE_VOICE,
+      displayName: 'Default Male Voice',
+      group: 'General',
+      description: 'The default voice to use for users with he/him pronouns',
+      type: SettingType.VOICE,
+    },
+    {
+      name: Setting.DEFAULT_FEMALE_VOICE,
+      displayName: 'Default Female Voice',
+      group: 'General',
+      description: 'The default voice to use for users with she/her pronouns',
       type: SettingType.VOICE,
     },
     {

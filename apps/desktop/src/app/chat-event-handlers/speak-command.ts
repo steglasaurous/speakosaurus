@@ -13,7 +13,7 @@ export class SpeakCommand {
     private lastMessageTime = 0;
 
     constructor(
-        private readonly streamerBotManagerService: StreamerBotManagerService, 
+        private readonly streamerBotManagerService: StreamerBotManagerService,
         private readonly voiceProviderService: VoiceProviderService,
         private readonly settingsService: SettingsService,
         private readonly usersService: UsersService
@@ -50,20 +50,27 @@ export class SpeakCommand {
         let user = await this.usersService.getUser(data.user.id);
         let voice: Voice | null = null;
         if (user) {
-            voice = await this.voiceProviderService.getVoice(user.ttsVoiceId, user.ttsProviderName);
-            if (!voice) {
-                this.logger.log(`Voice not found for user, falling back to default voice`, { userId: data.user.id, voiceId: user.ttsVoiceId, providerName: user.ttsProviderName });
+            if (user.ttsVoiceId && user.ttsProviderName) {
+                voice = await this.voiceProviderService.getVoice(user.ttsVoiceId, user.ttsProviderName);
+                if (!voice) {
+                    this.logger.log(`Assigned voice not found for user`, { userId: data.user.id, voiceId: user.ttsVoiceId, providerName: user.ttsProviderName });
+                }
             }
         } else {
             // Create a new user record with defaults.
             this.logger.log(`Creating new user record with defaults`, { userId: data.user.id, username: data.user.name });
             user = await this.usersService.createUser(data.user.id, data.user.name);
         }
+
+        // An explicitly assigned user voice takes precedence over pronoun defaults.
+        if (!voice) {
+            voice = await this.voiceProviderService.getPronounDefaultVoice(user.pronouns);
+        }
         if (!voice) {
             voice = await this.voiceProviderService.getDefaultVoice();
         }
-        
-        
+
+
         const mode = await this.settingsService.getSetting('mode');
         switch (mode.value) {
             case 'trigger': {
@@ -99,7 +106,7 @@ export class SpeakCommand {
                 message = messagePrefix.value.replace('{ttsName}', user.ttsName) + ' ' + message;
             }
         }
-        
+
         await this.voiceProviderService.speak(voice, message);
         this.lastMessageUserId = data.user.id;
         this.lastMessageTime = Date.now();
@@ -129,7 +136,7 @@ export class SpeakCommand {
         // Get the default intro voice from settings
         const defaultIntroVoiceSetting = await this.settingsService.getSetting(Setting.DEFAULT_INTRO_VOICE);
         let introVoice: Voice;
-        
+
         if (defaultIntroVoiceSetting && defaultIntroVoiceSetting.value) {
             try {
                 const defaultIntroVoiceValue = JSON.parse(defaultIntroVoiceSetting.value);
@@ -186,7 +193,7 @@ export class SpeakCommand {
     }
 
     /**
-     * 
+     *
      * @param data - The data from the Twitch.ChatMessage or Twitch.FirstWord event.
      * @returns - The sanitized message string.
      */
@@ -224,7 +231,7 @@ export class SpeakCommand {
             }
         }
 
-        return output;
+        return output.trim();
     }
 
     /**

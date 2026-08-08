@@ -158,6 +158,44 @@ export class VoiceProviderService implements OnModuleInit {
     }
 
     /**
+     * Return the configured gendered default voice for supported pronouns.
+     * A null result signals that the caller should use the global default.
+     */
+    async getPronounDefaultVoice(pronouns?: string): Promise<Voice | null> {
+        let settingName: Setting;
+        if (pronouns === 'hehim') {
+            settingName = Setting.DEFAULT_MALE_VOICE;
+        } else if (pronouns === 'sheher') {
+            settingName = Setting.DEFAULT_FEMALE_VOICE;
+        } else {
+            return null;
+        }
+
+        const setting = await this.settingsService.getSetting(settingName);
+        if (!setting?.value) {
+            return null;
+        }
+
+        try {
+            const configuredVoice = JSON.parse(setting.value);
+            if (!configuredVoice.voiceId || !configuredVoice.providerName) {
+                return null;
+            }
+
+            return await this.getVoice(
+                configuredVoice.voiceId,
+                configuredVoice.providerName,
+            );
+        } catch (error) {
+            this.logger.warn(
+                `Failed to resolve ${settingName}; falling back to the global default voice`,
+                error,
+            );
+            return null;
+        }
+    }
+
+    /**
      * Update the ElevenLabs provider based on whether the API key is set in settings.
      * This method is called on module init and when the API key setting changes.
      */

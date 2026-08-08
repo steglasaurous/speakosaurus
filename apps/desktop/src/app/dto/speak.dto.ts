@@ -16,6 +16,13 @@ export class SpeakDto {
   voiceId?: string;
 
   @ApiProperty({
+    description: 'Pronouns used to select a configured male or female default voice when no explicit voice is provided.',
+    example: 'hehim',
+    required: false,
+  })
+  pronouns?: string;
+
+  @ApiProperty({
     description: 'The message text to be converted to speech',
     example: 'Hello, this is a test message.',
   })

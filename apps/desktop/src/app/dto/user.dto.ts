@@ -52,6 +52,12 @@ export class UserDto {
   ttsVoiceId?: string;
 
   @ApiPropertyOptional({
+    description: 'Pronouns used by the user',
+    example: 'hehim',
+  })
+  pronouns?: string;
+
+  @ApiPropertyOptional({
     description: 'Whether to disable welcoming this user on first words',
     example: false,
   })
@@ -82,6 +88,13 @@ export class UpdateUserDto {
     example: 'voice-123',
   })
   ttsVoiceId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Pronouns used by the user; null clears the selection',
+    example: 'hehim',
+    nullable: true,
+  })
+  pronouns?: string | null;
 
   @ApiPropertyOptional({
     description: 'Whether to disable welcoming this user on first words',

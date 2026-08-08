@@ -1,11 +1,14 @@
 import { DrizzleService } from "nestjs-drizzle/sqlite";
 import * as schema from "../database/schema";
 import { eq, inArray } from "drizzle-orm";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
+import axios from "axios";
 import { UserEventService } from "./user-event.service";
 
 @Injectable()
 export class UsersService {
+    private readonly logger = new Logger(UsersService.name);
+
     constructor(
         private readonly drizzleService: DrizzleService<typeof schema>,
         private readonly userEventService: UserEventService,
@@ -41,6 +44,7 @@ export class UsersService {
             ttsName: user.ttsName || undefined,
             ttsProviderName: user.ttsProviderName || undefined,
             ttsVoiceId: user.ttsVoiceId || undefined,
+            pronouns: user.pronouns || undefined,
             disableWelcome: user.disableWelcome || undefined,
             customIntros: customIntros,
         };
@@ -75,6 +79,7 @@ export class UsersService {
             ttsName: user.ttsName || undefined,
             ttsProviderName: user.ttsProviderName || undefined,
             ttsVoiceId: user.ttsVoiceId || undefined,
+            pronouns: user.pronouns || undefined,
             disableWelcome: user.disableWelcome || undefined,
             customIntros: introsByUserId[user.twitchUserId] || [],
         }));
@@ -84,6 +89,7 @@ export class UsersService {
         ttsName?: string;
         ttsProviderName?: string;
         ttsVoiceId?: string;
+        pronouns?: string | null;
         disableWelcome?: boolean;
     }): Promise<any> {
         const [updated] = await this.drizzleService.db
@@ -116,6 +122,7 @@ export class UsersService {
             ttsName: updated.ttsName || undefined,
             ttsProviderName: updated.ttsProviderName || undefined,
             ttsVoiceId: updated.ttsVoiceId || undefined,
+            pronouns: updated.pronouns || undefined,
             disableWelcome: updated.disableWelcome || undefined,
             customIntros: customIntros,
         };
@@ -127,12 +134,14 @@ export class UsersService {
     }
 
     async createUser(twitchUserId: string, twitchUsername: string): Promise<any> {
+        const pronouns = await this.getPronouns(twitchUsername);
         const [user] = await this.drizzleService.db
             .insert(schema.users as any)
             .values({
                 twitchUserId,
                 twitchUsername,
                 ttsName: UsersService.ttsFriendlyUsername(twitchUsername),
+                pronouns,
             })
             .returning();
 
@@ -143,6 +152,7 @@ export class UsersService {
             ttsName: user.ttsName || undefined,
             ttsProviderName: user.ttsProviderName || undefined,
             ttsVoiceId: user.ttsVoiceId || undefined,
+            pronouns: user.pronouns || undefined,
             disableWelcome: user.disableWelcome || undefined,
             customIntros: [],
         };
@@ -230,9 +240,34 @@ export class UsersService {
             ttsName: user.ttsName || undefined,
             ttsProviderName: user.ttsProviderName || undefined,
             ttsVoiceId: user.ttsVoiceId || undefined,
+            pronouns: user.pronouns || undefined,
             disableWelcome: user.disableWelcome || undefined,
             customIntros: introsByUserId[user.twitchUserId] || [],
         }));
+    }
+
+    private async getPronouns(twitchUsername: string): Promise<string | undefined> {
+        try {
+            const response = await axios.get(
+                `https://api.pronouns.alejo.io/v1/users/${encodeURIComponent(twitchUsername)}`,
+                { timeout: 5000 },
+            );
+
+            if (
+                response.data &&
+                typeof response.data === "object" &&
+                typeof response.data.pronoun_id === "string"
+            ) {
+                return response.data.pronoun_id;
+            }
+        } catch (error) {
+            this.logger.warn(
+                `Unable to retrieve pronouns for Twitch user '${twitchUsername}'`,
+                error,
+            );
+        }
+
+        return undefined;
     }
 
     static ttsFriendlyUsername(username: string): string {

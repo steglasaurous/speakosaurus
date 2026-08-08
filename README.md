@@ -7,6 +7,11 @@ An app to provide TTS to twitch streams (or anything supported by streamerbot)
 - Streamer.bot running and connected to you broadcast account
 - Streamer.bot websocket server enabled
 
+# Pronouns notes
+
+https://api.pronouns.alejo.io/v1/users/omnidreamer_
+- API call to get stuff.
+
 # TODO
 
 - [ ] Design how mods can connect and use app (API bridge?)

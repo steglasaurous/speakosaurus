@@ -12,6 +12,7 @@ export const users = sqliteTable('users', {
   ttsName: text('tts_name'),
   ttsProviderName: text('tts_provider_name'),
   ttsVoiceId: text('tts_voice_id'),
+  pronouns: text('pronouns'),
   // Whether to disable welcoming this user on first words
   disableWelcome: integer('disable_welcome', { mode: 'boolean' }),
 });
