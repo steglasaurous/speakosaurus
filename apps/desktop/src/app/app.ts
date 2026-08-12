@@ -188,9 +188,9 @@ export default class App {
     App.mainWindow.once('ready-to-show', () => {
       Logger.log('Window ready to show');
       App.mainWindow.show();
-      if (App.isDevelopmentMode()) {
-        App.mainWindow.webContents.openDevTools({ mode: 'detach' });
-      }
+      // if (App.isDevelopmentMode()) {
+      //   App.mainWindow.webContents.openDevTools({ mode: 'detach' });
+      // }
     });
 
     // Keep a keyboard shortcut available even with the app menu removed
