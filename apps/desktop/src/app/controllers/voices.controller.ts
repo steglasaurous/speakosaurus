@@ -10,7 +10,7 @@ export class VoicesController {
     private readonly voiceProviderService: VoiceProviderService) {}
 
   @Get()
-  @ApiOperation({ 
+  @ApiOperation({
     summary: 'Get all available voices',
     description: 'Returns an array of all available voices from all configured voice providers',
   })
@@ -35,6 +35,10 @@ export class VoicesController {
       displayName: voice.displayName,
       group: voice.group,
       previewUrl: voice.previewUrl,
+      language: voice.language,
+      gender: voice.gender,
+      description: voice.description,
+      locale: voice.locale,
     }));
   }
 }

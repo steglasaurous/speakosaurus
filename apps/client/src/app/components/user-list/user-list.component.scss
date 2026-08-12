@@ -111,10 +111,16 @@ h1 {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  width: 100%;
   padding: 20px 24px;
+  border: none;
   border-bottom: 1px solid #e5e5e7;
+  background: none;
+  font: inherit;
+  text-align: left;
   text-decoration: none;
   color: inherit;
+  cursor: pointer;
   transition: background-color 0.2s;
 }
 
@@ -179,6 +185,28 @@ h1 {
 .empty-state-icon {
   font-size: 48px;
   margin-bottom: 16px;
+}
+
+.user-detail-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  padding: 24px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
+}
+
+.user-detail-modal app-user-detail {
+  display: block;
+  width: min(1000px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  background: #f5f5f7;
+  border-radius: 12px;
+  box-shadow: 0 16px 48px rgba(0, 0, 0, 0.24);
 }
 
 // Twitch Search Panel

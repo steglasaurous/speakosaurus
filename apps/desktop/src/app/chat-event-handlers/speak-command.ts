@@ -74,7 +74,7 @@ export class SpeakCommand {
         const mode = await this.settingsService.getSetting('mode');
         switch (mode.value) {
             case 'trigger': {
-                if (! await this.messageContainsTrigger(data.message.message)) {
+                if (! await this.messageContainsTrigger(data.text)) {
                     return;
                 }
                 break;
@@ -84,7 +84,7 @@ export class SpeakCommand {
             }
             case 'always': {
                 // Check if the line starts with an exclamation point.  If it does, ignore it.
-                if (data.message.message.startsWith('!') && ! await this.messageContainsTrigger(data.message.message)) {
+                if (data.text.startsWith('!') && ! await this.messageContainsTrigger(data.text)) {
                     return;
                 }
                 break;

@@ -4,6 +4,14 @@
   padding: 24px;
 }
 
+:host-context(.settings-modal) .header {
+  top: 0;
+}
+
+:host-context(.settings-modal) .tabs {
+  top: 91px;
+}
+
 .header {
   background: white;
   padding: 24px;
@@ -45,6 +53,48 @@ h1 {
   font-size: 28px;
   font-weight: 600;
   margin: 0;
+}
+
+.populate-pronouns-button {
+  background: #34c759;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.populate-pronouns-button:hover:not(:disabled) {
+  background: #28a745;
+}
+
+.populate-pronouns-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.pronoun-population-action {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  margin-top: 32px;
+  padding-top: 24px;
+  border-top: 2px solid #e5e5e7;
+}
+
+.pronoun-population-action h3 {
+  margin: 0 0 6px;
+  font-size: 18px;
+}
+
+.pronoun-population-action p {
+  margin: 0;
+  color: #86868b;
+  font-size: 14px;
 }
 
 .save-all-button {
@@ -93,12 +143,16 @@ h1 {
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  overflow: hidden;
+  overflow: visible;
 }
 
 .tabs {
   display: flex;
+  position: sticky;
+  top: 139px; // Status bar (48px) plus the sticky settings header (approximately 91px)
+  z-index: 98;
   border-bottom: 2px solid #e5e5e7;
+  border-radius: 12px 12px 0 0;
   background: #f5f5f7;
   overflow-x: auto;
 }
@@ -129,6 +183,8 @@ h1 {
 
 .tab-content {
   padding: 24px;
+  border-radius: 0 0 12px 12px;
+  background: white;
 }
 
 .subgroup-container {

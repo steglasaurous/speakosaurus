@@ -27,16 +27,16 @@ type PiperVoicesResponse = Record<
 
 /**
  * Piper voice provider - this uses piper's http server to get voices and render output.
- * 
+ *
  */
 export class PiperVoiceProvider implements VoiceProvider {
     providerName = 'piper';
     private logger: Logger = new Logger(PiperVoiceProvider.constructor.name);
 
     constructor(
-        private readonly piperUrl: string = 'http://localhost:5000', 
+        private readonly piperUrl = 'http://localhost:5000',
         private readonly httpService: HttpService) {
-        
+
     }
 
     async getVoices(): Promise<Voice[]> {
@@ -73,6 +73,8 @@ export class PiperVoiceProvider implements VoiceProvider {
                 voiceName: voiceId,
                 displayName,
                 group: lang?.code ?? lang?.family,
+                language: config.language?.family || undefined,
+                locale: config.language?.code?.replace('_', '-') || undefined,
             });
         }
 
@@ -90,7 +92,7 @@ export class PiperVoiceProvider implements VoiceProvider {
     async getRenderedMessage(message: string, voice: Voice): Promise<AudioData> {
         const ttsResponse = await firstValueFrom(
             this.httpService.post<ArrayBuffer>(
-                `${this.piperUrl.replace(/\/$/, "")}/`,
+                `${this.piperUrl.replace(/\/$/, "")}/synthesize`,
                 { text: message, voice: voice.voiceId },
                 {
                     headers: { "Content-Type": "application/json" },

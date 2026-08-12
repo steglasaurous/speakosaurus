@@ -121,6 +121,23 @@ export class UsersController {
     return user;
   }
 
+  @Post('populate-pronouns')
+  @ApiOperation({
+    summary: 'Populate missing user pronouns',
+    description: 'Queries the pronouns service for every user without stored pronouns and updates users when a setting is found',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Pronoun lookup completed',
+  })
+  async populateMissingPronouns(): Promise<{
+    checked: number;
+    updated: number;
+    unchanged: number;
+  }> {
+    return await this.usersService.populateMissingPronouns();
+  }
+
   @Get(':twitchUserId')
   @ApiOperation({
     summary: 'Get a user by Twitch user ID',

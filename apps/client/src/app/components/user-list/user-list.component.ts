@@ -1,17 +1,17 @@
 import { Component, inject, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { Subject, firstValueFrom, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { UsersService, User } from '../../services/users.service';
 import { VoicesService, Voice } from '../../services/voices.service';
 import { TwitchService, TwitchUser } from '../../services/twitch.service';
+import { UserDetailComponent } from '../user-detail/user-detail.component';
 
 @Component({
   selector: 'app-user-list',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule],
+  imports: [CommonModule, FormsModule, UserDetailComponent],
   templateUrl: './user-list.component.html',
   styleUrl: './user-list.component.scss',
 })
@@ -19,6 +19,7 @@ export class UserListComponent implements OnInit, OnDestroy {
   users: User[] = [];
   filteredUsers: User[] = [];
   searchQuery = '';
+  selectedUserId: string | null = null;
   
   // Twitch search
   showTwitchSearch = false;
@@ -42,6 +43,8 @@ export class UserListComponent implements OnInit, OnDestroy {
   private cdr = inject(ChangeDetectorRef);
   private voices: Voice[] = [];
   private usersSubscription?: Subscription;
+  private previousBodyOverflow = '';
+  private isBodyScrollLocked = false;
 
   ngOnInit(): void {
     this.loadVoices();
@@ -160,6 +163,40 @@ export class UserListComponent implements OnInit, OnDestroy {
 
   getIntroCount(user: User): number {
     return user.customIntros?.length || 0;
+  }
+
+  getPronounDisplayName(pronouns?: string): string {
+    switch (pronouns) {
+      case 'hehim':
+        return 'He/Him';
+      case 'sheher':
+        return 'She/Her';
+      case 'theythem':
+        return 'They/Them';
+      default:
+        return pronouns || 'Not set';
+    }
+  }
+
+  openUser(user: User): void {
+    this.selectedUserId = user.twitchUserId;
+    this.previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    this.isBodyScrollLocked = true;
+  }
+
+  closeUser(): void {
+    this.selectedUserId = null;
+    this.restoreBodyScrolling();
+  }
+
+  private restoreBodyScrolling(): void {
+    if (!this.isBodyScrollLocked) {
+      return;
+    }
+
+    document.body.style.overflow = this.previousBodyOverflow;
+    this.isBodyScrollLocked = false;
   }
 
   toggleTwitchSearch(): void {
@@ -309,6 +346,7 @@ export class UserListComponent implements OnInit, OnDestroy {
   }
 
   ngOnDestroy(): void {
+    this.restoreBodyScrolling();
     this.stopPolling();
     this.usersSubscription?.unsubscribe();
   }

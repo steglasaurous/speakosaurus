@@ -1,4 +1,4 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, EventEmitter, HostListener, inject, Input, OnInit, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
@@ -18,7 +18,9 @@ import { VoiceSelectorComponent } from '../voice-selector/voice-selector.compone
 })
 export class UserDetailComponent implements OnInit {
   user: User | null = null;
-  twitchUserId = '';
+  @Input() twitchUserId = '';
+  @Input() modalMode = false;
+  @Output() closed = new EventEmitter<void>();
 
   // Voice selection
   selectedVoice: Voice | null = null;
@@ -52,10 +54,16 @@ export class UserDetailComponent implements OnInit {
   private apiUrl = 'http://localhost:3000/api';
 
   ngOnInit(): void {
-    this.twitchUserId = this.route.snapshot.paramMap.get('twitchUserId') || '';
+    if (!this.twitchUserId) {
+      this.twitchUserId = this.route.snapshot.paramMap.get('twitchUserId') || '';
+    }
 
     if (!this.twitchUserId) {
-      this.router.navigate(['/users']);
+      if (this.modalMode) {
+        this.closed.emit();
+      } else {
+        this.router.navigate(['/users']);
+      }
       return;
     }
 
@@ -284,7 +292,7 @@ export class UserDetailComponent implements OnInit {
 
         if (introObservables.length === 0) {
           this.saving = false;
-          this.loadUser();
+          this.finishSuccessfulSave();
           return;
         }
 
@@ -292,8 +300,7 @@ export class UserDetailComponent implements OnInit {
         forkJoin(introObservables).subscribe({
           next: () => {
             this.saving = false;
-            // Reload user to get updated data
-            this.loadUser();
+            this.finishSuccessfulSave();
           },
           error: (error) => {
             console.error('Error saving intros:', error);
@@ -374,15 +381,39 @@ export class UserDetailComponent implements OnInit {
     return false;
   }
 
+  private finishSuccessfulSave(): void {
+    if (this.modalMode) {
+      this.closed.emit();
+    } else {
+      this.loadUser();
+    }
+  }
+
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.modalMode) {
+      this.requestClose();
+    }
+  }
+
   onBackClick(event: Event): void {
     event.preventDefault();
+    this.requestClose();
+  }
+
+  requestClose(): void {
     if (this.hasUnsavedChanges()) {
-      const confirmed = confirm('You have unsaved changes. Are you sure you want to discard them and go back?');
+      const confirmed = confirm('You have unsaved changes. Are you sure you want to discard them?');
       if (!confirmed) {
         return;
       }
     }
-    this.router.navigate(['/users']);
+
+    if (this.modalMode) {
+      this.closed.emit();
+    } else {
+      this.router.navigate(['/users']);
+    }
   }
 }
 

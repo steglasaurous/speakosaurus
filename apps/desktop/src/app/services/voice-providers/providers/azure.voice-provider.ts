@@ -6,6 +6,7 @@ import {
   SpeechConfig,
   SpeechSynthesizer,
   SpeechSynthesisOutputFormat,
+  SynthesisVoiceGender,
 } from 'microsoft-cognitiveservices-speech-sdk';
 import { v4 as uuid } from 'uuid';
 import { join } from 'path';
@@ -40,12 +41,16 @@ export class AzureVoiceProvider implements VoiceProvider {
     const result = await speechSynthesizer.getVoicesAsync();
     const voices: Voice[] = [];
     for (const voice of result.voices) {
-      voices.push({
+      const newVoice: Voice = {
         providerName: this.providerName,
         voiceId: voice.name,
         voiceName: voice.name,
         displayName: voice.name,
-      });
+        locale: voice.locale,
+        gender: voice.gender === SynthesisVoiceGender.Male ? 'male' : voice.gender === SynthesisVoiceGender.Female ? 'female' : 'other',
+        language: voice.locale?.split('-')[0],
+      };
+      voices.push(newVoice);
     }
 
     // Clean up the synthesizer
@@ -84,16 +89,16 @@ export class AzureVoiceProvider implements VoiceProvider {
               reject(new Error('No audio data received from Azure Speech SDK'));
               return;
             }
-            
+
             // Convert ArrayBuffer to Node.js Buffer and write to file
             const buffer = Buffer.from(audioData);
             writeFileSync(tempFilePath, buffer);
-            
-            this.logger.log('Audio file written successfully', { 
-              filePath: tempFilePath, 
-              size: buffer.length 
+
+            this.logger.log('Audio file written successfully', {
+              filePath: tempFilePath,
+              size: buffer.length
             });
-            
+
             speechSynthesizer.close();
             resolve({
               message,

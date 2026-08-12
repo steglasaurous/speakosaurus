@@ -1,0 +1,1029 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Voice Picker — Anchored Panel · Speak Manager</title>
+  <style>
+    :root {
+      --bg: #f5f5f7;
+      --surface: #ffffff;
+      --text: #1d1d1f;
+      --muted: #86868b;
+      --border: #e5e5e7;
+      --accent: #007aff;
+      --accent-hover: #0051d5;
+      --accent-soft: #e8f4fd;
+      --star: #ff9f0a;
+      --radius: 12px;
+      --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      --shadow-lg: 0 12px 40px rgba(0, 0, 0, 0.14);
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+      min-height: 100vh;
+    }
+
+    .mockup-banner {
+      background: #1d1d1f;
+      color: #fff;
+      padding: 12px 24px;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+    }
+
+    .mockup-banner a { color: #64b5ff; text-decoration: none; }
+    .mockup-banner a:hover { text-decoration: underline; }
+
+    .badge-concept {
+      background: #34c759;
+      color: #fff;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      padding: 4px 8px;
+      border-radius: 6px;
+    }
+
+    .page {
+      max-width: 640px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+
+    .card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 24px;
+      margin-top: 24px;
+    }
+
+    h1 { font-size: 24px; font-weight: 600; margin-bottom: 4px; }
+    .subtitle { color: var(--muted); font-size: 14px; margin-bottom: 24px; }
+
+    .form-label {
+      display: block;
+      font-size: 14px;
+      font-weight: 500;
+      margin-bottom: 8px;
+    }
+
+    .hint {
+      font-size: 13px;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+
+    .picker-field {
+      position: relative;
+    }
+
+    .selection-display {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      width: 100%;
+      padding: 12px 14px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      cursor: pointer;
+      font: inherit;
+      color: inherit;
+      text-align: left;
+      transition: border-color 0.15s, box-shadow 0.15s;
+    }
+
+    .selection-display:hover,
+    .selection-display.open,
+    .selection-display:focus-visible {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
+      outline: none;
+    }
+
+    .selection-display .sel-main { flex: 1; min-width: 0; }
+    .selection-display .sel-name { font-weight: 500; display: block; }
+    .selection-display .sel-meta {
+      font-size: 12px;
+      color: var(--muted);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .provider-pill {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.03em;
+      background: var(--accent-soft);
+      color: var(--accent);
+      padding: 4px 8px;
+      border-radius: 6px;
+      flex-shrink: 0;
+    }
+
+    .change-hint {
+      font-size: 12px;
+      color: var(--accent);
+      font-weight: 500;
+      flex-shrink: 0;
+    }
+
+    /* Anchored panel */
+    .panel {
+      display: none;
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(100% + 8px);
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow-lg);
+      z-index: 50;
+      overflow: hidden;
+      animation: pop 0.15s ease;
+    }
+
+    .panel.open { display: flex; flex-direction: column; max-height: 520px; }
+
+    @keyframes pop {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .panel-toolbar {
+      padding: 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      background: #fafafa;
+    }
+
+    .search-row {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+    }
+
+    .search-wrap {
+      flex: 1;
+      position: relative;
+    }
+
+    .search-wrap svg {
+      position: absolute;
+      left: 10px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      pointer-events: none;
+    }
+
+    .search-input {
+      width: 100%;
+      padding: 9px 10px 9px 32px;
+      border: 2px solid var(--border);
+      border-radius: 8px;
+      font: inherit;
+      font-size: 14px;
+      background: var(--surface);
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .filter-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .filter-label {
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      color: var(--muted);
+      margin-right: 2px;
+    }
+
+    select.lang-select {
+      font: inherit;
+      font-size: 12px;
+      padding: 6px 8px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+    }
+
+    select.lang-select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+
+    .chip {
+      font: inherit;
+      font-size: 12px;
+      padding: 5px 10px;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      transition: 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    .chip:hover { border-color: #c7c7cc; }
+    .chip.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: #fff;
+    }
+
+    .chip.toggle.active {
+      background: #fff4e5;
+      border-color: #ff9f0a;
+      color: #9a5b00;
+    }
+
+    .chip-more {
+      position: relative;
+    }
+
+    .tag-menu {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      box-shadow: var(--shadow-lg);
+      padding: 8px;
+      min-width: 180px;
+      z-index: 60;
+    }
+
+    .tag-menu.open { display: block; }
+
+    .tag-menu-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 8px 10px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      font: inherit;
+      font-size: 13px;
+      cursor: pointer;
+      text-align: left;
+      color: var(--text);
+    }
+
+    .tag-menu-item:hover { background: var(--bg); }
+    .tag-menu-item .check {
+      width: 14px;
+      color: var(--accent);
+      opacity: 0;
+    }
+    .tag-menu-item.on .check { opacity: 1; }
+
+    .active-filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .active-filters:empty { display: none; }
+
+    .removable {
+      background: var(--accent-soft);
+      border-color: transparent;
+      color: var(--accent);
+    }
+
+    .removable .x {
+      opacity: 0.7;
+      font-size: 14px;
+      line-height: 1;
+    }
+
+    .clear-link {
+      font: inherit;
+      font-size: 12px;
+      color: var(--accent);
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .clear-link:hover { text-decoration: underline; }
+
+    .panel-body {
+      overflow-y: auto;
+      flex: 1;
+      min-height: 200px;
+    }
+
+    .group-header {
+      position: sticky;
+      top: 0;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      width: 100%;
+      padding: 8px 14px;
+      background: var(--bg);
+      border: none;
+      font: inherit;
+      font-size: 11px;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      cursor: pointer;
+      text-align: left;
+    }
+
+    .group-header.fav {
+      background: #fff8eb;
+      color: #b36b00;
+    }
+
+    .group-header .chevron {
+      width: 14px;
+      height: 14px;
+      transition: transform 0.15s;
+    }
+
+    .group.collapsed .chevron { transform: rotate(-90deg); }
+    .group.collapsed .group-body { display: none; }
+
+    .group-count {
+      margin-left: auto;
+      font-weight: 500;
+      letter-spacing: 0;
+      text-transform: none;
+    }
+
+    .voice-row {
+      display: grid;
+      grid-template-columns: 28px 1fr auto;
+      gap: 4px 6px;
+      align-items: center;
+      width: 100%;
+      padding: 9px 12px 9px 10px;
+      border: none;
+      background: transparent;
+      font: inherit;
+      text-align: left;
+      color: inherit;
+      cursor: pointer;
+    }
+
+    .voice-row:hover { background: var(--bg); }
+    .voice-row.selected { background: var(--accent-soft); }
+    .voice-row.selected .v-name { color: var(--accent); font-weight: 600; }
+
+    .star-btn {
+      width: 28px;
+      height: 28px;
+      border: none;
+      background: transparent;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #c7c7cc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .star-btn:hover { color: var(--star); background: rgba(0,0,0,0.04); }
+    .star-btn.on { color: var(--star); }
+
+    .v-name {
+      font-size: 14px;
+      font-weight: 500;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .v-sub {
+      font-size: 12px;
+      color: var(--muted);
+      margin-top: 1px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      align-items: center;
+    }
+
+    .mini-tag {
+      font-size: 10px;
+      font-weight: 500;
+      padding: 2px 6px;
+      border-radius: 4px;
+      background: var(--bg);
+      color: #636366;
+    }
+
+    .assigned-label { color: #b36b00; font-size: 11px; }
+    .assigned-dot {
+      width: 6px;
+      height: 6px;
+      border-radius: 50%;
+      background: #ff9f0a;
+      display: inline-block;
+      vertical-align: middle;
+    }
+
+    .play-btn {
+      width: 30px;
+      height: 30px;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: white;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .play-btn:hover { background: var(--accent-hover); }
+    .play-btn.playing { background: #34c759; }
+
+    .empty {
+      padding: 40px 20px;
+      text-align: center;
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .panel-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 12px;
+      border-top: 1px solid var(--border);
+      background: var(--bg);
+      font-size: 12px;
+      color: var(--muted);
+    }
+
+    .notes {
+      margin-top: 28px;
+      padding: 16px;
+      background: var(--bg);
+      border-radius: 8px;
+      border-left: 3px solid #34c759;
+      font-size: 13px;
+      color: #424245;
+    }
+
+    .notes h3 {
+      font-size: 13px;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+
+    .notes ul { padding-left: 18px; }
+    .notes li { margin-bottom: 4px; }
+
+    .compare {
+      margin-top: 16px;
+      display: grid;
+      gap: 12px;
+    }
+
+    @media (min-width: 700px) {
+      .compare { grid-template-columns: 1fr 1fr; }
+    }
+
+    .compare-card {
+      background: var(--surface);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 16px;
+      font-size: 13px;
+    }
+
+    .compare-card h3 {
+      font-size: 14px;
+      margin-bottom: 8px;
+    }
+
+    .compare-card a {
+      color: var(--accent);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .compare-card a:hover { text-decoration: underline; }
+
+    .toast {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(80px);
+      background: #1d1d1f;
+      color: white;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-size: 13px;
+      opacity: 0;
+      transition: 0.25s;
+      z-index: 200;
+      pointer-events: none;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    .backdrop {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 40;
+    }
+
+    .backdrop.open { display: block; }
+  </style>
+</head>
+<body>
+  <div class="mockup-banner">
+    <div>
+      <span class="badge-concept">Concept B</span>
+      &nbsp; Anchored panel — chip filters above a grouped list, stays near the field
+    </div>
+    <div>
+      <a href="voice-picker-modal.html">← Concept A</a>
+      &nbsp;·&nbsp;
+      <a href="index.html">All mockups</a>
+    </div>
+  </div>
+
+  <div class="backdrop" id="backdrop"></div>
+
+  <div class="page">
+    <div class="card">
+      <h1>Default Voices</h1>
+      <p class="subtitle">Settings · pick a default without losing the full catalogue</p>
+
+      <label class="form-label">Default voice</label>
+      <p class="hint">
+        The field shows the current selection. Opening the panel starts with an empty search —
+        you are not trapped filtering by “Rachel”.
+      </p>
+
+      <div class="picker-field" id="picker-field">
+        <button type="button" class="selection-display" id="trigger" aria-expanded="false" aria-haspopup="listbox">
+          <span class="provider-pill" id="sel-provider">elevenlabs</span>
+          <span class="sel-main">
+            <span class="sel-name" id="sel-name">Rachel</span>
+            <span class="sel-meta" id="sel-meta">en-US · female · calm</span>
+          </span>
+          <span class="change-hint">Change</span>
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+          </svg>
+        </button>
+
+        <div class="panel" id="panel" role="listbox" aria-label="Voice list">
+          <div class="panel-toolbar">
+            <div class="search-row">
+              <div class="search-wrap">
+                <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z"/>
+                </svg>
+                <input type="search" class="search-input" id="search" placeholder="Filter voices…" autocomplete="off">
+              </div>
+            </div>
+
+            <div class="filter-row">
+              <span class="filter-label">Lang</span>
+              <select class="lang-select" id="lang" aria-label="Language">
+                <option value="all">All</option>
+              </select>
+
+              <button type="button" class="chip toggle" id="unassigned" aria-pressed="false">
+                Unassigned only
+              </button>
+
+              <div class="chip-more">
+                <button type="button" class="chip" id="tags-btn" aria-haspopup="true" aria-expanded="false">
+                  Tags
+                  <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                  </svg>
+                </button>
+                <div class="tag-menu" id="tag-menu"></div>
+              </div>
+            </div>
+
+            <div class="active-filters" id="active-filters"></div>
+          </div>
+
+          <div class="panel-body" id="list"></div>
+
+          <div class="panel-footer">
+            <span id="count"></span>
+            <span>★ favourites · click a row to select</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="notes">
+        <h3>Why this concept</h3>
+        <ul>
+          <li><strong>Selection display is read-only</strong> — search lives inside the panel, so the current name never becomes the query.</li>
+          <li><strong>Chip / dropdown filters</strong> keep the UI compact for Settings forms with several voice fields.</li>
+          <li><strong>Favourites first</strong>, then provider groups — same information architecture as Concept A.</li>
+          <li>Closer to today’s autocomplete footprint; lighter than a full modal.</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="compare">
+      <div class="compare-card">
+        <h3>Concept A — Modal</h3>
+        <p>Sidebar filters, explicit Apply, better for “browse hundreds of voices” sessions.</p>
+        <p style="margin-top:8px"><a href="voice-picker-modal.html">Open Concept A →</a></p>
+      </div>
+      <div class="compare-card">
+        <h3>Concept B — Panel (this page)</h3>
+        <p>Inline under the field, instant select-on-click, better for quick swaps in forms.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    const PROVIDER_ORDER = ['favourites', 'elevenlabs', 'azure', 'piper', 'ttsMonster', 'speakertts'];
+    const PROVIDER_LABELS = {
+      favourites: 'Favourites',
+      elevenlabs: 'ElevenLabs',
+      azure: 'Azure',
+      piper: 'Piper',
+      ttsMonster: 'TTS Monster',
+      speakertts: 'SpeakerTTS',
+    };
+    const ALL_TAGS = ['female', 'male', 'neutral', 'low', 'high', 'calm', 'energetic', 'narrative', 'conversational'];
+    const CURRENT_USER = 'StreamUser42';
+
+    const voices = [
+      { id: 'el-rachel', provider: 'elevenlabs', name: 'Rachel', language: 'en-US', tags: ['female', 'calm', 'conversational'], favourite: true, assignedTo: null },
+      { id: 'el-drew', provider: 'elevenlabs', name: 'Drew', language: 'en-US', tags: ['male', 'conversational'], favourite: false, assignedTo: 'NightOwl' },
+      { id: 'el-clyde', provider: 'elevenlabs', name: 'Clyde', language: 'en-US', tags: ['male', 'low', 'narrative'], favourite: true, assignedTo: null },
+      { id: 'el-domi', provider: 'elevenlabs', name: 'Domi', language: 'en-US', tags: ['female', 'energetic'], favourite: false, assignedTo: null },
+      { id: 'el-bella', provider: 'elevenlabs', name: 'Bella', language: 'en-GB', tags: ['female', 'high', 'calm'], favourite: false, assignedTo: CURRENT_USER },
+      { id: 'el-antoni', provider: 'elevenlabs', name: 'Antoni', language: 'en-US', tags: ['male', 'narrative'], favourite: false, assignedTo: null },
+      { id: 'el-elli', provider: 'elevenlabs', name: 'Elli', language: 'en-US', tags: ['female', 'high', 'energetic'], favourite: false, assignedTo: null },
+      { id: 'el-josh', provider: 'elevenlabs', name: 'Josh', language: 'en-US', tags: ['male', 'low'], favourite: false, assignedTo: 'ChatMod' },
+      { id: 'az-jenny', provider: 'azure', name: 'Jenny Neural', language: 'en-US', tags: ['female', 'conversational'], favourite: true, assignedTo: null },
+      { id: 'az-guy', provider: 'azure', name: 'Guy Neural', language: 'en-US', tags: ['male', 'conversational'], favourite: false, assignedTo: null },
+      { id: 'az-aria', provider: 'azure', name: 'Aria Neural', language: 'en-US', tags: ['female', 'narrative'], favourite: false, assignedTo: null },
+      { id: 'az-sonia', provider: 'azure', name: 'Sonia Neural', language: 'en-GB', tags: ['female', 'calm'], favourite: false, assignedTo: null },
+      { id: 'az-ryan', provider: 'azure', name: 'Ryan Neural', language: 'en-GB', tags: ['male', 'narrative'], favourite: false, assignedTo: null },
+      { id: 'az-denise', provider: 'azure', name: 'Denise Neural', language: 'nl-NL', tags: ['female'], favourite: false, assignedTo: null },
+      { id: 'az-horacio', provider: 'azure', name: 'Horacio Neural', language: 'es-ES', tags: ['male', 'low'], favourite: false, assignedTo: null },
+      { id: 'pi-lessac', provider: 'piper', name: 'en_US-lessac-medium', language: 'en-US', tags: ['neutral', 'narrative'], favourite: false, assignedTo: null },
+      { id: 'pi-amy', provider: 'piper', name: 'en_US-amy-medium', language: 'en-US', tags: ['female', 'conversational'], favourite: true, assignedTo: null },
+      { id: 'pi-ryan', provider: 'piper', name: 'en_US-ryan-high', language: 'en-US', tags: ['male', 'high'], favourite: false, assignedTo: null },
+      { id: 'pi-alba', provider: 'piper', name: 'en_GB-alba-medium', language: 'en-GB', tags: ['female'], favourite: false, assignedTo: null },
+      { id: 'pi-mls', provider: 'piper', name: 'fr_FR-mls-medium', language: 'fr-FR', tags: ['neutral'], favourite: false, assignedTo: null },
+      { id: 'tm-adam', provider: 'ttsMonster', name: 'Adam', language: 'en-US', tags: ['male', 'low'], favourite: false, assignedTo: null },
+      { id: 'tm-luna', provider: 'ttsMonster', name: 'Luna', language: 'en-US', tags: ['female', 'high', 'energetic'], favourite: false, assignedTo: 'VTuberKai' },
+      { id: 'tm-nova', provider: 'ttsMonster', name: 'Nova', language: 'en-US', tags: ['female', 'calm'], favourite: false, assignedTo: null },
+      { id: 'tm-brit', provider: 'ttsMonster', name: 'Britannia', language: 'en-GB', tags: ['female', 'narrative'], favourite: false, assignedTo: null },
+      { id: 'st-samantha', provider: 'speakertts', name: 'Samantha', language: 'en-US', tags: ['female'], favourite: false, assignedTo: null },
+      { id: 'st-alex', provider: 'speakertts', name: 'Alex', language: 'en-US', tags: ['male'], favourite: false, assignedTo: null },
+      { id: 'st-daniel', provider: 'speakertts', name: 'Daniel', language: 'en-GB', tags: ['male'], favourite: false, assignedTo: null },
+      { id: 'st-karen', provider: 'speakertts', name: 'Karen', language: 'en-AU', tags: ['female'], favourite: false, assignedTo: null },
+    ];
+
+    let selectedId = 'el-rachel';
+    let searchQuery = '';
+    let languageFilter = 'all';
+    let unassignedOnly = false;
+    let activeTags = new Set();
+    let collapsed = new Set();
+
+    const $ = (id) => document.getElementById(id);
+
+    function toast(msg) {
+      const el = $('toast');
+      el.textContent = msg;
+      el.classList.add('show');
+      clearTimeout(toast._t);
+      toast._t = setTimeout(() => el.classList.remove('show'), 1600);
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, (c) => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+      })[c]);
+    }
+
+    function isAssignedToOther(v) {
+      return v.assignedTo && v.assignedTo !== CURRENT_USER;
+    }
+
+    function matches(v) {
+      if (languageFilter !== 'all' && v.language !== languageFilter) return false;
+      if (unassignedOnly && isAssignedToOther(v)) return false;
+      if (activeTags.size && ![...activeTags].every((t) => v.tags.includes(t))) return false;
+      if (searchQuery) {
+        const q = searchQuery.toLowerCase();
+        const hay = `${v.name} ${v.provider} ${v.language} ${v.tags.join(' ')}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    }
+
+    function syncSelection() {
+      const v = voices.find((x) => x.id === selectedId);
+      if (!v) return;
+      $('sel-provider').textContent = v.provider;
+      $('sel-name').textContent = v.name;
+      $('sel-meta').textContent = `${v.language} · ${v.tags.join(' · ')}`;
+    }
+
+    function fillLangSelect() {
+      const langs = [...new Set(voices.map((v) => v.language))].sort();
+      $('lang').innerHTML =
+        `<option value="all">All</option>` +
+        langs.map((l) => `<option value="${l}">${l}</option>`).join('');
+      $('lang').value = languageFilter;
+    }
+
+    function renderTagMenu() {
+      $('tag-menu').innerHTML = ALL_TAGS.map((tag) => `
+        <button type="button" class="tag-menu-item ${activeTags.has(tag) ? 'on' : ''}" data-tag="${tag}">
+          <span class="check">✓</span>
+          ${tag}
+        </button>
+      `).join('');
+      $('tags-btn').classList.toggle('active', activeTags.size > 0);
+      $('tags-btn').innerHTML = activeTags.size
+        ? `Tags (${activeTags.size}) <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>`
+        : `Tags <svg width="12" height="12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>`;
+    }
+
+    function renderActiveFilters() {
+      const chips = [];
+      if (languageFilter !== 'all') {
+        chips.push(`<button type="button" class="chip removable" data-clear="lang">${languageFilter} <span class="x">×</span></button>`);
+      }
+      if (unassignedOnly) {
+        chips.push(`<button type="button" class="chip removable" data-clear="unassigned">Unassigned <span class="x">×</span></button>`);
+      }
+      for (const tag of activeTags) {
+        chips.push(`<button type="button" class="chip removable" data-clear-tag="${tag}">${tag} <span class="x">×</span></button>`);
+      }
+      if (chips.length) {
+        chips.push(`<button type="button" class="clear-link" data-clear="all">Clear all</button>`);
+      }
+      $('active-filters').innerHTML = chips.join('');
+    }
+
+    function renderList() {
+      const filtered = voices.filter(matches);
+      $('count').textContent = `${filtered.length} shown`;
+      renderActiveFilters();
+
+      if (!filtered.length) {
+        $('list').innerHTML = `<div class="empty">No voices match. Clear a filter or search.</div>`;
+        return;
+      }
+
+      const favs = filtered.filter((v) => v.favourite);
+      const byProvider = {};
+      for (const v of filtered) (byProvider[v.provider] ||= []).push(v);
+
+      const sections = [];
+      if (favs.length) sections.push({ key: 'favourites', items: favs });
+      for (const key of PROVIDER_ORDER) {
+        if (key === 'favourites') continue;
+        if (byProvider[key]?.length) sections.push({ key, items: byProvider[key] });
+      }
+
+      $('list').innerHTML = sections.map(({ key, items }) => `
+        <section class="group ${collapsed.has(key) ? 'collapsed' : ''}" data-group="${key}">
+          <button type="button" class="group-header ${key === 'favourites' ? 'fav' : ''}" data-toggle="${key}">
+            <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/></svg>
+            ${key === 'favourites' ? '★ ' : ''}${PROVIDER_LABELS[key] || key}
+            <span class="group-count">${items.length}</span>
+          </button>
+          <div class="group-body">
+            ${items.map((v) => {
+              const assigned = isAssignedToOther(v);
+              return `
+                <div class="voice-row ${selectedId === v.id ? 'selected' : ''}" data-id="${v.id}">
+                  <button type="button" class="star-btn ${v.favourite ? 'on' : ''}" data-star="${v.id}" title="Favourite">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="${v.favourite ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2">
+                      <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                    </svg>
+                  </button>
+                  <div>
+                    <div class="v-name">
+                      ${escapeHtml(v.name)}
+                      ${key === 'favourites' ? `<span class="provider-pill" style="font-size:10px;padding:2px 6px">${v.provider}</span>` : ''}
+                    </div>
+                    <div class="v-sub">
+                      <span>${v.language}</span>
+                      ${v.tags.slice(0, 3).map((t) => `<span class="mini-tag">${t}</span>`).join('')}
+                      ${assigned ? `<span class="assigned-label"><span class="assigned-dot"></span> ${escapeHtml(v.assignedTo)}</span>` : ''}
+                    </div>
+                  </div>
+                  <button type="button" class="play-btn" data-play="${v.id}" title="Preview" aria-label="Preview">
+                    <svg width="11" height="11" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                  </button>
+                </div>
+              `;
+            }).join('')}
+          </div>
+        </section>
+      `).join('');
+    }
+
+    function openPanel() {
+      $('panel').classList.add('open');
+      $('trigger').classList.add('open');
+      $('trigger').setAttribute('aria-expanded', 'true');
+      $('backdrop').classList.add('open');
+      searchQuery = '';
+      $('search').value = '';
+      renderList();
+      setTimeout(() => $('search').focus(), 40);
+    }
+
+    function closePanel() {
+      $('panel').classList.remove('open');
+      $('trigger').classList.remove('open');
+      $('trigger').setAttribute('aria-expanded', 'false');
+      $('backdrop').classList.remove('open');
+      $('tag-menu').classList.remove('open');
+      $('tags-btn').setAttribute('aria-expanded', 'false');
+    }
+
+    $('trigger').addEventListener('click', () => {
+      if ($('panel').classList.contains('open')) closePanel();
+      else openPanel();
+    });
+
+    $('backdrop').addEventListener('click', closePanel);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') closePanel();
+    });
+
+    $('search').addEventListener('input', (e) => {
+      searchQuery = e.target.value;
+      renderList();
+    });
+
+    $('lang').addEventListener('change', (e) => {
+      languageFilter = e.target.value;
+      renderList();
+    });
+
+    $('unassigned').addEventListener('click', () => {
+      unassignedOnly = !unassignedOnly;
+      $('unassigned').classList.toggle('active', unassignedOnly);
+      $('unassigned').setAttribute('aria-pressed', String(unassignedOnly));
+      renderList();
+    });
+
+    $('tags-btn').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const open = $('tag-menu').classList.toggle('open');
+      $('tags-btn').setAttribute('aria-expanded', String(open));
+    });
+
+    $('tag-menu').addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-tag]');
+      if (!btn) return;
+      e.stopPropagation();
+      const tag = btn.dataset.tag;
+      if (activeTags.has(tag)) activeTags.delete(tag);
+      else activeTags.add(tag);
+      renderTagMenu();
+      renderList();
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('.chip-more')) {
+        $('tag-menu').classList.remove('open');
+        $('tags-btn').setAttribute('aria-expanded', 'false');
+      }
+    });
+
+    $('active-filters').addEventListener('click', (e) => {
+      const clear = e.target.closest('[data-clear]');
+      if (clear) {
+        const kind = clear.dataset.clear;
+        if (kind === 'lang' || kind === 'all') {
+          languageFilter = 'all';
+          $('lang').value = 'all';
+        }
+        if (kind === 'unassigned' || kind === 'all') {
+          unassignedOnly = false;
+          $('unassigned').classList.remove('active');
+          $('unassigned').setAttribute('aria-pressed', 'false');
+        }
+        if (kind === 'all') activeTags.clear();
+        renderTagMenu();
+        renderList();
+        return;
+      }
+      const tagBtn = e.target.closest('[data-clear-tag]');
+      if (tagBtn) {
+        activeTags.delete(tagBtn.dataset.clearTag);
+        renderTagMenu();
+        renderList();
+      }
+    });
+
+    $('list').addEventListener('click', (e) => {
+      const star = e.target.closest('[data-star]');
+      if (star) {
+        e.stopPropagation();
+        const v = voices.find((x) => x.id === star.dataset.star);
+        v.favourite = !v.favourite;
+        renderList();
+        toast(v.favourite ? `★ ${v.name}` : `Unfavourited ${v.name}`);
+        return;
+      }
+
+      const play = e.target.closest('[data-play]');
+      if (play) {
+        e.stopPropagation();
+        play.classList.add('playing');
+        const v = voices.find((x) => x.id === play.dataset.play);
+        toast(`Previewing “${v.name}”…`);
+        setTimeout(() => play.classList.remove('playing'), 900);
+        return;
+      }
+
+      const toggle = e.target.closest('[data-toggle]');
+      if (toggle) {
+        const key = toggle.dataset.toggle;
+        if (collapsed.has(key)) collapsed.delete(key);
+        else collapsed.add(key);
+        renderList();
+        return;
+      }
+
+      const row = e.target.closest('.voice-row');
+      if (row) {
+        selectedId = row.dataset.id;
+        syncSelection();
+        renderList();
+        const v = voices.find((x) => x.id === selectedId);
+        toast(`Selected ${v.name}`);
+        closePanel();
+      }
+    });
+
+    fillLangSelect();
+    renderTagMenu();
+    syncSelection();
+  </script>
+</body>
+</html>

@@ -4,6 +4,10 @@
   padding: 24px;
 }
 
+:host-context(.user-detail-modal) .header {
+  top: 0;
+}
+
 .header {
   background: white;
   padding: 24px;

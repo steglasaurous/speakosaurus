@@ -10,6 +10,13 @@ export interface Voice {
   displayName?: string;
   group?: string;
   previewUrl?: string;
+  /** 2-character language code (e.g. en) */
+  language?: string;
+  /** male, female, other */
+  gender?: string;
+  description?: string;
+  /** ISO locale (e.g. en-US, es-ES) */
+  locale?: string;
 }
 
 @Injectable({
@@ -37,7 +44,11 @@ export class VoicesService {
         return voices.filter(voice =>
           voice.voiceName.toLowerCase().includes(lowerQuery) ||
           voice.providerName.toLowerCase().includes(lowerQuery) ||
-          (voice.displayName && voice.displayName.toLowerCase().includes(lowerQuery))
+          (voice.displayName && voice.displayName.toLowerCase().includes(lowerQuery)) ||
+          (voice.language && voice.language.toLowerCase().includes(lowerQuery)) ||
+          (voice.locale && voice.locale.toLowerCase().includes(lowerQuery)) ||
+          (voice.gender && voice.gender.toLowerCase().includes(lowerQuery)) ||
+          (voice.description && voice.description.toLowerCase().includes(lowerQuery))
         );
       }),
       map(voices => {
@@ -69,6 +80,27 @@ export class VoicesService {
       return voice.displayName;
     }
     return `${voice.providerName} - ${voice.voiceName}`;
+  }
+
+  voiceKey(voice: Pick<Voice, 'providerName' | 'voiceId'>): string {
+    return `${voice.providerName}::${voice.voiceId}`;
+  }
+
+  previewVoice(voice: Voice): Observable<unknown> {
+    const previewPayload: {
+      voiceProvider: string;
+      voiceId: string;
+      previewUrl?: string;
+    } = {
+      voiceProvider: voice.providerName,
+      voiceId: voice.voiceId,
+    };
+
+    if (voice.previewUrl) {
+      previewPayload.previewUrl = voice.previewUrl;
+    }
+
+    return this.http.post(`${this.apiUrl}/speak/preview`, previewPayload);
   }
 }
 

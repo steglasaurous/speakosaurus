@@ -154,9 +154,10 @@
         Users will be added when they write something in chat, or use the Add User button above to add users manually.
       </p>
     </div>
-    <a
+    <button
       *ngFor="let user of filteredUsers"
-      [routerLink]="['/users', user.twitchUserId]"
+      type="button"
+      (click)="openUser(user)"
       class="user-item"
     >
       <div class="user-info">
@@ -173,6 +174,10 @@
             </span>
           </div>
           <div class="user-detail-item">
+            <span>Pronouns:</span>
+            <strong>{{ getPronounDisplayName(user.pronouns) }}</strong>
+          </div>
+          <div class="user-detail-item">
             <span>Intros:</span>
             <strong>{{ getIntroCount(user) }}</strong>
           </div>
@@ -181,7 +186,24 @@
       <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
       </svg>
-    </a>
+    </button>
   </div>
 </div>
 
+<div
+  *ngIf="selectedUserId"
+  class="user-detail-modal"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Edit user"
+  (click)="userDetail.requestClose()"
+  (keydown.escape)="userDetail.requestClose(); $event.stopPropagation()"
+>
+  <app-user-detail
+    #userDetail
+    [twitchUserId]="selectedUserId"
+    [modalMode]="true"
+    (closed)="closeUser()"
+    (click)="$event.stopPropagation()"
+  ></app-user-detail>
+</div>

@@ -30,6 +30,7 @@ export enum Setting {
   IGNORED_USERS = 'ignoredUsers',
   STREAMERBOT_ACTION_INTRO = 'streamerbotActionIntro',
   SETUP_COMPLETED = 'setupCompleted',
+  FAVOURITE_VOICES = 'favouriteVoices',
 }
 
 export enum SettingType {
@@ -43,6 +44,14 @@ export enum SettingType {
   VOICE = 'voice',
   USER_LIST = 'userList',
   STREAMERBOT_ACTION = 'streamerbotAction',
+}
+
+export enum SettingGroup {
+  GENERAL = 'General',
+  DEFAULT_VOICES = 'Default Voices',
+  TTS_PROVIDERS = 'TTS Providers',
+  INTERNAL = 'Internal',
+  STREAMERBOT_ACTIONS = 'StreamerBot Actions',
 }
 
 export interface SettingDefinition {
@@ -93,7 +102,7 @@ export class SettingsService {
     {
       name: Setting.STREAMERBOT_WEBSOCKET_URL,
       displayName: 'StreamerBot WebSocket URL',
-      group: 'General',
+      group: SettingGroup.GENERAL,
       description: 'The URL of the streamerbot websocket server. Ex: ws://localhost:8080.  StreamerBot is used to get chat messages and trigger actions and is required for this app to function.',
       type: SettingType.STRING,
       default: 'ws://localhost:8080',
@@ -102,7 +111,7 @@ export class SettingsService {
     {
       name: Setting.MODE,
       displayName: 'TTS Mode',
-      group: 'General',
+      group: SettingGroup.GENERAL,
       description: 'How TTS should respond to chat messages',
       type: SettingType.ENUM,
       default: 'trigger',
@@ -117,7 +126,7 @@ export class SettingsService {
     {
       name: Setting.TRIGGER_COMMANDS,
       displayName: 'Trigger Commands',
-      group: 'General',
+      group: SettingGroup.GENERAL,
       description: 'The commands that will trigger TTS - typically start with an ! exclamation ex: !s',
       type: SettingType.ARRAY,
       default: '["!s", "!\\"", "!say"]',
@@ -125,35 +134,35 @@ export class SettingsService {
     {
       name: Setting.DEFAULT_VOICE,
       displayName: 'Default Voice',
-      group: 'General',
+      group: SettingGroup.DEFAULT_VOICES,
       description: 'The default voice to use for TTS (if pronouns cannot be determined or male/female default voices are not set)',
       type: SettingType.VOICE,
     },
     {
       name: Setting.DEFAULT_INTRO_VOICE,
       displayName: 'Default Intro Voice',
-      group: 'General',
+      group: SettingGroup.DEFAULT_VOICES,
       description: 'The default voice to use for intro messages',
       type: SettingType.VOICE,
     },
     {
       name: Setting.DEFAULT_MALE_VOICE,
       displayName: 'Default Male Voice',
-      group: 'General',
+      group: SettingGroup.DEFAULT_VOICES,
       description: 'The default voice to use for users with he/him pronouns',
       type: SettingType.VOICE,
     },
     {
       name: Setting.DEFAULT_FEMALE_VOICE,
       displayName: 'Default Female Voice',
-      group: 'General',
+      group: SettingGroup.DEFAULT_VOICES,
       description: 'The default voice to use for users with she/her pronouns',
       type: SettingType.VOICE,
     },
     {
       name: Setting.CHAT_MESSAGE_PREFIX,
       displayName: 'Chat Message Prefix',
-      group: 'General',
+      group: SettingGroup.GENERAL,
       description: 'The prefix to use for chat messages',
       type: SettingType.STRING,
       default: '{ttsName} said,, ',
@@ -161,7 +170,7 @@ export class SettingsService {
     {
       name: Setting.CHAT_MESSAGE_PREFIX_OMIT_SAME_USER,
       displayName: 'Omit Message Prefix for Same User',
-      group: 'General',
+      group: SettingGroup.GENERAL,
       description: 'Whether to omit the message prefix if the same user speaks within the timeout period',
       type: SettingType.BOOLEAN,
       default: 'true',
@@ -169,7 +178,7 @@ export class SettingsService {
     {
       name: Setting.CHAT_MESSAGE_PREFIX_OMIT_SAME_USER_TIMEOUT,
       displayName: 'Same User Message Prefix Omission Timeout',
-      group: 'General',
+      group: SettingGroup.GENERAL,
       description: 'The timeout period in milliseconds for the same user message prefix omission',
       type: SettingType.NUMBER,
       default: '30000',
@@ -177,7 +186,7 @@ export class SettingsService {
     {
       name: Setting.PAUSE_BETWEEN_MESSAGES_MS,
       displayName: 'Pause Between Messages',
-      group: 'General',
+      group: SettingGroup.GENERAL,
       description: 'How long to pause between playing messages in milliseconds',
       type: SettingType.NUMBER,
       default: '1', // Set to 1ms which seems reasonable for most cases
@@ -185,7 +194,7 @@ export class SettingsService {
     {
       name: Setting.ELEVENLABS_API_KEY,
       displayName: 'ElevenLabs API Key',
-      group: 'TTS Providers',
+      group: SettingGroup.TTS_PROVIDERS,
       subGroup: 'ElevenLabs',
       subGroupDescription: `
         <p>ElevenLabs provides high-quality text-to-speech voices. To use ElevenLabs:</p>
@@ -203,7 +212,7 @@ export class SettingsService {
     {
       name: Setting.TTS_MONSTER_API_KEY,
       displayName: 'TTS Monster API Key',
-      group: 'TTS Providers',
+      group: SettingGroup.TTS_PROVIDERS,
       subGroup: 'TTS Monster',
       subGroupDescription: `
         <p>TTS Monster is a text-to-speech service. To get your API key:</p>
@@ -222,14 +231,14 @@ export class SettingsService {
       name: Setting.TWITCH_CLIENT_ID,
       displayName: 'Twitch Client ID',
       default: '6ash2utgzo1hns22mle8v6g21q1qf0',
-      group: 'Internal',
+      group: SettingGroup.INTERNAL,
       description: 'Your Twitch application Client ID. Get one from https://dev.twitch.tv/console/apps',
       type: SettingType.STRING,
     },
     {
       name: Setting.TTS_MONSTER_UNOFFICIAL_USER_ID,
       displayName: 'TTS MonsterUnofficial User ID',
-      group: 'TTS Providers',
+      group: SettingGroup.TTS_PROVIDERS,
       subGroup: 'Unofficial TTS Monster',
       subGroupDescription: `
         <p>Unofficial TTS Monster API requires both a User ID and API Key. To obtain these:</p>
@@ -246,7 +255,7 @@ export class SettingsService {
     {
       name: Setting.TTS_MONSTER_UNOFFICIAL_API_KEY,
       displayName: 'TTS MonsterUnofficial API Key',
-      group: 'TTS Providers',
+      group: SettingGroup.TTS_PROVIDERS,
       subGroup: 'Unofficial TTS Monster',
       description: 'The API key for the tts.monster Unofficial API',
       type: SettingType.STRING,
@@ -255,7 +264,7 @@ export class SettingsService {
     {
       name: Setting.AZURE_SPEECH_KEY,
       displayName: 'Azure Speech Key',
-      group: 'TTS Providers',
+      group: SettingGroup.TTS_PROVIDERS,
       subGroup: 'Azure',
       subGroupDescription: `
         <p>Azure Speech Services provides text-to-speech capabilities. To set up Azure Speech:</p>
@@ -274,7 +283,7 @@ export class SettingsService {
     {
       name: Setting.AZURE_SPEECH_REGION,
       displayName: 'Azure Speech Region',
-      group: 'TTS Providers',
+      group: SettingGroup.TTS_PROVIDERS,
       subGroup: 'Azure',
       description: 'The region for the Azure Speech API',
       type: SettingType.STRING,
@@ -282,7 +291,7 @@ export class SettingsService {
     {
       name: Setting.AZURE_ENDPOINT,
       displayName: 'Azure Endpoint',
-      group: 'TTS Providers',
+      group: SettingGroup.TTS_PROVIDERS,
       subGroup: 'Azure',
       description: 'The endpoint for the Azure Speech API',
       type: SettingType.STRING,
@@ -290,7 +299,7 @@ export class SettingsService {
     {
       name: Setting.PIPER_HTTP_URL,
       displayName: 'Piper HTTP server URL',
-      group: 'TTS Providers',
+      group: SettingGroup.TTS_PROVIDERS,
       subGroup: 'Piper',
       subGroupDescription: `
         <p>Piper runs a local HTTP server (for example <code>python3 -m piper.http_server</code>).
@@ -303,7 +312,7 @@ export class SettingsService {
     {
       name: Setting.IGNORED_USERS,
       displayName: 'Ignored Users',
-      group: 'General',
+      group: SettingGroup.GENERAL,
       description: 'The users to ignore for TTS',
       type: SettingType.USER_LIST,
       default: '[]',
@@ -311,18 +320,26 @@ export class SettingsService {
     {
       name: Setting.STREAMERBOT_ACTION_INTRO,
       displayName: 'StreamerBot Action - Intro',
-      group: 'StreamerBot Actions',
+      group: SettingGroup.STREAMERBOT_ACTIONS,
       description: 'The action to trigger when the user speaks for the first time. Arguments sent are username and message.',
       type: SettingType.STREAMERBOT_ACTION,
     },
     {
       name: Setting.SETUP_COMPLETED,
       displayName: 'Setup Completed',
-      group: 'Internal',
+      group: SettingGroup.INTERNAL,
       description: 'Internal setting to track if initial setup has been completed',
       type: SettingType.BOOLEAN,
       default: 'false',
-    }
+    },
+    {
+      name: Setting.FAVOURITE_VOICES,
+      displayName: 'Favourite Voices',
+      group: SettingGroup.INTERNAL,
+      description: 'Voices favourited in the voice picker',
+      type: SettingType.JSON,
+      default: '[]',
+    },
   ];
 
   private settingsMap: Map<Setting, SettingDto> = new Map<Setting, SettingDto>();

@@ -1,2 +1,19 @@
-<app-status-bar></app-status-bar>
+<app-status-bar (settingsRequested)="openSettings()"></app-status-bar>
 <router-outlet></router-outlet>
+
+<div
+  *ngIf="settingsModalOpen"
+  class="settings-modal"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Settings"
+  (click)="settings.requestClose()"
+  (keydown.escape)="settings.requestClose(); $event.stopPropagation()"
+>
+  <app-settings
+    #settings
+    [modalMode]="true"
+    (closed)="closeSettings()"
+    (click)="$event.stopPropagation()"
+  ></app-settings>
+</div>

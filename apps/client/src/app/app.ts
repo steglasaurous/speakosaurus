@@ -1,22 +1,27 @@
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnDestroy, OnInit } from '@angular/core';
+import { CommonModule } from '@angular/common';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { StatusBarComponent } from './components/status-bar/status-bar.component';
+import { SettingsComponent } from './components/settings/settings.component';
 import { AudioService } from './services/audio.service';
 import { SettingsService } from './services/settings.service';
 import { filter } from 'rxjs/operators';
 
 @Component({
-  imports: [RouterModule, StatusBarComponent],
+  imports: [CommonModule, RouterModule, StatusBarComponent, SettingsComponent],
   selector: 'app-root',
   templateUrl: './app.html',
   styleUrl: './app.scss',
 })
-export class App implements OnInit {
+export class App implements OnInit, OnDestroy {
   protected title = 'client';
+  settingsModalOpen = false;
   private audioService = inject(AudioService);
   private settingsService = inject(SettingsService);
   private router = inject(Router);
   private setupCheckCompleted = false;
+  private previousBodyOverflow = '';
+  private isBodyScrollLocked = false;
 
   ngOnInit(): void {
     // Check setup status on app initialization
@@ -28,6 +33,31 @@ export class App implements OnInit {
       .subscribe(() => {
         this.checkSetupStatus();
       });
+  }
+
+  openSettings(): void {
+    this.settingsModalOpen = true;
+    this.previousBodyOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    this.isBodyScrollLocked = true;
+  }
+
+  closeSettings(): void {
+    this.settingsModalOpen = false;
+    this.restoreBodyScrolling();
+  }
+
+  private restoreBodyScrolling(): void {
+    if (!this.isBodyScrollLocked) {
+      return;
+    }
+
+    document.body.style.overflow = this.previousBodyOverflow;
+    this.isBodyScrollLocked = false;
+  }
+
+  ngOnDestroy(): void {
+    this.restoreBodyScrolling();
   }
 
   private checkSetupStatus(): void {

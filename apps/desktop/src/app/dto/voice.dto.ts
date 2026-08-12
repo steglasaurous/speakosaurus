@@ -36,5 +36,29 @@ export class VoiceDto {
     example: 'https://storage.googleapis.com/eleven-public-prod/premade/voices/9BWtsMINqrJLrRacOk9x/405766b8-1f4e-4d3c-aba1-6f25333823ec.mp3',
   })
   previewUrl?: string;
+
+  @ApiPropertyOptional({
+    description: '2-character language code',
+    example: 'en',
+  })
+  language?: string;
+
+  @ApiPropertyOptional({
+    description: 'Voice gender',
+    example: 'female',
+  })
+  gender?: string;
+
+  @ApiPropertyOptional({
+    description: 'Description of the voice, if available',
+    example: 'A calm conversational voice',
+  })
+  description?: string;
+
+  @ApiPropertyOptional({
+    description: 'Locale in ISO format',
+    example: 'en-US',
+  })
+  locale?: string;
 }
 

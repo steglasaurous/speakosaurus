@@ -1,7 +1,7 @@
 import { ElevenLabsClient } from "@elevenlabs/elevenlabs-js";
 import { VoiceProvider } from "../voice-provider.interface";
 import { Voice } from "../voice.interface";
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 import { AudioData } from "../audio-data.interface";
 import { writeFileSync } from "fs";
 import { join } from "path";
@@ -10,24 +10,29 @@ import { v4 as uuid } from "uuid";
 
 @Injectable()
 export class ElevenLabsVoiceProvider implements VoiceProvider {
+  private logger = new Logger(ElevenLabsVoiceProvider.name);
     constructor(private readonly elevenLabsClient: ElevenLabsClient
     ) {}
 
     providerName = 'elevenlabs';
 
     async getVoices(): Promise<Voice[]> {
-        
+
         const voices = await this.elevenLabsClient.voices.getAll();
-        
+
         const output: Voice[] = [];
         for (const voice of voices.voices) {
             const voiceWithPreview = voice as typeof voice & { preview_url?: string };
             output.push({
                 providerName: this.providerName,
                 voiceId: voice.voiceId,
-                voiceName: voice.name,
-                displayName: voice.name,
+                voiceName: voice.name || 'unnamed_voice',
+                displayName: voice.name || 'Unnamed Voice',
                 previewUrl: voiceWithPreview.preview_url || undefined,
+                language: voice.labels?.language || undefined,
+                gender: voice.labels?.gender || undefined,
+                description: voice.description || undefined,
+                locale: voice.labels?.locale || undefined,
             });
         }
 
@@ -41,9 +46,13 @@ export class ElevenLabsVoiceProvider implements VoiceProvider {
         return {
             providerName: this.providerName,
             voiceId: voice.voiceId,
-            voiceName: voice.name,
-            displayName: voice.name,
+            voiceName: voice.name || 'unnamed_voice',
+            displayName: voice.name || 'Unnamed Voice',
             previewUrl: voiceWithPreview.preview_url || undefined,
+            language: voice.labels?.language || undefined,
+            gender: voice.labels?.gender || undefined,
+            description: voice.description || undefined,
+            locale: voice.labels?.locale || undefined,
         };
     }
 
@@ -57,7 +66,7 @@ export class ElevenLabsVoiceProvider implements VoiceProvider {
         // Collect ReadableStream data into a buffer
         const chunks: Buffer[] = [];
         const reader = audioStream.getReader();
-        
+
         try {
             while (true) {
                 const { done, value } = await reader.read();
@@ -67,7 +76,7 @@ export class ElevenLabsVoiceProvider implements VoiceProvider {
         } finally {
             reader.releaseLock();
         }
-        
+
         const audioBuffer = Buffer.concat(chunks);
 
         // Write buffer to temporary file

@@ -1,6 +1,6 @@
 import { DrizzleService } from "nestjs-drizzle/sqlite";
 import * as schema from "../database/schema";
-import { eq, inArray } from "drizzle-orm";
+import { eq, inArray, isNull, or } from "drizzle-orm";
 import { Injectable, Logger } from "@nestjs/common";
 import axios from "axios";
 import { UserEventService } from "./user-event.service";
@@ -161,6 +161,49 @@ export class UsersService {
         this.userEventService.emitUserCreated(userWithIntros);
 
         return userWithIntros;
+    }
+
+    async populateMissingPronouns(): Promise<{
+        checked: number;
+        updated: number;
+        unchanged: number;
+    }> {
+        const usersWithoutPronouns = await this.drizzleService.db
+            .select()
+            .from(schema.users as any)
+            .where(
+                or(
+                    isNull(schema.users.pronouns),
+                    eq(schema.users.pronouns, ""),
+                ) as any,
+            );
+
+        let updated = 0;
+        const batchSize = 5;
+
+        for (let index = 0; index < usersWithoutPronouns.length; index += batchSize) {
+            const batch = usersWithoutPronouns.slice(index, index + batchSize);
+            const results = await Promise.all(
+                batch.map(async (user) => {
+                    const pronouns = await this.getPronouns(user.twitchUsername);
+                    if (!pronouns) {
+                        return false;
+                    }
+
+                    await this.updateUser(user.twitchUserId, { pronouns });
+                    return true;
+                }),
+            );
+            updated += results.filter(Boolean).length;
+        }
+
+        const result = {
+            checked: usersWithoutPronouns.length,
+            updated,
+            unchanged: usersWithoutPronouns.length - updated,
+        };
+        this.logger.log("Finished populating missing user pronouns", result);
+        return result;
     }
 
     async addCustomIntro(twitchUserId: string, introText: string): Promise<any> {

@@ -40,6 +40,12 @@ export interface CreateUserRequest {
   twitchUsername: string;
 }
 
+export interface PopulatePronounsResult {
+  checked: number;
+  updated: number;
+  unchanged: number;
+}
+
 export interface UserEvent {
   type: 'created' | 'updated';
   user: User;
@@ -110,6 +116,13 @@ export class UsersService implements OnDestroy {
 
   createUser(userData: CreateUserRequest): Observable<User> {
     return this.http.post<User>(`${this.apiUrl}/users`, userData);
+  }
+
+  populateMissingPronouns(): Observable<PopulatePronounsResult> {
+    return this.http.post<PopulatePronounsResult>(
+      `${this.apiUrl}/users/populate-pronouns`,
+      {}
+    );
   }
 
   /**

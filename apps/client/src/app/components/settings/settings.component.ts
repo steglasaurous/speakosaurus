@@ -1,4 +1,4 @@
-import { Component, OnInit, inject } from '@angular/core';
+import { Component, ElementRef, EventEmitter, HostListener, Input, OnInit, Output, inject } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
@@ -30,12 +30,16 @@ interface GroupedSettings {
   styleUrl: './settings.component.scss',
 })
 export class SettingsComponent implements OnInit {
+  @Input() modalMode = false;
+  @Output() closed = new EventEmitter<void>();
+
   settings: Setting[] = [];
   groupedSettings: GroupedSettings[] = [];
   activeTab = '';
   
   loading = false;
   saving = false;
+  populatingPronouns = false;
   error: string | null = null;
   successMessage: string | null = null;
   
@@ -80,6 +84,7 @@ export class SettingsComponent implements OnInit {
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private sanitizer = inject(DomSanitizer);
+  private elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
 
   ngOnInit(): void {
     this.loadSettings();
@@ -264,6 +269,16 @@ export class SettingsComponent implements OnInit {
 
   getSettingsForActiveTab(): GroupedSettings | null {
     return this.groupedSettings.find((g) => g.group === this.activeTab) || null;
+  }
+
+  selectTab(group: string): void {
+    this.activeTab = group;
+
+    if (this.modalMode) {
+      this.elementRef.nativeElement.scrollTo({ top: 0 });
+    } else {
+      window.scrollTo({ top: 0 });
+    }
   }
 
   getSettingValue(setting: Setting): any {
@@ -613,6 +628,30 @@ export class SettingsComponent implements OnInit {
     }, 200);
   }
 
+  populateMissingPronouns(): void {
+    if (this.populatingPronouns) {
+      return;
+    }
+
+    this.populatingPronouns = true;
+    this.error = null;
+    this.successMessage = null;
+
+    this.usersService.populateMissingPronouns().subscribe({
+      next: (result) => {
+        this.successMessage =
+          `Checked ${result.checked} ${result.checked === 1 ? 'user' : 'users'} and updated ${result.updated}. ` +
+          `${result.unchanged} ${result.unchanged === 1 ? 'user remains' : 'users remain'} without pronouns.`;
+        this.populatingPronouns = false;
+      },
+      error: (error) => {
+        console.error('Error populating user pronouns:', error);
+        this.error = 'Failed to populate user pronouns. Please try again.';
+        this.populatingPronouns = false;
+      },
+    });
+  }
+
   saveAllSettings(): void {
     this.saving = true;
     this.error = null;
@@ -637,6 +676,12 @@ export class SettingsComponent implements OnInit {
     });
 
     if (settingsToSave.length === 0) {
+      if (this.modalMode) {
+        this.closed.emit();
+        this.saving = false;
+        return;
+      }
+
       this.successMessage = 'No changes to save';
       this.saving = false;
       setTimeout(() => {
@@ -658,6 +703,12 @@ export class SettingsComponent implements OnInit {
         settingsToSave.forEach((setting) => {
           this.originalValues[setting.name] = setting.value;
         });
+        if (this.modalMode) {
+          this.saving = false;
+          this.closed.emit();
+          return;
+        }
+
         this.successMessage = `${settingsToSave.length} setting${settingsToSave.length === 1 ? '' : 's'} saved successfully`;
         this.saving = false;
         setTimeout(() => {
@@ -680,15 +731,31 @@ export class SettingsComponent implements OnInit {
     });
   }
 
+  @HostListener('document:keydown.escape')
+  onEscapeKey(): void {
+    if (this.modalMode) {
+      this.requestClose();
+    }
+  }
+
   onBackClick(event: Event): void {
     event.preventDefault();
+    this.requestClose();
+  }
+
+  requestClose(): void {
     if (this.hasUnsavedChanges()) {
-      const confirmed = confirm('You have unsaved changes. Are you sure you want to discard them and go back?');
+      const confirmed = confirm('You have unsaved changes. Are you sure you want to discard them?');
       if (!confirmed) {
         return;
       }
     }
-    this.router.navigate(['/users']);
+
+    if (this.modalMode) {
+      this.closed.emit();
+    } else {
+      this.router.navigate(['/users']);
+    }
   }
 
   toggleSensitiveVisibility(setting: Setting): void {

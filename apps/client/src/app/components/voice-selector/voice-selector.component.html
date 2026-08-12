@@ -3,47 +3,375 @@
     <ng-content select="[slot=label]">Voice</ng-content>
     <span class="label-hint" *ngIf="hint">{{ hint }}</span>
   </label>
-  <div class="autocomplete-wrapper">
-    <input
-      [type]="type"
-      [id]="inputId"
-      class="autocomplete-input"
-      [placeholder]="placeholder"
-      [(ngModel)]="voiceSearchQuery"
-      (input)="onVoiceSearchInput()"
-      (focus)="onVoiceInputFocus()"
-      (blur)="onVoiceInputBlur()"
-    >
-    <div class="autocomplete-dropdown" [class.active]="showVoiceDropdown" (mousedown)="onDropdownMouseDown()">
-      <div *ngFor="let group of getGroupedVoices()" class="dropdown-group">
-        <div class="dropdown-group-header">{{ group.provider }}</div>
-        <div
-          *ngFor="let voice of group.voices"
-          class="dropdown-item"
-          [class.selected]="selectedVoice?.voiceId === voice.voiceId && selectedVoice?.providerName === voice.providerName"
-          (mousedown)="selectVoice(voice); $event.stopPropagation()"
-        >
-          <div>
-            <div class="voice-name">{{ voice.voiceName }}</div>
-            <div class="voice-id">{{ voice.voiceId }}</div>
-          </div>
-          <button
-            class="play-button"
-            (mousedown)="playPreview($event, voice)"
-            [class.playing]="isPlaying(voice)"
-            type="button"
-            [attr.aria-label]="'Preview ' + voice.voiceName"
-            title="Preview voice"
-          >
-            <span *ngIf="!isPlaying(voice)">▶</span>
-            <span *ngIf="isPlaying(voice)">⏸</span>
-          </button>
-        </div>
-      </div>
-      <div *ngIf="filteredVoices.length === 0" class="dropdown-item">
-        <div>No voices found</div>
-      </div>
-    </div>
-  </div>
+
+  <button
+    type="button"
+    class="voice-trigger"
+    [id]="inputId"
+    (click)="openModal()"
+    [attr.aria-haspopup]="'dialog'"
+    [attr.aria-expanded]="modalOpen"
+  >
+    <span class="provider-pill" *ngIf="selectedVoice">{{ selectedVoice.providerName }}</span>
+    <span class="provider-pill empty" *ngIf="!selectedVoice">voice</span>
+    <span class="trigger-meta">
+      <span class="trigger-name">{{ displayName }}</span>
+      <span class="trigger-detail">{{ displayDetail }}</span>
+    </span>
+    <span class="change-hint">Change</span>
+    <svg class="chevron" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+    </svg>
+  </button>
 </div>
 
+@if (modalOpen) {
+  <div
+    class="voice-picker-overlay"
+    (click)="onOverlayClick($event)"
+    (keydown)="onOverlayKeydown($event)"
+    role="presentation"
+  >
+    <div
+      class="voice-picker-modal"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="voice-picker-title"
+      (click)="$event.stopPropagation()"
+      (keydown)="$event.stopPropagation()"
+    >
+      <header class="modal-header">
+        <h2 id="voice-picker-title">Choose a voice</h2>
+        <span class="current-chip" *ngIf="selectedVoice">
+          Currently: {{ selectedVoice.providerName }} — {{ selectedVoice.voiceName }}
+        </span>
+        <span class="current-chip" *ngIf="!selectedVoice">No voice selected</span>
+        <button type="button" class="icon-btn" (click)="closeModal()" aria-label="Close">
+          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+          </svg>
+        </button>
+      </header>
+
+      <aside class="sidebar">
+        <div class="filter-block" [class.expanded]="isFilterSectionExpanded('provider')">
+          <button
+            type="button"
+            class="filter-section-header"
+            (click)="toggleFilterSection('provider')"
+            [attr.aria-expanded]="isFilterSectionExpanded('provider')"
+          >
+            <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+            <span class="filter-section-title">Provider</span>
+            @if (!isFilterSectionExpanded('provider') && filterSectionSummary('provider'); as summary) {
+              <span class="filter-section-summary">{{ summary }}</span>
+            }
+          </button>
+          @if (isFilterSectionExpanded('provider')) {
+            <div class="filter-nav">
+              @for (item of providerNav; track trackByNav($index, item)) {
+                <button
+                  type="button"
+                  class="filter-nav-btn"
+                  [class.active]="providerFilter === item.key"
+                  [class.fav-nav]="item.favourite"
+                  (click)="setProviderFilter(item.key)"
+                >
+                  <span class="label">
+                    @if (item.favourite) {
+                      <span>★ </span>
+                    }
+                    {{ item.label }}
+                  </span>
+                  <span class="count">{{ item.count }}</span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="filter-block" [class.expanded]="isFilterSectionExpanded('language')">
+          <button
+            type="button"
+            class="filter-section-header"
+            (click)="toggleFilterSection('language')"
+            [attr.aria-expanded]="isFilterSectionExpanded('language')"
+          >
+            <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+            <span class="filter-section-title">Language</span>
+            @if (!isFilterSectionExpanded('language') && filterSectionSummary('language'); as summary) {
+              <span class="filter-section-summary">{{ summary }}</span>
+            }
+          </button>
+          @if (isFilterSectionExpanded('language')) {
+            <div class="filter-nav">
+              @for (item of languageNav; track trackByNav($index, item)) {
+                <button
+                  type="button"
+                  class="filter-nav-btn"
+                  [class.active]="languageFilter === item.key"
+                  (click)="setLanguageFilter(item.key)"
+                >
+                  <span class="label">{{ item.label }}</span>
+                  <span class="count">{{ item.count }}</span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="filter-block" [class.expanded]="isFilterSectionExpanded('locale')">
+          <button
+            type="button"
+            class="filter-section-header"
+            (click)="toggleFilterSection('locale')"
+            [attr.aria-expanded]="isFilterSectionExpanded('locale')"
+          >
+            <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+            <span class="filter-section-title">Locale</span>
+            @if (!isFilterSectionExpanded('locale') && filterSectionSummary('locale'); as summary) {
+              <span class="filter-section-summary">{{ summary }}</span>
+            }
+          </button>
+          @if (isFilterSectionExpanded('locale')) {
+            <div class="filter-nav">
+              @for (item of localeNav; track trackByNav($index, item)) {
+                <button
+                  type="button"
+                  class="filter-nav-btn"
+                  [class.active]="localeFilter === item.key"
+                  (click)="setLocaleFilter(item.key)"
+                >
+                  <span class="label">{{ item.label }}</span>
+                  <span class="count">{{ item.count }}</span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="filter-block" [class.expanded]="isFilterSectionExpanded('gender')">
+          <button
+            type="button"
+            class="filter-section-header"
+            (click)="toggleFilterSection('gender')"
+            [attr.aria-expanded]="isFilterSectionExpanded('gender')"
+          >
+            <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+            <span class="filter-section-title">Gender</span>
+            @if (!isFilterSectionExpanded('gender') && filterSectionSummary('gender'); as summary) {
+              <span class="filter-section-summary">{{ summary }}</span>
+            }
+          </button>
+          @if (isFilterSectionExpanded('gender')) {
+            <div class="filter-nav">
+              @for (item of genderNav; track trackByNav($index, item)) {
+                <button
+                  type="button"
+                  class="filter-nav-btn"
+                  [class.active]="genderFilter === item.key"
+                  (click)="setGenderFilter(item.key)"
+                >
+                  <span class="label">{{ item.label }}</span>
+                  <span class="count">{{ item.count }}</span>
+                </button>
+              }
+            </div>
+          }
+        </div>
+
+        <div class="filter-block" [class.expanded]="isFilterSectionExpanded('availability')">
+          <button
+            type="button"
+            class="filter-section-header"
+            (click)="toggleFilterSection('availability')"
+            [attr.aria-expanded]="isFilterSectionExpanded('availability')"
+          >
+            <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+            </svg>
+            <span class="filter-section-title">Availability</span>
+            @if (!isFilterSectionExpanded('availability') && filterSectionSummary('availability'); as summary) {
+              <span class="filter-section-summary">{{ summary }}</span>
+            }
+          </button>
+          @if (isFilterSectionExpanded('availability')) {
+            <label class="toggle-row">
+              <span>Unassigned only</span>
+              <span class="switch">
+                <input
+                  type="checkbox"
+                  [ngModel]="unassignedOnly"
+                  (ngModelChange)="onUnassignedChange($event)"
+                >
+                <span class="slider"></span>
+              </span>
+            </label>
+          }
+        </div>
+
+        <button
+          type="button"
+          class="clear-filters"
+          [disabled]="!filtersActive"
+          (click)="clearFilters()"
+        >
+          Clear filters
+        </button>
+      </aside>
+
+      <div class="main">
+        <div class="search-bar">
+          <div class="search-wrap">
+            <svg width="16" height="16" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-4.35-4.35M11 18a7 7 0 100-14 7 7 0 000 14z"/>
+            </svg>
+            <input
+              type="search"
+              class="search-input"
+              [placeholder]="placeholder"
+              [ngModel]="searchQuery"
+              (ngModelChange)="onSearchChange($event)"
+              autocomplete="off"
+            >
+          </div>
+          <span class="result-meta">{{ resultCountLabel }}</span>
+        </div>
+
+        <div class="voice-list" role="listbox">
+          @for (voiceGroup of voiceGroups; track trackByGroup($index, voiceGroup)) {
+            <section
+              class="voice-group"
+              [class.collapsed]="isGroupCollapsed(voiceGroup.key)"
+            >
+              <button
+                type="button"
+                class="group-header"
+                [class.fav]="voiceGroup.key === 'favourites'"
+                (click)="toggleGroup(voiceGroup.key)"
+              >
+                <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                </svg>
+                @if (voiceGroup.key === 'favourites') {
+                  <span>★ </span>
+                }
+                {{ voiceGroup.label }}
+                <span class="group-count">{{ voiceGroup.voices.length }}</span>
+              </button>
+
+              <div class="group-body">
+                @for (voice of voiceGroup.voices; track trackByVoice($index, voice)) {
+                  <div
+                    class="voice-row"
+                    [class.selected]="isPending(voice)"
+                    (click)="selectPending(voice)"
+                    (keydown.enter)="selectPending(voice)"
+                    (keydown.space)="$event.preventDefault(); selectPending(voice)"
+                    role="option"
+                    tabindex="0"
+                    [attr.aria-selected]="isPending(voice)"
+                  >
+                    <button
+                      type="button"
+                      class="star-btn"
+                      [class.on]="isFavourite(voice)"
+                      (click)="toggleFavourite($event, voice)"
+                      [attr.title]="isFavourite(voice) ? 'Remove favourite' : 'Add favourite'"
+                      [attr.aria-label]="isFavourite(voice) ? 'Remove favourite' : 'Add favourite'"
+                    >
+                      <svg
+                        width="16"
+                        height="16"
+                        viewBox="0 0 24 24"
+                        [attr.fill]="isFavourite(voice) ? 'currentColor' : 'none'"
+                        stroke="currentColor"
+                        stroke-width="2"
+                      >
+                        <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+                      </svg>
+                    </button>
+
+                    <div class="v-text">
+                      <div class="v-name">
+                        {{ voice.voiceName }}
+                        @if (voiceGroup.key === 'favourites') {
+                          <span class="provider-pill tiny">{{ voice.providerName }}</span>
+                        }
+                      </div>
+                      <div class="v-sub">
+                        @for (chip of voiceMetaChips(voice); track chip) {
+                          <span class="mini-tag">{{ chip }}</span>
+                        }
+                        @if (voice.displayName && voice.displayName !== voice.voiceName) {
+                          <span>{{ voice.displayName }}</span>
+                        } @else if (voiceMetaChips(voice).length === 0) {
+                          <span>{{ voice.voiceId }}</span>
+                        }
+                        @if (isAssignedToOther(voice)) {
+                          <span class="assigned-label">
+                            <span class="assigned-dot"></span>
+                            {{ assignedTo(voice) }}
+                          </span>
+                        }
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      class="play-btn"
+                      [class.playing]="isPlaying(voice)"
+                      (click)="playPreview($event, voice)"
+                      [attr.aria-label]="'Preview ' + voice.voiceName"
+                      title="Preview voice"
+                    >
+                      @if (!isPlaying(voice)) {
+                        <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M8 5v14l11-7z"/>
+                        </svg>
+                      } @else {
+                        <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
+                          <path d="M6 5h4v14H6zm8 0h4v14h-4z"/>
+                        </svg>
+                      }
+                    </button>
+                  </div>
+                }
+              </div>
+            </section>
+          }
+
+          @if (voiceGroups.length === 0) {
+            <div class="empty">
+              No voices match these filters.<br>
+              Try clearing a filter or widening search.
+            </div>
+          }
+        </div>
+      </div>
+
+      <footer class="modal-footer">
+        <span class="footer-hint">★ favourites · orange dot = assigned to another user</span>
+        <div class="footer-actions">
+          <button type="button" class="btn btn-ghost" (click)="closeModal()">Cancel</button>
+          <button
+            type="button"
+            class="btn btn-primary"
+            [disabled]="!canApply"
+            (click)="applySelection()"
+          >
+            Select voice
+          </button>
+        </div>
+      </footer>
+    </div>
+  </div>
+}

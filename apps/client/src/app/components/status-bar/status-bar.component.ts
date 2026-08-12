@@ -1,6 +1,5 @@
-import { Component, OnInit, OnDestroy, inject } from '@angular/core';
+import { Component, EventEmitter, OnInit, OnDestroy, inject, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { RouterModule } from '@angular/router';
 import { StatusService, Status } from '../../services/status.service';
 import { SettingsService } from '../../services/settings.service';
 import { HttpClient } from '@angular/common/http';
@@ -9,11 +8,13 @@ import { Subscription } from 'rxjs';
 @Component({
   selector: 'app-status-bar',
   standalone: true,
-  imports: [CommonModule, RouterModule],
+  imports: [CommonModule],
   templateUrl: './status-bar.component.html',
   styleUrl: './status-bar.component.scss',
 })
 export class StatusBarComponent implements OnInit, OnDestroy {
+  @Output() settingsRequested = new EventEmitter<void>();
+
   status: Status = {
     streamerBotConnected: false,
     audioQueueSize: 0,

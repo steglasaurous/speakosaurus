@@ -48,6 +48,7 @@ export class TTSMonsterUnofficialVoiceProvider implements VoiceProvider {
     console.log(response.data);
 
     const voices: Voice[] = [];
+    // NOTE: The data we get back from this is VERY basic. There's no language, gender, or locale information.
     for (const voice of response.data.message.voices) {
       voices.push({
         providerName: this.providerName,

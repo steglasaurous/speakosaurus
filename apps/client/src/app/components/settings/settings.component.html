@@ -1,17 +1,25 @@
 <div class="container">
   <div class="header">
     <div class="header-left">
-      <a class="back-button" (click)="onBackClick($event)" style="cursor: pointer;">
-        <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+      <button
+        type="button"
+        class="back-button"
+        (click)="onBackClick($event)"
+        [attr.aria-label]="modalMode ? 'Close settings' : 'Go back to users list'"
+      >
+        <svg *ngIf="!modalMode" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
         </svg>
-      </a>
+        <svg *ngIf="modalMode" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"></path>
+        </svg>
+      </button>
       <h1>Settings</h1>
     </div>
     <button 
       class="save-all-button" 
       (click)="saveAllSettings()" 
-      [disabled]="saving || loading || !hasUnsavedChanges()"
+      [disabled]="saving || populatingPronouns || loading || !hasUnsavedChanges()"
     >
       {{ saving ? 'Saving...' : 'Save Changes' }}
     </button>
@@ -35,7 +43,7 @@
         *ngFor="let group of groupedSettings"
         class="tab-button"
         [class.active]="activeTab === group.group"
-        (click)="activeTab = group.group"
+        (click)="selectTab(group.group)"
       >
         {{ group.group }}
       </button>
@@ -334,6 +342,20 @@
           </div>
         </div>
           </div>
+        </div>
+        <div *ngIf="activeTab === 'Default Voices'" class="pronoun-population-action">
+          <div>
+            <h3>Populate User Pronouns</h3>
+            <p>Query and populate pronouns for every user who does not already have them set.</p>
+          </div>
+          <button
+            type="button"
+            class="populate-pronouns-button"
+            (click)="populateMissingPronouns()"
+            [disabled]="populatingPronouns || saving || loading"
+          >
+            {{ populatingPronouns ? 'Checking Pronouns...' : 'Populate Pronouns' }}
+          </button>
         </div>
       </ng-container>
     </div>

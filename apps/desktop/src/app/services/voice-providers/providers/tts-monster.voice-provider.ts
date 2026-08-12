@@ -54,13 +54,37 @@ constructor(private readonly apiKey: string, private readonly httpService: HttpS
 
         // Map regular voices
         for (const voice of response.data.voices) {
-            voices.push({
-                providerName: this.providerName,
-                voiceId: voice.voice_id,
-                voiceName: voice.name,
-                displayName: voice.name,
-                previewUrl: voice.sample || undefined,
-            });
+          // metadata: EN-US|Female, JA|Female
+          // Take apart the metadata and create a new voice object with the language and gender, if available.
+          const metadata = voice.metadata?.split('|');
+
+          let languageAndLocale: string[] = [];
+          let language: string | undefined = undefined;
+          let locale: string | undefined = undefined;
+          let gender: string | undefined = undefined;
+
+          if (metadata && metadata.length > 1) {
+            // Sometimes we get locale EN-US, sometimes just language JP.
+            languageAndLocale = metadata[0].split('-');
+            language = languageAndLocale[0].toLowerCase();
+            if (languageAndLocale.length > 1) {
+              locale = language + '-' + languageAndLocale[1].toUpperCase();
+            }
+            gender = metadata[1].toLowerCase();
+          }
+
+          const newVoice: Voice = {
+            providerName: this.providerName,
+            voiceId: voice.voice_id,
+            voiceName: voice.name,
+            displayName: voice.name,
+            previewUrl: voice.sample || undefined,
+            language: language,
+            locale: locale,
+            gender: gender,
+          };
+
+          voices.push(newVoice);
         }
 
         // Map custom voices
