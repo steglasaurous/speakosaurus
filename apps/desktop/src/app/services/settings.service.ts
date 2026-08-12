@@ -302,11 +302,15 @@ export class SettingsService {
       group: SettingGroup.TTS_PROVIDERS,
       subGroup: 'Piper',
       subGroupDescription: `
-        <p>Piper runs a local HTTP server (for example <code>python3 -m piper.http_server</code>).
-        Set the base URL where it listens, without a trailing path (e.g. <code>http://localhost:5000</code>).
-        Leave empty to disable Piper voices.</p>
+        <p>SpeakManager can auto-start a bundled Piper TTS server on <strong>Windows and Linux</strong>
+        when this field is left empty. Leave empty to use the bundled server (recommended).</p>
+        <p>To use your own Piper HTTP server instead, set the base URL without a trailing path
+        (e.g. <code>http://localhost:5000</code>). That stops the bundled server.</p>
+        <p>Extra voices: drop matching <code>Name.onnx</code> and <code>Name.onnx.json</code> files into the
+        app voices folder under your user data directory
+        (<code>…/speakmanager2/piper/voices</code>). They appear in the voice list without restarting the app.</p>
       `,
-      description: 'Base URL of the Piper TTS HTTP server',
+      description: 'Optional external Piper HTTP URL (empty = bundled Piper)',
       type: SettingType.STRING,
     },
     {

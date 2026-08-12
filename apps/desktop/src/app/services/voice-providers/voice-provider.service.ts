@@ -13,6 +13,7 @@ import { TTSMonsterUnofficialVoiceProvider } from "./providers/tts-monster-unoff
 import { AzureVoiceProvider } from "./providers/azure.voice-provider";
 import { PiperVoiceProvider } from "./providers/piper.voice-provider";
 import { StatusEventService } from "../status-event.service";
+import { PiperHttpServerService } from "../piper-http-server.service";
 
 @Injectable()
 export class VoiceProviderService implements OnModuleInit {
@@ -27,6 +28,7 @@ export class VoiceProviderService implements OnModuleInit {
         private readonly settingsService: SettingsService,
         private readonly httpService: HttpService,
         private readonly statusEventService: StatusEventService,
+        private readonly piperHttpServerService: PiperHttpServerService,
     ) {
         // Start with the initial providers (typically just SpeakerttsVoiceProvider)
         this.voiceProviders = [...this.initialVoiceProviders];
@@ -283,7 +285,9 @@ export class VoiceProviderService implements OnModuleInit {
     }
 
     /**
-     * Add or remove the Piper provider based on {@link Setting.PIPER_HTTP_URL}.
+     * Add or remove the Piper provider.
+     * Non-empty {@link Setting.PIPER_HTTP_URL} uses an external server (managed child stopped).
+     * Empty URL uses the bundled managed Piper HTTP child when available.
      */
     async updatePiperProvider(): Promise<void> {
         this.voiceProviders = this.voiceProviders.filter(
@@ -291,17 +295,33 @@ export class VoiceProviderService implements OnModuleInit {
         );
 
         const urlSetting = await this.settingsService.getSetting(Setting.PIPER_HTTP_URL);
-        const baseUrl = urlSetting?.value?.trim();
+        const externalUrl = urlSetting?.value?.trim();
 
-        if (baseUrl) {
-            const piperProvider = new PiperVoiceProvider(baseUrl, this.httpService);
+        if (externalUrl) {
+            await this.piperHttpServerService.stop();
+            const piperProvider = new PiperVoiceProvider(externalUrl, this.httpService);
             this.voiceProviders.push(piperProvider);
             this.cachedVoices = null;
-            this.logger.log('Piper provider added', { baseUrl });
-        } else {
-            this.cachedVoices = null;
-            this.logger.log('Piper provider not added — Piper HTTP URL not set');
+            this.logger.log('Piper provider added (external URL)', { baseUrl: externalUrl });
+            return;
         }
+
+        const managedUrl = await this.piperHttpServerService.ensureStarted();
+        if (managedUrl) {
+            const piperProvider = new PiperVoiceProvider(managedUrl, this.httpService);
+            this.voiceProviders.push(piperProvider);
+            this.cachedVoices = null;
+            this.logger.log('Piper provider added (bundled managed server)', {
+                baseUrl: managedUrl,
+                voicesDir: this.piperHttpServerService.getVoicesDirectory(),
+            });
+            return;
+        }
+
+        this.cachedVoices = null;
+        this.logger.log(
+            'Piper provider not added — no external URL and bundled runtime unavailable',
+        );
     }
 
     /**

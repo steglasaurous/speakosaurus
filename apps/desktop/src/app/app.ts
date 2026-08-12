@@ -8,7 +8,7 @@ import { NestFactory } from '@nestjs/core';
 // import { ElectronIPCTransport } from 'nestjs-electron-ipc-transport';
 import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { Logger } from '@nestjs/common';
+import { type INestApplication, Logger } from '@nestjs/common';
 import { MigrationService } from './services/migration.service';
 
 export default class App {
@@ -17,6 +17,8 @@ export default class App {
   static mainWindow: Electron.BrowserWindow;
   static application: Electron.App;
   static BrowserWindow;
+  static nestApp: INestApplication | null = null;
+  private static isQuitting = false;
 
   public static isDevelopmentMode() {
     const isEnvironmentSet: boolean = 'ELECTRON_IS_DEV' in process.env;
@@ -90,14 +92,16 @@ export default class App {
       // Consider showing a user notification here in production
     }
 
-    const app = await NestFactory.create(AppModule);
+    const nestApp = await NestFactory.create(AppModule);
+    App.nestApp = nestApp;
+    nestApp.enableShutdownHooks();
     const globalPrefix = 'api';
-    app.setGlobalPrefix(globalPrefix);
+    nestApp.setGlobalPrefix(globalPrefix);
     
     // Enable CORS for the Angular client
     // FOR DEV MODE ONLY.  In production mode, the assets are loaded
     // by electron directly. (I think?)
-    app.enableCors({
+    nestApp.enableCors({
       origin: 'http://localhost:4200',
       methods: 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS',
       credentials: true,
@@ -108,17 +112,34 @@ export default class App {
       .setDescription('API for managing voice providers and voices')
       .setVersion('1.0')
       .build();
-    const document = SwaggerModule.createDocument(app, config);
-    SwaggerModule.setup('api', app, document);
+    const document = SwaggerModule.createDocument(nestApp, config);
+    SwaggerModule.setup('api', nestApp, document);
     
     const port = process.env.PORT || 3000;
-    await app.listen(port);
+    await nestApp.listen(port);
     Logger.log(
       `🚀 Application is running on: http://localhost:${port}/${globalPrefix}`,
     );
     Logger.log(
       `📚 Swagger documentation available at: http://localhost:${port}/api`,
     );
+  }
+
+  private static async onBeforeQuit(event: Electron.Event) {
+    if (App.isQuitting || !App.nestApp) {
+      return;
+    }
+    event.preventDefault();
+    App.isQuitting = true;
+    try {
+      Logger.log('Closing Nest application (stops managed Piper if running)...');
+      await App.nestApp.close();
+    } catch (err) {
+      Logger.error('Error while closing Nest application', err);
+    } finally {
+      App.nestApp = null;
+      App.application.quit();
+    }
   }
 
   private static onActivate() {
@@ -264,5 +285,6 @@ export default class App {
     App.application.on('window-all-closed', App.onWindowAllClosed); // Quit when all windows are closed.
     App.application.on('ready', App.onReady); // App is ready to load data
     App.application.on('activate', App.onActivate); // App is activated
+    App.application.on('before-quit', App.onBeforeQuit);
   }
 }

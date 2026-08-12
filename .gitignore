@@ -45,3 +45,6 @@ Thumbs.db
 
 .env
 database.sqlite
+
+# Bundled Piper runtime (prepared by scripts/prepare-piper-runtime.mjs)
+vendor/piper/

@@ -7,17 +7,12 @@ An app to provide TTS to twitch streams (or anything supported by streamerbot)
 - Streamer.bot running and connected to you broadcast account
 - Streamer.bot websocket server enabled
 
-# Pronouns notes
-
-https://api.pronouns.alejo.io/v1/users/omnidreamer_
-- API call to get stuff.
-
 # TODO
 
 - [ ] Design how mods can connect and use app (API bridge?)
-- [ ] Voicelist: Create filters that can help pair down the voice selection
-  - [ ] azure voices: add filters for locale, gender
-  - [ ] groups: add ability to "roll up" groups, make it easier to find voices in other groups by scrolling
+- [x] Voicelist: Create filters that can help pair down the voice selection
+  - [x] azure voices: add filters for locale, gender
+  - [x] groups: add ability to "roll up" groups, make it easier to find voices in other groups by scrolling
 - [ ] for API keys, create documentation on how to get them for each service
   - [ ] Azure
   - [ ] Elevenlabs
