@@ -8,6 +8,7 @@ An app to provide TTS to twitch streams (or anything supported by streamerbot)
 - Streamer.bot websocket server enabled
 
 # TODO
+- [ ] Making a setting empty doesn't actually save it in the database. The old setting is retained.
 
 - [ ] Design how mods can connect and use app (API bridge?)
 - [x] Voicelist: Create filters that can help pair down the voice selection
