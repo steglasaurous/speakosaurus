@@ -53,8 +53,10 @@ export class PiperHttpServerService implements OnModuleDestroy {
       return null;
     }
 
-    const platformDir =
-      process.platform === 'win32' ? 'win-x64' : 'linux-x64';
+    const platformDir = this.hostPlatformDir();
+    if (!platformDir) {
+      return null;
+    }
 
     if (app.isPackaged) {
       const packaged = join(process.resourcesPath || '', 'piper');
@@ -242,6 +244,23 @@ export class PiperHttpServerService implements OnModuleDestroy {
     this.baseUrl = url;
     this.logger.log(`Managed Piper ready at ${url}`);
     return url;
+  }
+
+  /**
+   * vendor/piper/<os>-<arch> folder name, matching electron-builder ${os}-${arch}
+   * and scripts/prepare-piper-runtime.mjs targets.
+   */
+  private hostPlatformDir(): string | null {
+    if (process.platform === 'win32' && process.arch === 'x64') {
+      return 'win-x64';
+    }
+    if (process.platform === 'linux' && process.arch === 'x64') {
+      return 'linux-x64';
+    }
+    if (process.platform === 'linux' && process.arch === 'arm64') {
+      return 'linux-arm64';
+    }
+    return null;
   }
 
   private resolvePythonExe(runtimeRoot: string): string {

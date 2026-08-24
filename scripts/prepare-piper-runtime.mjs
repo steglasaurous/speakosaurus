@@ -7,6 +7,7 @@
  *   node scripts/prepare-piper-runtime.mjs
  *   node scripts/prepare-piper-runtime.mjs --target win-x64
  *   node scripts/prepare-piper-runtime.mjs --target linux-x64
+ *   node scripts/prepare-piper-runtime.mjs --target linux-arm64
  *   node scripts/prepare-piper-runtime.mjs --target all
  */
 
@@ -40,14 +41,31 @@ const TARGETS = {
   'win-x64': {
     asset: `cpython-${PBS_VERSION}+${PBS_TAG}-x86_64-pc-windows-msvc-install_only_stripped.tar.gz`,
     pythonRel: join('python', 'python.exe'),
-    canRunOnHost: process.platform === 'win32',
+    canRunOnHost: process.platform === 'win32' && process.arch === 'x64',
   },
   'linux-x64': {
     asset: `cpython-${PBS_VERSION}+${PBS_TAG}-x86_64-unknown-linux-gnu-install_only_stripped.tar.gz`,
     pythonRel: join('python', 'bin', 'python3'),
-    canRunOnHost: process.platform === 'linux',
+    canRunOnHost: process.platform === 'linux' && process.arch === 'x64',
+  },
+  'linux-arm64': {
+    asset: `cpython-${PBS_VERSION}+${PBS_TAG}-aarch64-unknown-linux-gnu-install_only_stripped.tar.gz`,
+    pythonRel: join('python', 'bin', 'python3'),
+    canRunOnHost: process.platform === 'linux' && process.arch === 'arm64',
   },
 };
+
+function supportedTargetList() {
+  return `${Object.keys(TARGETS).join('|')}|all`;
+}
+
+/** Map this machine to a vendor/piper/<os>-<arch> folder (electron-builder ${os}-${arch}). */
+function hostTargetName() {
+  if (process.platform === 'win32' && process.arch === 'x64') return 'win-x64';
+  if (process.platform === 'linux' && process.arch === 'x64') return 'linux-x64';
+  if (process.platform === 'linux' && process.arch === 'arm64') return 'linux-arm64';
+  return null;
+}
 
 function parseTargets() {
   const args = process.argv.slice(2).filter((a) => a !== '--');
@@ -58,15 +76,17 @@ function parseTargets() {
     value = positional || null;
   }
   if (!value || value === 'host') {
-    if (process.platform === 'win32') return ['win-x64'];
-    if (process.platform === 'linux') return ['linux-x64'];
+    const host = hostTargetName();
+    if (host) return [host];
     throw new Error(
-      `Unsupported host platform ${process.platform}. Use --target win-x64|linux-x64|all`,
+      `Unsupported host ${process.platform}/${process.arch}. Use --target ${supportedTargetList()}`,
     );
   }
   if (value === 'all') return Object.keys(TARGETS);
   if (!(value in TARGETS)) {
-    throw new Error(`Unknown target "${value}". Use win-x64, linux-x64, or all.`);
+    throw new Error(
+      `Unknown target "${value}". Use ${Object.keys(TARGETS).join(', ')}, or all.`,
+    );
   }
   return [value];
 }
