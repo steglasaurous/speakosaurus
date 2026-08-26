@@ -90,10 +90,25 @@ export class PiperVoiceProvider implements VoiceProvider {
     }
 
     async getRenderedMessage(message: string, voice: Voice): Promise<AudioData> {
+        const body: {
+            text: string;
+            voice: string;
+            length_scale?: number;
+            noise_scale?: number;
+        } = { text: message, voice: voice.voiceId };
+
+        const speed = voice.tweaks?.speed;
+        if (speed != null && speed > 0 && speed !== 1) {
+            body.length_scale = 1 / speed;
+        }
+        if (voice.tweaks?.piperNoiseScale != null) {
+            body.noise_scale = voice.tweaks.piperNoiseScale;
+        }
+
         const ttsResponse = await firstValueFrom(
             this.httpService.post<ArrayBuffer>(
                 `${this.piperUrl.replace(/\/$/, "")}/synthesize`,
-                { text: message, voice: voice.voiceId },
+                body,
                 {
                     headers: { "Content-Type": "application/json" },
                     responseType: "arraybuffer",

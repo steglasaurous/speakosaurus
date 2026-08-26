@@ -126,7 +126,9 @@ export class SpeakController {
 
       let audioData: AudioData;
 
-      if (previewDto.previewUrl) {
+      const shouldSynthesize = !!previewDto.message || previewDto.tweaks != null;
+
+      if (previewDto.previewUrl && !shouldSynthesize) {
         // Download the preview audio file from URL
         try {
           const audioResponse = await firstValueFrom(
@@ -162,10 +164,11 @@ export class SpeakController {
           throw new Error(`Failed to download preview audio: ${downloadError instanceof Error ? downloadError.message : 'Unknown error'}`);
         }
       } else {
-        // Generate TTS with test message
+        // Generate TTS with playground text or the default test message
         audioData = await this.voiceProviderService.getRenderedMessage(
           voice,
-          'This is a test message.',
+          previewDto.message?.trim() || 'This is a test message.',
+          previewDto.tweaks,
         );
       }
 

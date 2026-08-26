@@ -11,7 +11,7 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { VoicesService, Voice } from '../../services/voices.service';
+import { VoicesService, Voice, VoiceTweakSettings } from '../../services/voices.service';
 import { SettingsService } from '../../services/settings.service';
 import { UsersService, User } from '../../services/users.service';
 import { Subscription } from 'rxjs';
@@ -21,7 +21,7 @@ export interface FavouriteVoiceRef {
   voiceId: string;
 }
 
-type ProviderFilter = 'all' | 'favourites' | string;
+type ProviderFilter = 'all' | 'favourites' | 'custom' | string;
 
 interface VoiceGroup {
   key: string;
@@ -34,12 +34,14 @@ interface FilterNavItem {
   label: string;
   count: number;
   favourite?: boolean;
+  custom?: boolean;
 }
 
 const FAVOURITE_VOICES_SETTING = 'favouriteVoices';
 const UNKNOWN_FILTER_KEY = '__unknown__';
 const PROVIDER_LABELS: Record<string, string> = {
   favourites: 'Favourites',
+  custom: 'Custom',
   elevenlabs: 'ElevenLabs',
   azure: 'Azure',
   piper: 'Piper',
@@ -54,6 +56,9 @@ const PROVIDER_LABELS: Record<string, string> = {
   imports: [CommonModule, FormsModule],
   templateUrl: './voice-selector.component.html',
   styleUrl: './voice-selector.component.scss',
+  host: {
+    '[class.embedded]': 'layout === "embedded"',
+  },
 })
 export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
   @Input() selectedVoice: Voice | null = null;
@@ -64,6 +69,12 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
   @Input() showLabel = true;
   /** When editing a user, their voice is not treated as "assigned to another user". */
   @Input() currentTwitchUserId: string | null = null;
+  @Input() layout: 'modal' | 'embedded' = 'modal';
+  /** When set, play synthesizes this text instead of using a canned preview clip. */
+  @Input() previewMessage?: string;
+  /** Live slider values applied when playing the currently selected tweak voice. */
+  @Input() previewTweaks?: VoiceTweakSettings | null;
+  @Input() tweaksVoice: Voice | null = null;
   @Output() voiceSelected = new EventEmitter<Voice | null>();
 
   modalOpen = false;
@@ -123,11 +134,22 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
       this.buildAssignmentMap(this.lastUsers);
       this.refreshDerivedLists();
     }
+    if (changes['selectedVoice'] && this.selectedVoice) {
+      this.pendingVoice = this.selectedVoice;
+    }
   }
 
   ngOnDestroy(): void {
     this.subscriptions.unsubscribe();
     this.detachEscapeHandler();
+  }
+
+  get isEmbedded(): boolean {
+    return this.layout === 'embedded';
+  }
+
+  get isPickerVisible(): boolean {
+    return this.isEmbedded || this.modalOpen;
   }
 
   get displayName(): string {
@@ -200,12 +222,18 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   onOverlayClick(event: MouseEvent): void {
+    if (this.isEmbedded) {
+      return;
+    }
     if (event.target === event.currentTarget) {
       this.closeModal();
     }
   }
 
   onOverlayKeydown(event: KeyboardEvent): void {
+    if (this.isEmbedded) {
+      return;
+    }
     if (event.key === 'Escape') {
       event.stopPropagation();
       this.closeModal();
@@ -223,6 +251,10 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
 
   selectPending(voice: Voice): void {
     this.pendingVoice = voice;
+    if (this.isEmbedded) {
+      this.selectedVoice = voice;
+      this.voiceSelected.emit(voice);
+    }
   }
 
   setProviderFilter(key: ProviderFilter): void {
@@ -307,6 +339,9 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
         if (this.providerFilter === 'favourites') {
           return 'Favourites';
         }
+        if (this.providerFilter === 'custom') {
+          return 'Custom';
+        }
         return this.providerLabel(this.providerFilter);
       case 'language':
         return this.languageFilter === 'all'
@@ -384,7 +419,18 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
     this.playingVoiceId = voice.voiceId;
     this.playingProviderName = voice.providerName;
 
-    this.voicesService.previewVoice(voice).subscribe({
+    const isTweaksTarget =
+      !!this.tweaksVoice && this.isSameVoice(voice, this.tweaksVoice);
+    const tweaks = isTweaksTarget
+      ? (this.previewTweaks ?? undefined)
+      : voice.tweaks;
+    const skipPreviewUrl = this.isEmbedded || !!this.previewMessage || tweaks != null;
+
+    this.voicesService.previewVoice(voice, {
+      message: this.previewMessage,
+      tweaks,
+      skipPreviewUrl,
+    }).subscribe({
       next: () => {
         setTimeout(() => {
           if (this.isPlaying(voice)) {
@@ -448,6 +494,10 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
       if (favs.length) {
         groups.push({ key: 'favourites', label: 'Favourites', voices: favs });
       }
+    } else if (this.providerFilter === 'custom') {
+      if (filtered.length) {
+        groups.push({ key: 'custom', label: 'Custom', voices: filtered });
+      }
     } else if (this.providerFilter !== 'all') {
       if (filtered.length) {
         groups.push({
@@ -463,6 +513,14 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
           key: 'favourites',
           label: 'Favourites',
           voices: favourites,
+        });
+      }
+      const customs = filtered.filter((v) => v.isCustom);
+      if (customs.length) {
+        groups.push({
+          key: 'custom',
+          label: 'Custom',
+          voices: customs,
         });
       }
       for (const provider of this.uniqueProviders(filtered)) {
@@ -492,6 +550,12 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
         label: 'Favourites',
         count: pool.filter((v) => this.isFavourite(v)).length,
         favourite: true,
+      },
+      {
+        key: 'custom',
+        label: 'Custom',
+        count: pool.filter((v) => !!v.isCustom).length,
+        custom: true,
       },
       ...providers.map((provider) => ({
         key: provider,
@@ -561,8 +625,12 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
     return items;
   }
 
-  private loadVoices(): void {
-    this.voicesService.getVoices().subscribe({
+  reloadVoices(forceReload = true): void {
+    this.loadVoices(forceReload);
+  }
+
+  private loadVoices(forceReload = false): void {
+    this.voicesService.getVoices(forceReload).subscribe({
       next: (voices) => {
         this.availableVoices = voices;
         this.refreshDerivedLists();
@@ -711,6 +779,9 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
     }
     if (this.providerFilter === 'favourites') {
       return this.isFavourite(voice);
+    }
+    if (this.providerFilter === 'custom') {
+      return !!voice.isCustom;
     }
     return voice.providerName === this.providerFilter;
   }

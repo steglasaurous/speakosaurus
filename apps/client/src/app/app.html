@@ -1,4 +1,7 @@
-<app-status-bar (settingsRequested)="openSettings()"></app-status-bar>
+<app-status-bar
+  (settingsRequested)="openSettings()"
+  (playgroundRequested)="openPlayground()"
+></app-status-bar>
 <router-outlet></router-outlet>
 
 <div
@@ -16,4 +19,19 @@
     (closed)="closeSettings()"
     (click)="$event.stopPropagation()"
   ></app-settings>
+</div>
+
+<div
+  *ngIf="playgroundModalOpen"
+  class="playground-modal"
+  role="dialog"
+  aria-modal="true"
+  aria-label="Voice playground"
+  (click)="playground.requestClose()"
+  (keydown.escape)="playground.requestClose(); $event.stopPropagation()"
+>
+  <app-voice-playground
+    #playground
+    (closed)="closePlayground()"
+  ></app-voice-playground>
 </div>

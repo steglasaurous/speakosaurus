@@ -1,3 +1,5 @@
+import { VoiceTweakSettings } from './voice-tweak-settings.interface';
+
 export interface Voice {
   voiceId: string;
   providerName: string;
@@ -13,4 +15,9 @@ export interface Voice {
   description?: string;
   /** Locale in ISO format (e.g. en-US, es-ES) */
   locale?: string;
+  /** Azure neural styles this stock voice supports. */
+  supportedStyles?: string[];
+  isCustom?: boolean;
+  baseVoiceId?: string;
+  tweaks?: VoiceTweakSettings;
 }

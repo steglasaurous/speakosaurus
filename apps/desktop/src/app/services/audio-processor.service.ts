@@ -135,6 +135,7 @@ export class AudioProcessorService {
                     base64,
                     format,
                     message: audioData.message,
+                    volume: audioData.volume ?? 1,
                     voice: {
                         providerName: audioData.voice.providerName,
                         voiceId: audioData.voice.voiceId,

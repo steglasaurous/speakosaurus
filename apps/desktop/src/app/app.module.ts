@@ -1,6 +1,8 @@
 import { Module, type DynamicModule } from '@nestjs/common';
 import { VOICE_PROVIDERS } from './injection-tokens';
 import { VoiceProviderService } from './services/voice-providers/voice-provider.service';
+import { CustomVoicesService } from './services/custom-voices.service';
+import { CustomVoicesController } from './controllers/custom-voices.controller';
 import { VoicesController } from './controllers/voices.controller';
 import { SpeakController } from './controllers/speak.controller';
 import { SettingsController } from './controllers/settings.controller';
@@ -32,7 +34,7 @@ import { PiperHttpServerService } from './services/piper-http-server.service';
     }) as DynamicModule,
     HttpModule,
   ],
-  controllers: [VoicesController, SpeakController, SettingsController, UsersController, TwitchController, StatusController, StreamerBotController],
+    controllers: [VoicesController, SpeakController, SettingsController, UsersController, TwitchController, StatusController, StreamerBotController, CustomVoicesController],
   providers: [ 
     SpeakerttsVoiceProvider,
     {
@@ -42,6 +44,7 @@ import { PiperHttpServerService } from './services/piper-http-server.service';
     },
     PiperHttpServerService,
     VoiceProviderService,
+    CustomVoicesService,
     AudioProcessorService,
     SettingsService,
     StreamerBotManagerService,

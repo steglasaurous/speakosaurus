@@ -106,10 +106,18 @@ export class SpeakerttsVoiceProvider implements VoiceProvider {
         
         return new Promise<AudioData>((resolve, reject) => {
             this.logger.log('Exporting message', { message, voice, tempFilePath });
-            this.speaker.export(message, voice.voiceId, null, 'UTF-8', tempFilePath, (error: Error | null) => {
+            const speed = voice.tweaks?.speed;
+            this.speaker.export(
+                message,
+                voice.voiceId,
+                speed != null && speed !== 1 ? speed : null,
+                'UTF-8',
+                tempFilePath,
+                (error: Error | null) => {
                 if (error) {
                     this.logger.error('Error exporting message', { error, message, voice, tempFilePath });
                     reject(error);
+                    return;
                 }
                 this.logger.log('Message exported', { message, voice, tempFilePath });
                 resolve({

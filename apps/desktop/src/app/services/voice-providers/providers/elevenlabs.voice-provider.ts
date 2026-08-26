@@ -57,11 +57,35 @@ export class ElevenLabsVoiceProvider implements VoiceProvider {
     }
 
     async getRenderedMessage(message: string, voice: Voice): Promise<AudioData> {
-        const audioStream = await this.elevenLabsClient.textToSpeech.convert(voice.voiceId, {
+        const tweaks = voice.tweaks;
+        const convertOptions: {
+            text: string;
+            modelId: string;
+            outputFormat: 'mp3_44100_128';
+            voiceSettings?: {
+                stability?: number;
+                similarityBoost?: number;
+                style?: number;
+                useSpeakerBoost?: boolean;
+                speed?: number;
+            };
+        } = {
             text: message,
             modelId: 'eleven_multilingual_v2',
             outputFormat: 'mp3_44100_128',
-        });
+        };
+
+        if (tweaks && this.hasElevenLabsTweaks(tweaks)) {
+            convertOptions.voiceSettings = {
+                stability: tweaks.elevenLabsStability,
+                similarityBoost: tweaks.elevenLabsSimilarityBoost,
+                style: tweaks.elevenLabsStyle,
+                useSpeakerBoost: tweaks.elevenLabsUseSpeakerBoost,
+                speed: tweaks.speed,
+            };
+        }
+
+        const audioStream = await this.elevenLabsClient.textToSpeech.convert(voice.voiceId, convertOptions);
 
         // Collect ReadableStream data into a buffer
         const chunks: Buffer[] = [];
@@ -89,5 +113,15 @@ export class ElevenLabsVoiceProvider implements VoiceProvider {
             voice,
             audioFilePath: tempFilePath,
         };
+    }
+
+    private hasElevenLabsTweaks(tweaks: NonNullable<Voice['tweaks']>): boolean {
+        return (
+            tweaks.speed != null ||
+            tweaks.elevenLabsStability != null ||
+            tweaks.elevenLabsSimilarityBoost != null ||
+            tweaks.elevenLabsStyle != null ||
+            tweaks.elevenLabsUseSpeakerBoost != null
+        );
     }
 }

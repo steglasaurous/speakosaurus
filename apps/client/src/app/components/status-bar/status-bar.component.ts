@@ -14,6 +14,7 @@ import { Subscription } from 'rxjs';
 })
 export class StatusBarComponent implements OnInit, OnDestroy {
   @Output() settingsRequested = new EventEmitter<void>();
+  @Output() playgroundRequested = new EventEmitter<void>();
 
   status: Status = {
     streamerBotConnected: false,

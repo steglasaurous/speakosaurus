@@ -19,3 +19,16 @@
   border-radius: 12px;
   box-shadow: 0 16px 48px rgba(0, 0, 0, 0.24);
 }
+
+.playground-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: 24px;
+  overflow: hidden;
+  background: rgba(0, 0, 0, 0.45);
+  box-sizing: border-box;
+}

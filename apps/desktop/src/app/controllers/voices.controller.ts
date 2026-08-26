@@ -2,6 +2,7 @@ import { Controller, Get, Query } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { VoiceProviderService } from '../services/voice-providers/voice-provider.service';
 import { VoiceDto } from '../dto/voice.dto';
+import { toVoiceDto } from '../dto/voice-mapper';
 
 @ApiTags('voices')
 @Controller('voices')
@@ -28,18 +29,7 @@ export class VoicesController {
   async getVoices(@Query('forceReload') forceReload?: string): Promise<VoiceDto[]> {
     const shouldForceReload = forceReload === 'true' || forceReload === '1';
     const voices = await this.voiceProviderService.getVoices(shouldForceReload);
-    return voices.map(voice => ({
-      voiceId: voice.voiceId,
-      providerName: voice.providerName,
-      voiceName: voice.voiceName,
-      displayName: voice.displayName,
-      group: voice.group,
-      previewUrl: voice.previewUrl,
-      language: voice.language,
-      gender: voice.gender,
-      description: voice.description,
-      locale: voice.locale,
-    }));
+    return voices.map(toVoiceDto);
   }
 }
 

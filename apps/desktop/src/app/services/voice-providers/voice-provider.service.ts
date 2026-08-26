@@ -14,6 +14,8 @@ import { AzureVoiceProvider } from "./providers/azure.voice-provider";
 import { PiperVoiceProvider } from "./providers/piper.voice-provider";
 import { StatusEventService } from "../status-event.service";
 import { PiperHttpServerService } from "../piper-http-server.service";
+import { CustomVoicesService } from "../custom-voices.service";
+import { VoiceTweakSettings } from "./voice-tweak-settings.interface";
 
 @Injectable()
 export class VoiceProviderService implements OnModuleInit {
@@ -29,6 +31,7 @@ export class VoiceProviderService implements OnModuleInit {
         private readonly httpService: HttpService,
         private readonly statusEventService: StatusEventService,
         private readonly piperHttpServerService: PiperHttpServerService,
+        private readonly customVoicesService: CustomVoicesService,
     ) {
         // Start with the initial providers (typically just SpeakerttsVoiceProvider)
         this.voiceProviders = [...this.initialVoiceProviders];
@@ -43,7 +46,7 @@ export class VoiceProviderService implements OnModuleInit {
         await this.updatePiperProvider();
     }
 
-    async getVoices(forceReload = false): Promise<Voice[]> {
+    async getStockVoices(forceReload = false): Promise<Voice[]> {
         // Return cached result if available and not forcing reload
         if (this.cachedVoices !== null && !forceReload) {
             return this.cachedVoices;
@@ -72,10 +75,19 @@ export class VoiceProviderService implements OnModuleInit {
             return a.providerName.localeCompare(b.providerName);
         });
 
-        // Update cache with latest results
         this.cachedVoices = output;
-
         return output;
+    }
+
+    async getVoices(forceReload = false): Promise<Voice[]> {
+        const stock = await this.getStockVoices(forceReload);
+        const custom = await this.customVoicesService.toVoices(stock);
+        return [...stock, ...custom];
+    }
+
+    async getStockVoice(voiceId: string, providerName: string): Promise<Voice | null> {
+        const voices = await this.getStockVoices();
+        return voices.find(v => v.voiceId === voiceId && v.providerName === providerName) || null;
     }
 
     async getVoice(voiceId: string, providerName: string): Promise<Voice | null> {
@@ -87,29 +99,45 @@ export class VoiceProviderService implements OnModuleInit {
         return voice;
     }
 
-    async getRenderedMessage(voice: Voice, message: string): Promise<AudioData> {
+    async getRenderedMessage(
+        voice: Voice,
+        message: string,
+        tweaksOverride?: VoiceTweakSettings,
+    ): Promise<AudioData> {
         const provider = this.voiceProviders.find(p => p.providerName === voice.providerName);
         
         if (!provider) {
             throw new Error(`Voice provider '${voice.providerName}' not found`);
         }
-        this.logger.log('Getting rendered message', { message, voice });
+
+        const engineVoiceId = voice.isCustom && voice.baseVoiceId
+            ? voice.baseVoiceId
+            : voice.voiceId;
+        const tweaks = tweaksOverride ?? voice.tweaks;
+        const renderVoice: Voice = {
+            ...voice,
+            voiceId: engineVoiceId,
+            tweaks,
+        };
+
+        this.logger.log('Getting rendered message', { message, voice: renderVoice });
         this.pendingMessages++;
-        // Emit update
         this.statusEventService.emitStatusUpdate({ 
             pendingMessages: this.pendingMessages 
         });
         try {
-            const audioData = await provider.getRenderedMessage(message, voice);
+            const audioData = await provider.getRenderedMessage(message, renderVoice);
             this.pendingMessages--;
-            // Emit update
             this.statusEventService.emitStatusUpdate({ 
                 pendingMessages: this.pendingMessages 
             });
-            return audioData;
+            return {
+                ...audioData,
+                voice,
+                volume: tweaks?.volume,
+            };
         } catch (error) {
             this.pendingMessages--;
-            // Emit update
             this.statusEventService.emitStatusUpdate({ 
                 pendingMessages: this.pendingMessages 
             });

@@ -31,6 +31,7 @@ export enum Setting {
   STREAMERBOT_ACTION_INTRO = 'streamerbotActionIntro',
   SETUP_COMPLETED = 'setupCompleted',
   FAVOURITE_VOICES = 'favouriteVoices',
+  CUSTOM_VOICES = 'customVoices',
 }
 
 export enum SettingType {
@@ -341,6 +342,14 @@ export class SettingsService {
       displayName: 'Favourite Voices',
       group: SettingGroup.INTERNAL,
       description: 'Voices favourited in the voice picker',
+      type: SettingType.JSON,
+      default: '[]',
+    },
+    {
+      name: Setting.CUSTOM_VOICES,
+      displayName: 'Custom Voices',
+      group: SettingGroup.INTERNAL,
+      description: 'User-saved customized voices with tweak settings',
       type: SettingType.JSON,
       default: '[]',
     },

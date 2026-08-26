@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { VoiceTweaksDto } from './voice-tweaks.dto';
 
 export class VoiceDto {
   @ApiProperty({
@@ -60,5 +61,20 @@ export class VoiceDto {
     example: 'en-US',
   })
   locale?: string;
+
+  @ApiPropertyOptional({
+    description: 'Azure speaking styles supported by this voice',
+    example: ['cheerful', 'sad'],
+  })
+  supportedStyles?: string[];
+
+  @ApiPropertyOptional({ description: 'True when this is a user-saved customized voice' })
+  isCustom?: boolean;
+
+  @ApiPropertyOptional({ description: 'Stock voice id this custom voice is based on' })
+  baseVoiceId?: string;
+
+  @ApiPropertyOptional({ type: VoiceTweaksDto })
+  tweaks?: VoiceTweaksDto;
 }
 

@@ -1,4 +1,4 @@
-<div class="form-group">
+<div class="form-group" *ngIf="!isEmbedded">
   <label [for]="inputId" *ngIf="showLabel">
     <ng-content select="[slot=label]">Voice</ng-content>
     <span class="label-hint" *ngIf="hint">{{ hint }}</span>
@@ -25,33 +25,37 @@
   </button>
 </div>
 
-@if (modalOpen) {
+@if (isPickerVisible) {
   <div
     class="voice-picker-overlay"
+    [class.embedded-host]="isEmbedded"
     (click)="onOverlayClick($event)"
     (keydown)="onOverlayKeydown($event)"
     role="presentation"
   >
     <div
       class="voice-picker-modal"
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="voice-picker-title"
+      [class.embedded]="isEmbedded"
+      [attr.role]="isEmbedded ? null : 'dialog'"
+      [attr.aria-modal]="isEmbedded ? null : 'true'"
+      [attr.aria-labelledby]="isEmbedded ? null : 'voice-picker-title'"
       (click)="$event.stopPropagation()"
       (keydown)="$event.stopPropagation()"
     >
-      <header class="modal-header">
-        <h2 id="voice-picker-title">Choose a voice</h2>
-        <span class="current-chip" *ngIf="selectedVoice">
-          Currently: {{ selectedVoice.providerName }} — {{ selectedVoice.voiceName }}
-        </span>
-        <span class="current-chip" *ngIf="!selectedVoice">No voice selected</span>
-        <button type="button" class="icon-btn" (click)="closeModal()" aria-label="Close">
-          <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-          </svg>
-        </button>
-      </header>
+      @if (!isEmbedded) {
+        <header class="modal-header">
+          <h2 id="voice-picker-title">Choose a voice</h2>
+          <span class="current-chip" *ngIf="selectedVoice">
+            Currently: {{ selectedVoice.providerName }} — {{ selectedVoice.voiceName }}
+          </span>
+          <span class="current-chip" *ngIf="!selectedVoice">No voice selected</span>
+          <button type="button" class="icon-btn" (click)="closeModal()" aria-label="Close">
+            <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+          </button>
+        </header>
+      }
 
       <aside class="sidebar">
         <div class="filter-block" [class.expanded]="isFilterSectionExpanded('provider')">
@@ -77,6 +81,7 @@
                   class="filter-nav-btn"
                   [class.active]="providerFilter === item.key"
                   [class.fav-nav]="item.favourite"
+                  [class.custom-nav]="item.custom"
                   (click)="setProviderFilter(item.key)"
                 >
                   <span class="label">
@@ -256,6 +261,7 @@
                 type="button"
                 class="group-header"
                 [class.fav]="voiceGroup.key === 'favourites'"
+                [class.custom]="voiceGroup.key === 'custom'"
                 (click)="toggleGroup(voiceGroup.key)"
               >
                 <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
@@ -303,7 +309,10 @@
                     <div class="v-text">
                       <div class="v-name">
                         {{ voice.voiceName }}
-                        @if (voiceGroup.key === 'favourites') {
+                        @if (voice.isCustom) {
+                          <span class="custom-pill">custom</span>
+                        }
+                        @if (voiceGroup.key === 'favourites' || voiceGroup.key === 'custom') {
                           <span class="provider-pill tiny">{{ voice.providerName }}</span>
                         }
                       </div>
@@ -358,20 +367,22 @@
         </div>
       </div>
 
-      <footer class="modal-footer">
-        <span class="footer-hint">★ favourites · orange dot = assigned to another user</span>
-        <div class="footer-actions">
-          <button type="button" class="btn btn-ghost" (click)="closeModal()">Cancel</button>
-          <button
-            type="button"
-            class="btn btn-primary"
-            [disabled]="!canApply"
-            (click)="applySelection()"
-          >
-            Select voice
-          </button>
-        </div>
-      </footer>
+      @if (!isEmbedded) {
+        <footer class="modal-footer">
+          <span class="footer-hint">★ favourites · custom · orange dot = assigned to another user</span>
+          <div class="footer-actions">
+            <button type="button" class="btn btn-ghost" (click)="closeModal()">Cancel</button>
+            <button
+              type="button"
+              class="btn btn-primary"
+              [disabled]="!canApply"
+              (click)="applySelection()"
+            >
+              Select voice
+            </button>
+          </div>
+        </footer>
+      }
     </div>
   </div>
 }

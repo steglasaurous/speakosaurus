@@ -1,0 +1,162 @@
+<div class="section-label">Voice controls</div>
+
+@if (!providerName) {
+  <p class="hint">Select a voice to tweak it.</p>
+} @else {
+  @if (showSpeed) {
+    <label class="control">
+      <span class="control-head">
+        Speed
+        <span class="control-value">{{ formatMultiplier(tweaks.speed) }}</span>
+      </span>
+      <input
+        type="range"
+        min="0.5"
+        max="2"
+        step="0.05"
+        [ngModel]="tweaks.speed ?? 1"
+        (ngModelChange)="patchNumber('speed', $event)"
+      >
+    </label>
+  }
+
+  @if (showPitch) {
+    <label class="control">
+      <span class="control-head">
+        Pitch
+        <span class="control-value">{{ formatMultiplier(tweaks.pitch) }}</span>
+      </span>
+      <input
+        type="range"
+        min="0.5"
+        max="1.5"
+        step="0.01"
+        [ngModel]="tweaks.pitch ?? 1"
+        (ngModelChange)="patchNumber('pitch', $event)"
+      >
+    </label>
+  }
+
+  @if (showVolume) {
+    <label class="control">
+      <span class="control-head">
+        Volume
+        <span class="control-value">{{ formatPercent(tweaks.volume) }}</span>
+      </span>
+      <input
+        type="range"
+        min="0"
+        max="2"
+        step="0.05"
+        [ngModel]="tweaks.volume ?? 1"
+        (ngModelChange)="patchNumber('volume', $event)"
+      >
+    </label>
+  }
+
+  @if (showAzureStyle) {
+    <label class="control">
+      <span class="control-head">Speaking style</span>
+      <select
+        [ngModel]="tweaks.azureStyle ?? ''"
+        (ngModelChange)="patch({ azureStyle: $event })"
+      >
+        <option value="">Neutral (default)</option>
+        @for (style of supportedStyles; track style) {
+          <option [value]="style">{{ style }}</option>
+        }
+      </select>
+    </label>
+  }
+
+  @if (showAzureStyleDegree) {
+    <label class="control">
+      <span class="control-head">
+        Style intensity
+        <span class="control-value">{{ formatFixed(tweaks.azureStyleDegree, 1) }}</span>
+      </span>
+      <input
+        type="range"
+        min="0.01"
+        max="2"
+        step="0.01"
+        [ngModel]="tweaks.azureStyleDegree ?? 1"
+        (ngModelChange)="patchNumber('azureStyleDegree', $event)"
+      >
+    </label>
+  }
+
+  @if (showElevenLabs) {
+    <label class="control">
+      <span class="control-head">
+        Stability
+        <span class="control-value">{{ formatFixed(tweaks.elevenLabsStability, 0.5) }}</span>
+      </span>
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        [ngModel]="tweaks.elevenLabsStability ?? 0.5"
+        (ngModelChange)="patchNumber('elevenLabsStability', $event)"
+      >
+    </label>
+    <label class="control">
+      <span class="control-head">
+        Similarity
+        <span class="control-value">{{ formatFixed(tweaks.elevenLabsSimilarityBoost, 0.75) }}</span>
+      </span>
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        [ngModel]="tweaks.elevenLabsSimilarityBoost ?? 0.75"
+        (ngModelChange)="patchNumber('elevenLabsSimilarityBoost', $event)"
+      >
+    </label>
+    <label class="control">
+      <span class="control-head">
+        Style exaggeration
+        <span class="control-value">{{ formatFixed(tweaks.elevenLabsStyle, 0) }}</span>
+      </span>
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        [ngModel]="tweaks.elevenLabsStyle ?? 0"
+        (ngModelChange)="patchNumber('elevenLabsStyle', $event)"
+      >
+    </label>
+    <label class="check-row">
+      <input
+        type="checkbox"
+        [ngModel]="tweaks.elevenLabsUseSpeakerBoost ?? true"
+        (ngModelChange)="patch({ elevenLabsUseSpeakerBoost: $event })"
+      >
+      Speaker boost
+    </label>
+  }
+
+  @if (showPiper) {
+    <label class="control">
+      <span class="control-head">
+        Expressiveness
+        <span class="control-value">{{ formatFixed(tweaks.piperNoiseScale, 0.667) }}</span>
+      </span>
+      <input
+        type="range"
+        min="0"
+        max="1"
+        step="0.01"
+        [ngModel]="tweaks.piperNoiseScale ?? 0.667"
+        (ngModelChange)="patchNumber('piperNoiseScale', $event)"
+      >
+    </label>
+  }
+
+  @if (showMonsterHint) {
+    <p class="hint">TTS Monster has no synthesis tweaks — volume is applied at playback.</p>
+  }
+}

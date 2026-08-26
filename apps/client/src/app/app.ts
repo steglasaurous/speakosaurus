@@ -3,12 +3,13 @@ import { CommonModule } from '@angular/common';
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { StatusBarComponent } from './components/status-bar/status-bar.component';
 import { SettingsComponent } from './components/settings/settings.component';
+import { VoicePlaygroundComponent } from './components/voice-playground/voice-playground.component';
 import { AudioService } from './services/audio.service';
 import { SettingsService } from './services/settings.service';
 import { filter } from 'rxjs/operators';
 
 @Component({
-  imports: [CommonModule, RouterModule, StatusBarComponent, SettingsComponent],
+  imports: [CommonModule, RouterModule, StatusBarComponent, SettingsComponent, VoicePlaygroundComponent],
   selector: 'app-root',
   templateUrl: './app.html',
   styleUrl: './app.scss',
@@ -16,6 +17,7 @@ import { filter } from 'rxjs/operators';
 export class App implements OnInit, OnDestroy {
   protected title = 'client';
   settingsModalOpen = false;
+  playgroundModalOpen = false;
   private audioService = inject(AudioService);
   private settingsService = inject(SettingsService);
   private router = inject(Router);
@@ -36,14 +38,40 @@ export class App implements OnInit, OnDestroy {
   }
 
   openSettings(): void {
+    this.playgroundModalOpen = false;
     this.settingsModalOpen = true;
+    this.lockBodyScroll();
+  }
+
+  closeSettings(): void {
+    this.settingsModalOpen = false;
+    this.unlockBodyScrollIfIdle();
+  }
+
+  openPlayground(): void {
+    this.settingsModalOpen = false;
+    this.playgroundModalOpen = true;
+    this.lockBodyScroll();
+  }
+
+  closePlayground(): void {
+    this.playgroundModalOpen = false;
+    this.unlockBodyScrollIfIdle();
+  }
+
+  private lockBodyScroll(): void {
+    if (this.isBodyScrollLocked) {
+      return;
+    }
     this.previousBodyOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     this.isBodyScrollLocked = true;
   }
 
-  closeSettings(): void {
-    this.settingsModalOpen = false;
+  private unlockBodyScrollIfIdle(): void {
+    if (this.settingsModalOpen || this.playgroundModalOpen) {
+      return;
+    }
     this.restoreBodyScrolling();
   }
 

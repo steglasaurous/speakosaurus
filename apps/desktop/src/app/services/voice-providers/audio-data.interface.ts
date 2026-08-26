@@ -4,4 +4,6 @@ export interface AudioData {
     message: string;
     voice: Voice;
     audioFilePath: string; // Path to temporary file containing audio data
+    /** Playback gain. 1 = unchanged. */
+    volume?: number;
 }

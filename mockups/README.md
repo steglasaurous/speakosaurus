@@ -11,6 +11,7 @@ Open `index.html` in your web browser to see a navigation page with links to all
 3. **Settings** (`settings.html`) - Configure application settings
 4. **Voice Picker — Modal (A)** (`voice-picker-modal.html`) - Full voice browser dialog
 5. **Voice Picker — Panel (B)** (`voice-picker-panel.html`) - Anchored filter panel
+6. **Voice Playground** (`voice-playground.html`) - Status-bar modal: embedded picker, sample text, provider-aware tweaks, save to Custom. Three scenes (Azure, ElevenLabs, saved custom).
 
 ## Voice picker concepts
 
@@ -56,6 +57,14 @@ Shared features in A and B:
 - ✅ Default voice selection with autocomplete (grouped by provider)
 - ✅ Trigger commands management (add/remove commands)
 - ✅ Save settings functionality
+
+### Voice Playground
+- ✅ Status-bar playground button next to Settings
+- ✅ Two-pane modal: embedded voice picker + tweak panel
+- ✅ Sample text played by per-row / selected-voice play buttons
+- ✅ Shared controls (speed, pitch, volume) plus per-provider extras
+- ✅ Custom category (Favourites-style), custom pill, save / update / delete
+- ✅ Custom voices can still be favourited
 
 ## Design Notes
 

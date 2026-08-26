@@ -41,6 +41,8 @@ export class AzureVoiceProvider implements VoiceProvider {
     const result = await speechSynthesizer.getVoicesAsync();
     const voices: Voice[] = [];
     for (const voice of result.voices) {
+      const sdkVoice = voice as typeof voice & { styleList?: string[]; StyleList?: string[] };
+      const supportedStyles = (sdkVoice.styleList ?? sdkVoice.StyleList ?? []).filter(Boolean);
       const newVoice: Voice = {
         providerName: this.providerName,
         voiceId: voice.name,
@@ -49,6 +51,7 @@ export class AzureVoiceProvider implements VoiceProvider {
         locale: voice.locale,
         gender: voice.gender === SynthesisVoiceGender.Male ? 'male' : voice.gender === SynthesisVoiceGender.Female ? 'female' : 'other',
         language: voice.locale?.split('-')[0],
+        supportedStyles: supportedStyles.length ? supportedStyles : undefined,
       };
       voices.push(newVoice);
     }
@@ -68,21 +71,20 @@ export class AzureVoiceProvider implements VoiceProvider {
     const tempFilePath = join(tmpdir(), fileName);
     const renderedSpeechConfig = this.speechConfig;
     renderedSpeechConfig.speechSynthesisVoiceName = voice.voiceId;
-    // Set output format to standard RIFF WAV format compatible with Web Audio API
     renderedSpeechConfig.speechSynthesisOutputFormat = SpeechSynthesisOutputFormat.Riff48Khz16BitMonoPcm;
-    // Use null for AudioConfig to get audioData directly from result instead of writing to file
     const audioConfig = null;
 
     const speechSynthesizer = new SpeechSynthesizer(
       renderedSpeechConfig,
       audioConfig,
     );
+
+    const useSsml = this.needsSsml(voice);
+
     return new Promise<AudioData>((resolve, reject) => {
-      speechSynthesizer.speakTextAsync(message, (result) => {
+      const onResult = (result: { reason: ResultReason; audioData: ArrayBuffer }) => {
         if (result.reason === ResultReason.SynthesizingAudioCompleted) {
           try {
-            // Get audioData directly from result and write to file ourselves
-            // This ensures we have full control over the file writing process
             const audioData = result.audioData;
             if (!audioData || audioData.byteLength === 0) {
               speechSynthesizer.close();
@@ -90,7 +92,6 @@ export class AzureVoiceProvider implements VoiceProvider {
               return;
             }
 
-            // Convert ArrayBuffer to Node.js Buffer and write to file
             const buffer = Buffer.from(audioData);
             writeFileSync(tempFilePath, buffer);
 
@@ -114,7 +115,63 @@ export class AzureVoiceProvider implements VoiceProvider {
           speechSynthesizer.close();
           reject(new Error(`Failed to synthesize audio: ${result.reason}`));
         }
-      });
+      };
+
+      if (useSsml) {
+        speechSynthesizer.speakSsmlAsync(this.buildSsml(message, voice), onResult);
+      } else {
+        speechSynthesizer.speakTextAsync(message, onResult);
+      }
     });
+  }
+
+  private needsSsml(voice: Voice): boolean {
+    const tweaks = voice.tweaks;
+    if (!tweaks) {
+      return false;
+    }
+    return (
+      (tweaks.speed != null && tweaks.speed !== 1) ||
+      (tweaks.pitch != null && tweaks.pitch !== 1) ||
+      !!tweaks.azureStyle
+    );
+  }
+
+  private buildSsml(message: string, voice: Voice): string {
+    const tweaks = voice.tweaks ?? {};
+    const rate = tweaks.speed ?? 1;
+    const pitch = tweaks.pitch ?? 1;
+    const lang = this.escapeXml(voice.locale || 'en-US');
+    let inner = this.escapeXml(message);
+
+    const prosodyAttrs: string[] = [];
+    if (rate !== 1) {
+      prosodyAttrs.push(`rate="${rate}"`);
+    }
+    if (pitch !== 1) {
+      const percent = ((pitch - 1) * 100).toFixed(2);
+      const signed = Number(percent) >= 0 ? `+${percent}` : percent;
+      prosodyAttrs.push(`pitch="${signed}%"`);
+    }
+    if (prosodyAttrs.length) {
+      inner = `<prosody ${prosodyAttrs.join(' ')}>${inner}</prosody>`;
+    }
+
+    if (tweaks.azureStyle) {
+      const style = this.escapeXml(tweaks.azureStyle);
+      const degree = tweaks.azureStyleDegree ?? 1;
+      inner = `<mstts:express-as style="${style}" styledegree="${degree}">${inner}</mstts:express-as>`;
+    }
+
+    return `<speak version="1.0" xmlns="http://www.w3.org/2001/10/synthesis" xmlns:mstts="https://www.w3.org/2001/mstts" xml:lang="${lang}"><voice name="${this.escapeXml(voice.voiceId)}">${inner}</voice></speak>`;
+  }
+
+  private escapeXml(value: string): string {
+    return value
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&apos;');
   }
 }

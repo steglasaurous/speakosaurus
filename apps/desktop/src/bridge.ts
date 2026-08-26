@@ -8,6 +8,7 @@ export interface AudioPlayData {
     base64: string;
     format: string;
     message: string;
+    volume?: number;
     voice: {
         providerName: string;
         voiceId: string;

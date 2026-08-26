@@ -5,6 +5,7 @@ export interface AudioPlayData {
   base64: string;
   format: string;
   message: string;
+  volume?: number;
   voice: {
     providerName: string;
     voiceId: string;
@@ -168,14 +169,13 @@ export class AudioService implements OnDestroy {
       // Try Web Audio API first (works for WAV and often MP3/M4A)
       if (this.audioContext && this.canUseWebAudioAPI(audioData.format)) {
         try {
-          await this.playWithWebAudioAPI(arrayBuffer);
+          await this.playWithWebAudioAPI(arrayBuffer, audioData.volume ?? 1);
         } catch (error) {
           console.warn('Web Audio API failed, falling back to HTML5 Audio:', error);
-          await this.playWithHTML5Audio(arrayBuffer, audioData.format);
+          await this.playWithHTML5Audio(arrayBuffer, audioData.format, audioData.volume ?? 1);
         }
       } else {
-        // Fallback to HTML5 Audio
-        await this.playWithHTML5Audio(arrayBuffer, audioData.format);
+        await this.playWithHTML5Audio(arrayBuffer, audioData.format, audioData.volume ?? 1);
       }
 
       // Note: Pause between messages is handled by the main process
@@ -208,17 +208,15 @@ export class AudioService implements OnDestroy {
     return mimeTypes[formatLower] || `audio/${format}`;
   }
 
-  private async playWithWebAudioAPI(arrayBuffer: ArrayBuffer): Promise<void> {
+  private async playWithWebAudioAPI(arrayBuffer: ArrayBuffer, volume = 1): Promise<void> {
     if (!this.audioContext) {
       throw new Error('AudioContext not available');
     }
 
-    // Resume AudioContext if suspended (required by some browsers)
     if (this.audioContext.state === 'suspended') {
       await this.audioContext.resume();
     }
 
-    // Decode audio data (this will throw if decoding fails)
     let audioBuffer: AudioBuffer;
     try {
       audioBuffer = await this.audioContext.decodeAudioData(arrayBuffer.slice(0));
@@ -226,14 +224,15 @@ export class AudioService implements OnDestroy {
       throw new Error(`Failed to decode audio data: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
 
-    // Create buffer source
     const source = this.audioContext.createBufferSource();
     source.buffer = audioBuffer;
-    source.connect(this.audioContext.destination);
+    const gain = this.audioContext.createGain();
+    gain.gain.value = Number.isFinite(volume) ? Math.max(0, volume) : 1;
+    source.connect(gain);
+    gain.connect(this.audioContext.destination);
 
     this.currentAudioSource = source;
 
-    // Play audio
     return new Promise((resolve, reject) => {
       try {
         source.onended = () => {
@@ -248,7 +247,7 @@ export class AudioService implements OnDestroy {
     });
   }
 
-  private playWithHTML5Audio(arrayBuffer: ArrayBuffer, format: string): Promise<void> {
+  private playWithHTML5Audio(arrayBuffer: ArrayBuffer, format: string, volume = 1): Promise<void> {
     // Create blob URL from array buffer with proper MIME type
     const mimeType = this.getMimeType(format);
     const blob = new Blob([arrayBuffer], { type: mimeType });
@@ -256,6 +255,7 @@ export class AudioService implements OnDestroy {
 
     // Create audio element
     const audio = new Audio(url);
+    audio.volume = Math.min(1, Math.max(0, Number.isFinite(volume) ? volume : 1));
     this.currentAudioSource = audio;
 
     // Play audio

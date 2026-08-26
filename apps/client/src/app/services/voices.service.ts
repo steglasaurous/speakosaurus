@@ -3,6 +3,32 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
 import { map } from 'rxjs/operators';
 
+export interface VoiceTweakSettings {
+  speed?: number;
+  pitch?: number;
+  volume?: number;
+  azureStyle?: string;
+  azureStyleDegree?: number;
+  elevenLabsStability?: number;
+  elevenLabsSimilarityBoost?: number;
+  elevenLabsStyle?: number;
+  elevenLabsUseSpeakerBoost?: boolean;
+  piperNoiseScale?: number;
+}
+
+export const DEFAULT_VOICE_TWEAKS: VoiceTweakSettings = {
+  speed: 1,
+  pitch: 1,
+  volume: 1,
+  azureStyle: '',
+  azureStyleDegree: 1,
+  elevenLabsStability: 0.5,
+  elevenLabsSimilarityBoost: 0.75,
+  elevenLabsStyle: 0,
+  elevenLabsUseSpeakerBoost: true,
+  piperNoiseScale: 0.667,
+};
+
 export interface Voice {
   voiceId: string;
   providerName: string;
@@ -17,6 +43,10 @@ export interface Voice {
   description?: string;
   /** ISO locale (e.g. en-US, es-ES) */
   locale?: string;
+  supportedStyles?: string[];
+  isCustom?: boolean;
+  baseVoiceId?: string;
+  tweaks?: VoiceTweakSettings;
 }
 
 @Injectable({
@@ -86,17 +116,34 @@ export class VoicesService {
     return `${voice.providerName}::${voice.voiceId}`;
   }
 
-  previewVoice(voice: Voice): Observable<unknown> {
+  previewVoice(
+    voice: Voice,
+    options?: { message?: string; tweaks?: VoiceTweakSettings; skipPreviewUrl?: boolean },
+  ): Observable<unknown> {
     const previewPayload: {
       voiceProvider: string;
       voiceId: string;
       previewUrl?: string;
+      message?: string;
+      tweaks?: VoiceTweakSettings;
     } = {
       voiceProvider: voice.providerName,
       voiceId: voice.voiceId,
     };
 
-    if (voice.previewUrl) {
+    if (options?.message) {
+      previewPayload.message = options.message;
+    }
+    if (options?.tweaks) {
+      previewPayload.tweaks = options.tweaks;
+    }
+
+    const usePreviewUrl =
+      !options?.skipPreviewUrl &&
+      !options?.message &&
+      options?.tweaks == null &&
+      !!voice.previewUrl;
+    if (usePreviewUrl && voice.previewUrl) {
       previewPayload.previewUrl = voice.previewUrl;
     }
 
