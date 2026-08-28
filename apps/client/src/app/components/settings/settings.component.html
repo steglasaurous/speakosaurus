@@ -186,6 +186,7 @@
         <div *ngIf="setting.type === 'voice'">
           <app-voice-selector
             [selectedVoice]="selectedVoices[setting.name]"
+            [assignmentTweaks]="selectedVoices[setting.name]?.tweaks"
             [inputId]="'setting-' + setting.name"
             [showLabel]="false"
             (voiceSelected)="onVoiceSelected(setting, $event)"

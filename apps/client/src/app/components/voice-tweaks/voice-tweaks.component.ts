@@ -51,6 +51,18 @@ export class VoiceTweaksComponent {
     return this.providerName === 'ttsMonster' || this.providerName === 'ttsMonsterUnofficial';
   }
 
+  get isAtDefaults(): boolean {
+    return (
+      JSON.stringify({ ...DEFAULT_VOICE_TWEAKS, ...this.tweaks }) ===
+      JSON.stringify(DEFAULT_VOICE_TWEAKS)
+    );
+  }
+
+  reset(): void {
+    this.tweaks = { ...DEFAULT_VOICE_TWEAKS };
+    this.tweaksChange.emit(this.tweaks);
+  }
+
   patch(partial: Partial<VoiceTweakSettings>): void {
     this.tweaks = { ...this.tweaks, ...partial };
     this.tweaksChange.emit(this.tweaks);

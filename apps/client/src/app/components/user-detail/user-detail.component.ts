@@ -42,7 +42,7 @@ export class UserDetailComponent implements OnInit {
   private originalTtsName: string | null = null;
   private originalPronouns: string | null = null;
   private originalDisableWelcome: boolean | null = null;
-  private originalVoice: { providerName: string; voiceId: string } | null = null;
+  private originalVoice: { providerName: string; voiceId: string; tweaks?: Voice['tweaks'] } | null = null;
   private originalCustomIntros: CustomIntro[] = [];
 
   private router = inject(Router);
@@ -85,7 +85,7 @@ export class UserDetailComponent implements OnInit {
         this.originalPronouns = user.pronouns || null;
         this.originalDisableWelcome = user.disableWelcome || false;
         this.originalVoice = user.ttsProviderName && user.ttsVoiceId
-          ? { providerName: user.ttsProviderName, voiceId: user.ttsVoiceId }
+          ? { providerName: user.ttsProviderName, voiceId: user.ttsVoiceId, tweaks: user.ttsTweaks }
           : null;
         this.originalCustomIntros = [...(user.customIntros || [])].map(intro => ({ ...intro }));
 
@@ -93,9 +93,12 @@ export class UserDetailComponent implements OnInit {
         if (user.ttsProviderName && user.ttsVoiceId) {
           this.voicesService.getVoices().subscribe({
             next: (voices) => {
-              this.selectedVoice = voices.find(
+              const found = voices.find(
                 (v) => v.providerName === user.ttsProviderName && v.voiceId === user.ttsVoiceId
               ) || null;
+              this.selectedVoice = found
+                ? { ...found, tweaks: user.ttsTweaks ?? found.tweaks }
+                : null;
             },
           });
         } else {
@@ -160,6 +163,9 @@ export class UserDetailComponent implements OnInit {
     if (this.selectedVoice) {
       speakPayload.voiceProvider = this.selectedVoice.providerName;
       speakPayload.voiceId = this.selectedVoice.voiceId;
+      if (this.selectedVoice.tweaks) {
+        speakPayload.tweaks = this.selectedVoice.tweaks;
+      }
     }
     // If no voice is selected, the API will use the pronoun-specific or global default.
 
@@ -203,6 +209,9 @@ export class UserDetailComponent implements OnInit {
             if (voiceData.voiceId && voiceData.providerName) {
               speakPayload.voiceProvider = voiceData.providerName;
               speakPayload.voiceId = voiceData.voiceId;
+              if (voiceData.tweaks) {
+                speakPayload.tweaks = voiceData.tweaks;
+              }
             }
           } catch (error) {
             console.warn('Failed to parse default intro voice setting', error);
@@ -265,9 +274,11 @@ export class UserDetailComponent implements OnInit {
     if (this.selectedVoice) {
       updates.ttsProviderName = this.selectedVoice.providerName;
       updates.ttsVoiceId = this.selectedVoice.voiceId;
+      updates.ttsTweaks = this.selectedVoice.tweaks ?? null;
     } else {
       updates.ttsProviderName = undefined;
       updates.ttsVoiceId = undefined;
+      updates.ttsTweaks = null;
     }
 
     // Update user
@@ -337,7 +348,11 @@ export class UserDetailComponent implements OnInit {
 
     // Check voice selection
     const currentVoice = this.selectedVoice
-      ? { providerName: this.selectedVoice.providerName, voiceId: this.selectedVoice.voiceId }
+      ? {
+          providerName: this.selectedVoice.providerName,
+          voiceId: this.selectedVoice.voiceId,
+          tweaks: this.selectedVoice.tweaks,
+        }
       : null;
     const originalVoiceProvider = this.originalVoice?.providerName || null;
     const originalVoiceId = this.originalVoice?.voiceId || null;
@@ -345,6 +360,10 @@ export class UserDetailComponent implements OnInit {
     const currentVoiceId = currentVoice?.voiceId || null;
 
     if (originalVoiceProvider !== currentVoiceProvider || originalVoiceId !== currentVoiceId) {
+      return true;
+    }
+
+    if (JSON.stringify(currentVoice?.tweaks ?? {}) !== JSON.stringify(this.originalVoice?.tweaks ?? {})) {
       return true;
     }
 

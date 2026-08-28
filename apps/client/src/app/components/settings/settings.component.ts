@@ -255,7 +255,10 @@ export class SettingsComponent implements OnInit {
                       v.voiceId === voiceData.voiceId
                   );
                   if (voice) {
-                    this.selectedVoices[setting.name] = voice;
+                    this.selectedVoices[setting.name] = {
+                      ...voice,
+                      tweaks: voiceData.tweaks ?? voice.tweaks,
+                    };
                   }
                 },
               });
@@ -310,6 +313,7 @@ export class SettingsComponent implements OnInit {
       setting.value = JSON.stringify({
         providerName: voice.providerName,
         voiceId: voice.voiceId,
+        tweaks: voice.tweaks,
       });
     } else {
       setting.value = '';

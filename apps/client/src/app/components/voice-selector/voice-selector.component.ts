@@ -11,10 +11,11 @@ import {
 } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
-import { VoicesService, Voice, VoiceTweakSettings } from '../../services/voices.service';
+import { VoicesService, Voice, VoiceTweakSettings, DEFAULT_VOICE_TWEAKS } from '../../services/voices.service';
 import { SettingsService } from '../../services/settings.service';
 import { UsersService, User } from '../../services/users.service';
 import { Subscription } from 'rxjs';
+import { VoiceTweaksComponent } from '../voice-tweaks/voice-tweaks.component';
 
 export interface FavouriteVoiceRef {
   providerName: string;
@@ -53,7 +54,7 @@ const PROVIDER_LABELS: Record<string, string> = {
 @Component({
   selector: 'app-voice-selector',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [CommonModule, FormsModule, VoiceTweaksComponent],
   templateUrl: './voice-selector.component.html',
   styleUrl: './voice-selector.component.scss',
   host: {
@@ -75,6 +76,8 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
   /** Live slider values applied when playing the currently selected tweak voice. */
   @Input() previewTweaks?: VoiceTweakSettings | null;
   @Input() tweaksVoice: Voice | null = null;
+  /** Stored assignment tweaks for the currently selected voice (modal picker). */
+  @Input() assignmentTweaks?: VoiceTweakSettings | null;
   @Output() voiceSelected = new EventEmitter<Voice | null>();
 
   modalOpen = false;
@@ -93,6 +96,9 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
   expandedFilterSections = new Set<string>(['provider']);
   playingVoiceId: string | null = null;
   playingProviderName: string | null = null;
+  playingSelected = false;
+  modalTweaks: VoiceTweakSettings = { ...DEFAULT_VOICE_TWEAKS };
+  modalSampleText = 'Welcome to the stream! Thanks for the follow, I really appreciate it.';
 
   /** Cached derived lists — avoid impure getters with *ngFor/@for. */
   providerNav: FilterNavItem[] = [];
@@ -191,7 +197,18 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
     if (!this.selectedVoice) {
       return true;
     }
-    return !this.isSameVoice(this.pendingVoice, this.selectedVoice);
+    if (!this.isSameVoice(this.pendingVoice, this.selectedVoice)) {
+      return true;
+    }
+    return !this.tweaksEqual(this.modalTweaks, this.effectiveAssignmentTweaks);
+  }
+
+  get supportedStyles(): string[] {
+    return this.pendingVoice?.supportedStyles ?? [];
+  }
+
+  private get effectiveAssignmentTweaks(): VoiceTweakSettings | undefined {
+    return this.assignmentTweaks ?? this.selectedVoice?.tweaks;
   }
 
   get resultCountLabel(): string {
@@ -211,6 +228,7 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
     this.expandedFilterSections = new Set(['provider']);
     this.modalOpen = true;
     this.attachEscapeHandler();
+    this.seedTweaksForVoice(this.pendingVoice);
     this.loadFavourites();
     this.loadVoices();
     this.refreshDerivedLists();
@@ -244,17 +262,52 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
     if (!this.canApply || !this.pendingVoice) {
       return;
     }
-    this.selectedVoice = this.pendingVoice;
-    this.voiceSelected.emit(this.pendingVoice);
+    const applied: Voice = {
+      ...this.pendingVoice,
+      tweaks: { ...this.modalTweaks },
+    };
+    this.selectedVoice = applied;
+    this.voiceSelected.emit(applied);
     this.closeModal();
   }
 
   selectPending(voice: Voice): void {
     this.pendingVoice = voice;
+    if (!this.isEmbedded) {
+      this.seedTweaksForVoice(voice);
+    }
     if (this.isEmbedded) {
       this.selectedVoice = voice;
       this.voiceSelected.emit(voice);
     }
+  }
+
+  onModalTweaksChange(tweaks: VoiceTweakSettings): void {
+    this.modalTweaks = tweaks;
+  }
+
+  playSelected(): void {
+    if (!this.pendingVoice || this.playingSelected) {
+      return;
+    }
+    this.playingSelected = true;
+    this.voicesService
+      .previewVoice(this.pendingVoice, {
+        message: this.modalSampleText,
+        tweaks: this.modalTweaks,
+        skipPreviewUrl: true,
+      })
+      .subscribe({
+        next: () => {
+          setTimeout(() => {
+            this.playingSelected = false;
+          }, 4000);
+        },
+        error: (error) => {
+          console.error('Error playing assigned voice preview:', error);
+          this.playingSelected = false;
+        },
+      });
   }
 
   setProviderFilter(key: ProviderFilter): void {
@@ -419,15 +472,17 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
     this.playingVoiceId = voice.voiceId;
     this.playingProviderName = voice.providerName;
 
-    const isTweaksTarget =
-      !!this.tweaksVoice && this.isSameVoice(voice, this.tweaksVoice);
+    const isTweaksTarget = this.isEmbedded
+      ? !!this.tweaksVoice && this.isSameVoice(voice, this.tweaksVoice)
+      : !!this.pendingVoice && this.isSameVoice(voice, this.pendingVoice);
     const tweaks = isTweaksTarget
-      ? (this.previewTweaks ?? undefined)
+      ? (this.isEmbedded ? (this.previewTweaks ?? undefined) : this.modalTweaks)
       : voice.tweaks;
-    const skipPreviewUrl = this.isEmbedded || !!this.previewMessage || tweaks != null;
+    const previewMessage = this.isEmbedded ? this.previewMessage : this.modalSampleText;
+    const skipPreviewUrl = this.isEmbedded || !!previewMessage || tweaks != null;
 
     this.voicesService.previewVoice(voice, {
-      message: this.previewMessage,
+      message: previewMessage,
       tweaks,
       skipPreviewUrl,
     }).subscribe({
@@ -869,6 +924,33 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
 
   private isSameVoice(a: Voice, b: Voice): boolean {
     return a.voiceId === b.voiceId && a.providerName === b.providerName;
+  }
+
+  private seedTweaksForVoice(voice: Voice | null): void {
+    if (!voice) {
+      this.modalTweaks = { ...DEFAULT_VOICE_TWEAKS };
+      return;
+    }
+    const useAssignment =
+      !!this.selectedVoice &&
+      this.isSameVoice(voice, this.selectedVoice);
+    this.modalTweaks = {
+      ...DEFAULT_VOICE_TWEAKS,
+      ...(useAssignment
+        ? (this.effectiveAssignmentTweaks ?? voice.tweaks ?? {})
+        : (voice.tweaks ?? {})),
+    };
+  }
+
+  private tweaksEqual(
+    left?: VoiceTweakSettings | null,
+    right?: VoiceTweakSettings | null,
+  ): boolean {
+    return JSON.stringify(this.normalizedTweaks(left)) === JSON.stringify(this.normalizedTweaks(right));
+  }
+
+  private normalizedTweaks(tweaks?: VoiceTweakSettings | null): VoiceTweakSettings {
+    return { ...DEFAULT_VOICE_TWEAKS, ...(tweaks ?? {}) };
   }
 
   private attachEscapeHandler(): void {

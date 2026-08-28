@@ -1,4 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { VoiceTweaksDto } from './voice-tweaks.dto';
 
 export class SpeakDto {
   @ApiProperty({
@@ -21,6 +22,12 @@ export class SpeakDto {
     required: false,
   })
   pronouns?: string;
+
+  @ApiPropertyOptional({
+    description: 'Tweak snapshot to apply for this utterance. Overrides the resolved voice tweaks when set.',
+    type: VoiceTweaksDto,
+  })
+  tweaks?: VoiceTweaksDto;
 
   @ApiProperty({
     description: 'The message text to be converted to speech',

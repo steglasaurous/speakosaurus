@@ -1,4 +1,5 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { VoiceTweaksDto } from './voice-tweaks.dto';
 
 export class CustomIntroDto {
   @ApiProperty({
@@ -52,6 +53,12 @@ export class UserDto {
   ttsVoiceId?: string;
 
   @ApiPropertyOptional({
+    description: 'Tweak snapshot for the assigned voice',
+    type: VoiceTweaksDto,
+  })
+  ttsTweaks?: VoiceTweaksDto;
+
+  @ApiPropertyOptional({
     description: 'Pronouns used by the user',
     example: 'hehim',
   })
@@ -88,6 +95,13 @@ export class UpdateUserDto {
     example: 'voice-123',
   })
   ttsVoiceId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Tweak snapshot for the assigned voice; null clears stored tweaks',
+    type: VoiceTweaksDto,
+    nullable: true,
+  })
+  ttsTweaks?: VoiceTweaksDto | null;
 
   @ApiPropertyOptional({
     description: 'Pronouns used by the user; null clears the selection',

@@ -51,8 +51,10 @@ export class SpeakCommand {
         let voice: Voice | null = null;
         if (user) {
             if (user.ttsVoiceId && user.ttsProviderName) {
-                voice = await this.voiceProviderService.getVoice(user.ttsVoiceId, user.ttsProviderName);
-                if (!voice) {
+                const assigned = await this.voiceProviderService.getVoice(user.ttsVoiceId, user.ttsProviderName);
+                if (assigned) {
+                    voice = this.voiceProviderService.withAssignmentTweaks(assigned, user.ttsTweaks);
+                } else {
                     this.logger.log(`Assigned voice not found for user`, { userId: data.user.id, voiceId: user.ttsVoiceId, providerName: user.ttsProviderName });
                 }
             }
@@ -139,8 +141,7 @@ export class SpeakCommand {
 
         if (defaultIntroVoiceSetting && defaultIntroVoiceSetting.value) {
             try {
-                const defaultIntroVoiceValue = JSON.parse(defaultIntroVoiceSetting.value);
-                const voice = await this.voiceProviderService.getVoice(defaultIntroVoiceValue.voiceId, defaultIntroVoiceValue.providerName);
+                const voice = await this.voiceProviderService.voiceFromSettingJson(defaultIntroVoiceSetting.value);
                 if (voice) {
                     introVoice = voice;
                 } else {

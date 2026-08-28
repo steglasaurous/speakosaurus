@@ -36,6 +36,7 @@
     <div
       class="voice-picker-modal"
       [class.embedded]="isEmbedded"
+      [class.has-tweaks]="!isEmbedded"
       [attr.role]="isEmbedded ? null : 'dialog'"
       [attr.aria-modal]="isEmbedded ? null : 'true'"
       [attr.aria-labelledby]="isEmbedded ? null : 'voice-picker-title'"
@@ -366,6 +367,32 @@
           }
         </div>
       </div>
+
+      @if (!isEmbedded) {
+        <aside class="tweaks-pane">
+          <div class="tweaks-scroll">
+            <div>
+              <div class="section-label">Sample text</div>
+              <textarea [(ngModel)]="modalSampleText" rows="4"></textarea>
+              <button
+                type="button"
+                class="btn btn-primary play-selected"
+                [disabled]="!pendingVoice || playingSelected"
+                (click)="playSelected()"
+              >
+                {{ playingSelected ? 'Playing…' : 'Play selected voice' }}
+              </button>
+            </div>
+
+            <app-voice-tweaks
+              [providerName]="pendingVoice?.providerName ?? null"
+              [supportedStyles]="supportedStyles"
+              [tweaks]="modalTweaks"
+              (tweaksChange)="onModalTweaksChange($event)"
+            ></app-voice-tweaks>
+          </div>
+        </aside>
+      }
 
       @if (!isEmbedded) {
         <footer class="modal-footer">

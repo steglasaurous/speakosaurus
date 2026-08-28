@@ -39,6 +39,7 @@
       <h2 class="section-title">Voice Assignment</h2>
       <app-voice-selector
         [selectedVoice]="selectedVoice"
+        [assignmentTweaks]="selectedVoice?.tweaks"
         [currentTwitchUserId]="twitchUserId"
         inputId="voice-select"
         (voiceSelected)="onVoiceSelected($event)"

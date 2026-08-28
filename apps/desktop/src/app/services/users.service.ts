@@ -4,6 +4,7 @@ import { eq, inArray, isNull, or } from "drizzle-orm";
 import { Injectable, Logger } from "@nestjs/common";
 import axios from "axios";
 import { UserEventService } from "./user-event.service";
+import { VoiceTweakSettings } from "./voice-providers/voice-tweak-settings.interface";
 
 @Injectable()
 export class UsersService {
@@ -38,16 +39,7 @@ export class UsersService {
             introText: intro.introText,
         }));
 
-        return {
-            twitchUserId: user.twitchUserId,
-            twitchUsername: user.twitchUsername,
-            ttsName: user.ttsName || undefined,
-            ttsProviderName: user.ttsProviderName || undefined,
-            ttsVoiceId: user.ttsVoiceId || undefined,
-            pronouns: user.pronouns || undefined,
-            disableWelcome: user.disableWelcome || undefined,
-            customIntros: customIntros,
-        };
+        return this.mapUser(user, customIntros);
     }
 
     async getAllUsers(): Promise<any[]> {
@@ -73,28 +65,26 @@ export class UsersService {
             return acc;
         }, {} as Record<string, Array<{ id: string; twitchUserId: string; introText: string }>>);
 
-        return users.map(user => ({
-            twitchUserId: user.twitchUserId,
-            twitchUsername: user.twitchUsername,
-            ttsName: user.ttsName || undefined,
-            ttsProviderName: user.ttsProviderName || undefined,
-            ttsVoiceId: user.ttsVoiceId || undefined,
-            pronouns: user.pronouns || undefined,
-            disableWelcome: user.disableWelcome || undefined,
-            customIntros: introsByUserId[user.twitchUserId] || [],
-        }));
+        return users.map(user => this.mapUser(user, introsByUserId[user.twitchUserId] || []));
     }
 
     async updateUser(twitchUserId: string, updates: {
         ttsName?: string;
         ttsProviderName?: string;
         ttsVoiceId?: string;
+        ttsTweaks?: VoiceTweakSettings | null;
         pronouns?: string | null;
         disableWelcome?: boolean;
     }): Promise<any> {
+        const { ttsTweaks, ...rest } = updates;
+        const dbUpdates: Record<string, unknown> = { ...rest };
+        if (ttsTweaks !== undefined) {
+            dbUpdates.ttsTweaks = ttsTweaks == null ? null : JSON.stringify(ttsTweaks);
+        }
+
         const [updated] = await this.drizzleService.db
             .update(schema.users as any)
-            .set(updates)
+            .set(dbUpdates)
             .where(eq(schema.users.twitchUserId, twitchUserId) as any)
             .returning();
 
@@ -115,17 +105,7 @@ export class UsersService {
             introText: intro.introText,
         }));
 
-        // Create a plain object to ensure proper serialization
-        const user = {
-            twitchUserId: updated.twitchUserId,
-            twitchUsername: updated.twitchUsername,
-            ttsName: updated.ttsName || undefined,
-            ttsProviderName: updated.ttsProviderName || undefined,
-            ttsVoiceId: updated.ttsVoiceId || undefined,
-            pronouns: updated.pronouns || undefined,
-            disableWelcome: updated.disableWelcome || undefined,
-            customIntros: customIntros,
-        };
+        const user = this.mapUser(updated, customIntros);
 
         // Emit user updated event
         this.userEventService.emitUserUpdated(user);
@@ -145,17 +125,7 @@ export class UsersService {
             })
             .returning();
 
-        // Create a plain object to ensure proper serialization
-        const userWithIntros = {
-            twitchUserId: user.twitchUserId,
-            twitchUsername: user.twitchUsername,
-            ttsName: user.ttsName || undefined,
-            ttsProviderName: user.ttsProviderName || undefined,
-            ttsVoiceId: user.ttsVoiceId || undefined,
-            pronouns: user.pronouns || undefined,
-            disableWelcome: user.disableWelcome || undefined,
-            customIntros: [],
-        };
+        const userWithIntros = this.mapUser(user, []);
 
         // Emit user created event
         this.userEventService.emitUserCreated(userWithIntros);
@@ -277,16 +247,39 @@ export class UsersService {
             return acc;
         }, {} as Record<string, Array<{ id: string; twitchUserId: string; introText: string }>>);
 
-        return filteredUsers.map(user => ({
+        return filteredUsers.map(user => this.mapUser(user, introsByUserId[user.twitchUserId] || []));
+    }
+
+    private mapUser(
+        user: any,
+        customIntros: Array<{ id: string; twitchUserId: string; introText: string }>,
+    ) {
+        return {
             twitchUserId: user.twitchUserId,
             twitchUsername: user.twitchUsername,
             ttsName: user.ttsName || undefined,
             ttsProviderName: user.ttsProviderName || undefined,
             ttsVoiceId: user.ttsVoiceId || undefined,
+            ttsTweaks: this.parseTtsTweaks(user.ttsTweaks),
             pronouns: user.pronouns || undefined,
             disableWelcome: user.disableWelcome || undefined,
-            customIntros: introsByUserId[user.twitchUserId] || [],
-        }));
+            customIntros,
+        };
+    }
+
+    private parseTtsTweaks(value?: string | null): VoiceTweakSettings | undefined {
+        if (!value) {
+            return undefined;
+        }
+        try {
+            const parsed = JSON.parse(value) as VoiceTweakSettings;
+            if (parsed && typeof parsed === 'object' && !Array.isArray(parsed)) {
+                return parsed;
+            }
+        } catch {
+            this.logger.warn('Failed to parse user ttsTweaks');
+        }
+        return undefined;
     }
 
     private async getPronouns(twitchUsername: string): Promise<string | undefined> {

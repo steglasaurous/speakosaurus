@@ -65,6 +65,7 @@ export class SpeakController {
       const audioData = await this.voiceProviderService.getRenderedMessage(
         voice,
         speakDto.message,
+        speakDto.tweaks,
       );
 
       // If Stop was triggered while the provider was rendering/downloading,

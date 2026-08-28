@@ -155,6 +155,13 @@ export class VoiceProviderService implements OnModuleInit {
         await this.audioProcessorService.addToQueue(audioData);
     }
 
+    withAssignmentTweaks(voice: Voice, tweaks?: VoiceTweakSettings | null): Voice {
+        return {
+            ...voice,
+            tweaks: tweaks ?? voice.tweaks,
+        };
+    }
+
     /**
      * Return the default voice to use in cases where no specific voice is specified.
      * 
@@ -183,8 +190,8 @@ export class VoiceProviderService implements OnModuleInit {
             throw new Error('No voices are available - configure at least one voice provider');
         }
 
-        const defaultVoiceValue = JSON.parse(defaultVoiceSetting.value);
-        return await this.getVoice(defaultVoiceValue.voiceId, defaultVoiceValue.providerName);
+        const voice = await this.voiceFromSettingJson(defaultVoiceSetting.value);
+        return voice as Voice;
     }
 
     /**
@@ -207,15 +214,7 @@ export class VoiceProviderService implements OnModuleInit {
         }
 
         try {
-            const configuredVoice = JSON.parse(setting.value);
-            if (!configuredVoice.voiceId || !configuredVoice.providerName) {
-                return null;
-            }
-
-            return await this.getVoice(
-                configuredVoice.voiceId,
-                configuredVoice.providerName,
-            );
+            return await this.voiceFromSettingJson(setting.value);
         } catch (error) {
             this.logger.warn(
                 `Failed to resolve ${settingName}; falling back to the global default voice`,
@@ -223,6 +222,26 @@ export class VoiceProviderService implements OnModuleInit {
             );
             return null;
         }
+    }
+
+    async voiceFromSettingJson(value: string): Promise<Voice | null> {
+        const configuredVoice = JSON.parse(value) as {
+            voiceId?: string;
+            providerName?: string;
+            tweaks?: VoiceTweakSettings;
+        };
+        if (!configuredVoice.voiceId || !configuredVoice.providerName) {
+            return null;
+        }
+
+        const voice = await this.getVoice(
+            configuredVoice.voiceId,
+            configuredVoice.providerName,
+        );
+        if (!voice) {
+            return null;
+        }
+        return this.withAssignmentTweaks(voice, configuredVoice.tweaks);
     }
 
     /**

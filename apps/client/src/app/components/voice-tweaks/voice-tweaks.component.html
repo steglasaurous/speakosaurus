@@ -1,4 +1,9 @@
-<div class="section-label">Voice controls</div>
+<div class="section-head">
+  <div class="section-label">Voice controls</div>
+  @if (providerName && !isAtDefaults) {
+    <button type="button" class="reset-btn" (click)="reset()">Reset</button>
+  }
+</div>
 
 @if (!providerName) {
   <p class="hint">Select a voice to tweak it.</p>

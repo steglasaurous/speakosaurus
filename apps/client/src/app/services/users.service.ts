@@ -1,6 +1,7 @@
 import { inject, Injectable, OnDestroy, NgZone } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, BehaviorSubject } from 'rxjs';
+import { VoiceTweakSettings } from './voices.service';
 
 export interface CustomIntro {
   id: string;
@@ -14,6 +15,7 @@ export interface User {
   ttsName?: string;
   ttsProviderName?: string;
   ttsVoiceId?: string;
+  ttsTweaks?: VoiceTweakSettings;
   pronouns?: string;
   disableWelcome?: boolean;
   customIntros: CustomIntro[];
@@ -23,6 +25,7 @@ export interface UpdateUserRequest {
   ttsName?: string;
   ttsProviderName?: string;
   ttsVoiceId?: string;
+  ttsTweaks?: VoiceTweakSettings | null;
   pronouns?: string | null;
   disableWelcome?: boolean;
 }

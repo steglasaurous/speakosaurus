@@ -1,10 +1,33 @@
+.section-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
 .section-label {
   font-size: 11px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.06em;
   color: #86868b;
-  margin-bottom: 8px;
+}
+
+.reset-btn {
+  border: none;
+  background: transparent;
+  padding: 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 500;
+  color: #007aff;
+  cursor: pointer;
+}
+
+.reset-btn:hover {
+  color: #0051d5;
+  text-decoration: underline;
 }
 
 .control {
