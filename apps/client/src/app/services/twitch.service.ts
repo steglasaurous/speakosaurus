@@ -2,6 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, interval, throwError } from 'rxjs';
 import { catchError, switchMap, takeWhile, map } from 'rxjs/operators';
+import { API_URL } from '../constants';
 
 export interface TwitchUser {
   id: string;
@@ -23,7 +24,7 @@ export interface DeviceCodeInfo {
 })
 export class TwitchService {
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api';
+  private apiUrl = API_URL;
 
   /**
    * Check if user is authenticated

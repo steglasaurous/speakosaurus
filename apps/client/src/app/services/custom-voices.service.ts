@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { API_URL } from '../constants';
 import { Voice, VoiceTweakSettings } from './voices.service';
 
 export interface CreateCustomVoiceRequest {
@@ -19,7 +20,7 @@ export interface UpdateCustomVoiceRequest {
   providedIn: 'root',
 })
 export class CustomVoicesService {
-  private apiUrl = 'http://localhost:3000/api';
+  private apiUrl = API_URL;
   private http = inject(HttpClient);
 
   create(body: CreateCustomVoiceRequest): Observable<Voice> {

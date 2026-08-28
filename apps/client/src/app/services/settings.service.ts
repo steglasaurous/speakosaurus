@@ -1,6 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
+import { API_URL } from '../constants';
 
 export enum SettingType {
   STRING = 'string',
@@ -38,7 +39,7 @@ export interface UpdateSettingRequest {
   providedIn: 'root',
 })
 export class SettingsService {
-  private apiUrl = 'http://localhost:3000/api';
+  private apiUrl = API_URL;
   private http = inject(HttpClient);
 
   getAllSettings(): Observable<Setting[]> {

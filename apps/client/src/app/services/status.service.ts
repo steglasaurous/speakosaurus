@@ -1,6 +1,7 @@
 import { inject, Injectable, OnDestroy, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
+import { API_URL } from '../constants';
 
 export interface Status {
   streamerBotConnected: boolean;
@@ -13,7 +14,7 @@ export interface Status {
   providedIn: 'root',
 })
 export class StatusService implements OnDestroy {
-  private apiUrl = 'http://localhost:3000/api';
+  private apiUrl = API_URL;
   private http = inject(HttpClient);
   private ngZone = inject(NgZone);
   private statusSubject = new BehaviorSubject<Status>({

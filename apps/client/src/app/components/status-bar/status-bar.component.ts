@@ -1,9 +1,10 @@
 import { Component, EventEmitter, OnInit, OnDestroy, inject, Output } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { StatusService, Status } from '../../services/status.service';
-import { SettingsService } from '../../services/settings.service';
 import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
+import { API_URL } from '../../constants';
+import { StatusService, Status } from '../../services/status.service';
+import { SettingsService } from '../../services/settings.service';
 
 @Component({
   selector: 'app-status-bar',
@@ -29,7 +30,7 @@ export class StatusBarComponent implements OnInit, OnDestroy {
   private statusService = inject(StatusService);
   private settingsService = inject(SettingsService);
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api';
+  private apiUrl = API_URL;
   stopInProgress = false;
 
   ngOnInit() {

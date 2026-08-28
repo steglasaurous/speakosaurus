@@ -3,10 +3,11 @@ import { CommonModule } from '@angular/common';
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
+import { forkJoin } from 'rxjs';
+import { API_URL } from '../../constants';
 import { UsersService, User, CustomIntro } from '../../services/users.service';
 import { VoicesService, Voice } from '../../services/voices.service';
 import { SettingsService } from '../../services/settings.service';
-import { forkJoin } from 'rxjs';
 import { VoiceSelectorComponent } from '../voice-selector/voice-selector.component';
 
 @Component({
@@ -51,7 +52,7 @@ export class UserDetailComponent implements OnInit {
   private settingsService = inject(SettingsService);
   private route = inject(ActivatedRoute);
   private http = inject(HttpClient);
-  private apiUrl = 'http://localhost:3000/api';
+  private apiUrl = API_URL;
 
   ngOnInit(): void {
     if (!this.twitchUserId) {
