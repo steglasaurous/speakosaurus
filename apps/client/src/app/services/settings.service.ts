@@ -13,6 +13,7 @@ export enum SettingType {
   VOICE = 'voice',
   USER_LIST = 'userList',
   STREAMERBOT_ACTION = 'streamerbotAction',
+  WORD_REPLACEMENTS = 'wordReplacements',
 }
 
 export interface Setting {

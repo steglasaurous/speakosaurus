@@ -170,6 +170,56 @@
           </div>
         </div>
 
+        <!-- WORD_REPLACEMENTS type -->
+        <div *ngIf="setting.type === 'wordReplacements'" class="form-group">
+          <div class="word-replacements">
+            <div
+              *ngFor="let item of parseWordReplacementsValue(setting); let i = index; trackBy: trackByIndex"
+              class="word-replacement-item"
+            >
+              <input
+                type="text"
+                class="form-input word-replacement-input"
+                [ngModel]="item.from"
+                (ngModelChange)="updateWordReplacementField(setting, i, 'from', $event)"
+                placeholder="Match"
+                [attr.aria-label]="'Match word or phrase ' + (i + 1)"
+              >
+              <span class="word-replacement-arrow" aria-hidden="true">→</span>
+              <input
+                type="text"
+                class="form-input word-replacement-input"
+                [ngModel]="item.to"
+                (ngModelChange)="updateWordReplacementField(setting, i, 'to', $event)"
+                placeholder="Replacement"
+                [attr.aria-label]="'Replacement ' + (i + 1)"
+              >
+              <label class="word-replacement-case">
+                <input
+                  type="checkbox"
+                  [ngModel]="item.caseSensitive"
+                  (ngModelChange)="updateWordReplacementCaseSensitive(setting, i, $event)"
+                >
+                <span>Case sensitive</span>
+              </label>
+              <button
+                class="remove-array-item-button"
+                (click)="removeWordReplacement(setting, i)"
+                type="button"
+              >
+                Remove
+              </button>
+            </div>
+            <button
+              class="add-array-item-button"
+              (click)="addWordReplacement(setting)"
+              type="button"
+            >
+              + Add replacement
+            </button>
+          </div>
+        </div>
+
         <!-- JSON type -->
         <div *ngIf="setting.type === 'json'" class="form-group">
           <textarea

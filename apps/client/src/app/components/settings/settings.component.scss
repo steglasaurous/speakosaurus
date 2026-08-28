@@ -413,6 +413,45 @@ h1 {
   background: #28a745;
 }
 
+.word-replacements {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.word-replacement-item {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.word-replacement-input {
+  flex: 1;
+  min-width: 120px;
+}
+
+.word-replacement-arrow {
+  color: #86868b;
+  font-size: 16px;
+}
+
+.word-replacement-case {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #1d1d1f;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.word-replacement-case input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
 // User list styles
 .user-list-container {
   display: flex;

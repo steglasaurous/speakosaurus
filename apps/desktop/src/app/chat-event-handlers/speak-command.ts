@@ -5,6 +5,7 @@ import { Setting, SettingsService } from "../services/settings.service";
 import { UsersService } from "../services/users.service";
 import { Voice } from "../services/voice-providers/voice.interface";
 import { StreamerBotManagerService } from "../services/streamer-bot-manager.service";
+import { applyWordReplacements, parseWordReplacements } from "./apply-word-replacements";
 
 @Injectable()
 export class SpeakCommand {
@@ -212,7 +213,7 @@ export class SpeakCommand {
         const triggerCommands = await this.settingsService.getSetting(Setting.TRIGGER_COMMANDS);
         if (!triggerCommands) {
             this.logger.warn('Trigger commands not found, returning original message');
-            return output;
+            return this.applyConfiguredWordReplacements(output);
         }
         let triggers: string[];
         try {
@@ -220,11 +221,11 @@ export class SpeakCommand {
             triggers = JSON.parse(triggerCommands.value.replace('\\\\', '\\'));
             if (!Array.isArray(triggers)) {
                 this.logger.warn('Trigger commands is not an array, returning original message', { triggerCommands: triggerCommands.value });
-                return output;
+                return this.applyConfiguredWordReplacements(output);
             }
         } catch (error) {
             this.logger.error('Error parsing trigger commands JSON in sanitizeMessage', { error, triggerCommands: triggerCommands.value });
-            return output;
+            return this.applyConfiguredWordReplacements(output);
         }
         for (const trigger of triggers) {
             if (output.startsWith(trigger + ' ')) {
@@ -232,7 +233,16 @@ export class SpeakCommand {
             }
         }
 
-        return output.trim();
+        return this.applyConfiguredWordReplacements(output);
+    }
+
+    private async applyConfiguredWordReplacements(message: string): Promise<string> {
+        const wordReplacementsSetting = await this.settingsService.getSetting(Setting.WORD_REPLACEMENTS);
+        if (wordReplacementsSetting?.value) {
+            const replacements = parseWordReplacements(wordReplacementsSetting.value);
+            message = applyWordReplacements(message, replacements);
+        }
+        return message.trim();
     }
 
     /**

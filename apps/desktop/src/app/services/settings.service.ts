@@ -28,6 +28,7 @@ export enum Setting {
   AZURE_ENDPOINT = 'azureEndpoint',
   PIPER_HTTP_URL = 'piperHttpUrl',
   IGNORED_USERS = 'ignoredUsers',
+  WORD_REPLACEMENTS = 'wordReplacements',
   STREAMERBOT_ACTION_INTRO = 'streamerbotActionIntro',
   SETUP_COMPLETED = 'setupCompleted',
   FAVOURITE_VOICES = 'favouriteVoices',
@@ -45,6 +46,7 @@ export enum SettingType {
   VOICE = 'voice',
   USER_LIST = 'userList',
   STREAMERBOT_ACTION = 'streamerbotAction',
+  WORD_REPLACEMENTS = 'wordReplacements',
 }
 
 export enum SettingGroup {
@@ -320,6 +322,14 @@ export class SettingsService {
       group: SettingGroup.GENERAL,
       description: 'The users to ignore for TTS',
       type: SettingType.USER_LIST,
+      default: '[]',
+    },
+    {
+      name: Setting.WORD_REPLACEMENTS,
+      displayName: 'Word Replacements',
+      group: SettingGroup.GENERAL,
+      description: 'Replace words or phrases in incoming chat before TTS. Matching is whole-word and case-insensitive by default. Enable Case sensitive on a rule to match exact casing.',
+      type: SettingType.WORD_REPLACEMENTS,
       default: '[]',
     },
     {

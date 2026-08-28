@@ -12,6 +12,12 @@ import { forkJoin, Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { VoiceSelectorComponent } from '../voice-selector/voice-selector.component';
 
+interface WordReplacement {
+  from: string;
+  to: string;
+  caseSensitive: boolean;
+}
+
 interface SubGroupedSettings {
   subGroup?: string;
   settings: Setting[];
@@ -51,6 +57,9 @@ export class SettingsComponent implements OnInit {
 
   // Cached array values to prevent re-parsing on every change detection
   arrayCache: { [key: string]: string[] } = {};
+
+  // Cached word replacement rules
+  wordReplacementsCache: { [key: string]: WordReplacement[] } = {};
 
   // User list search state per setting
   userListSearchQueries: { [key: string]: string } = {};
@@ -135,6 +144,14 @@ export class SettingsComponent implements OnInit {
             } catch {
               this.arrayCache[setting.name] = [];
             }
+          });
+        // Initialize word replacement cache
+        this.settings
+          .filter((s) => s.type === SettingType.WORD_REPLACEMENTS)
+          .forEach((setting) => {
+            this.wordReplacementsCache[setting.name] = this.parseWordReplacementsJson(
+              setting.value || setting.default || '[]'
+            );
           });
         // Initialize user list cache for userList-type settings
         this.settings
@@ -296,7 +313,12 @@ export class SettingsComponent implements OnInit {
     
     if (setting.type === SettingType.BOOLEAN) {
       stringValue = value ? 'true' : 'false';
-    } else if (setting.type === SettingType.ARRAY || setting.type === SettingType.JSON || setting.type === SettingType.USER_LIST) {
+    } else if (
+      setting.type === SettingType.ARRAY ||
+      setting.type === SettingType.JSON ||
+      setting.type === SettingType.USER_LIST ||
+      setting.type === SettingType.WORD_REPLACEMENTS
+    ) {
       stringValue = typeof value === 'string' ? value : JSON.stringify(value);
     } else {
       stringValue = String(value);
@@ -355,6 +377,64 @@ export class SettingsComponent implements OnInit {
     const array = this.parseArrayValue(setting);
     array[index] = value;
     this.syncArrayToSetting(setting);
+  }
+
+  parseWordReplacementsValue(setting: Setting): WordReplacement[] {
+    if (!this.wordReplacementsCache[setting.name]) {
+      this.wordReplacementsCache[setting.name] = this.parseWordReplacementsJson(
+        setting.value || setting.default || '[]'
+      );
+    }
+    return this.wordReplacementsCache[setting.name];
+  }
+
+  private parseWordReplacementsJson(value: string): WordReplacement[] {
+    try {
+      const parsed = JSON.parse(value);
+      if (!Array.isArray(parsed)) {
+        return [];
+      }
+      return parsed.map((item) => ({
+        from: typeof item?.from === 'string' ? item.from : '',
+        to: typeof item?.to === 'string' ? item.to : '',
+        caseSensitive: item?.caseSensitive === true,
+      }));
+    } catch {
+      return [];
+    }
+  }
+
+  syncWordReplacementsToSetting(setting: Setting): void {
+    setting.value = JSON.stringify(this.wordReplacementsCache[setting.name] || []);
+  }
+
+  addWordReplacement(setting: Setting): void {
+    const replacements = this.parseWordReplacementsValue(setting);
+    replacements.push({ from: '', to: '', caseSensitive: false });
+    this.syncWordReplacementsToSetting(setting);
+  }
+
+  removeWordReplacement(setting: Setting, index: number): void {
+    const replacements = this.parseWordReplacementsValue(setting);
+    replacements.splice(index, 1);
+    this.syncWordReplacementsToSetting(setting);
+  }
+
+  updateWordReplacementField(
+    setting: Setting,
+    index: number,
+    field: 'from' | 'to',
+    value: string
+  ): void {
+    const replacements = this.parseWordReplacementsValue(setting);
+    replacements[index][field] = value;
+    this.syncWordReplacementsToSetting(setting);
+  }
+
+  updateWordReplacementCaseSensitive(setting: Setting, index: number, value: boolean): void {
+    const replacements = this.parseWordReplacementsValue(setting);
+    replacements[index].caseSensitive = value;
+    this.syncWordReplacementsToSetting(setting);
   }
 
   trackByIndex(index: number): number {
