@@ -7,6 +7,38 @@ An app to provide TTS to twitch streams (or anything supported by streamerbot)
 - Streamer.bot running and connected to you broadcast account
 - Streamer.bot websocket server enabled
 
+# Voices
+
+## Piper voices
+From this cobbled-together list: https://community.home-assistant.io/t/collections-of-pre-trained-piper-voices/915666/2
+
+https://huggingface.co/rhasspy/piper-voices/tree/main
+
+https://github.com/simoniz0r/piper-voice-models/tree/main
+https://huggingface.co/BibEBobberson/Piper/tree/main
+https://huggingface.co/campwill/HAL-9000-Piper-TTS/tree/main
+https://huggingface.co/csukuangfj/vits-piper-en_US-glados-high/tree/main
+https://github.com/dividebysandwich/piper-voice-models
+https://grace-central.net/Projects/piper/
+https://huggingface.co/poisson-fish/piper-vasco/tree/main/onnx
+https://github.com/DJMalachite/PiperVoiceModels/tree/main/Titanfall2/BT7274
+https://github.com/hopkira/k9_piper_voice
+https://huggingface.co/davet2001/wheatley1/tree/main
+https://huggingface.co/russdill/kronk/tree/main/en/en_US/kronk/medium
+https://github.com/1liminal1/xiaozhi-esphome/tree/main/piper-voices
+https://github.com/robit-man/combine_overwatch_onnx
+https://huggingface.co/Aquaaa123/piper-tts-pda-subnautica/tree/main
+https://github.com/sparky-vision/fedcomp?tab=readme-ov-file
+https://github.com/cosycove/BeefStew/tree/5bb2191bf64af7da19b1da7994dc355200fb29f1/src/data/tts_voices
+https://huggingface.co/jgkawell/jarvis/tree/main
+https://huggingface.co/AkumaVenom/RocketRacoon-Piper-US-Medium/tree/main
+https://github.com/stoney66/piper-voices
+https://github.com/programmingPug/AIVoices_HA
+https://github.com/Davis8483/portal2-announcer-piper-tts
+https://github.com/willovex/geralt-piper-voice
+https://github.com/TacitusCornelius/shodan-piper-tts
+
+
 # TODO
 - [ ] Making a setting empty doesn't actually save it in the database. The old setting is retained.
 
