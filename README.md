@@ -12,16 +12,22 @@ An app to provide TTS to twitch streams (or anything supported by streamerbot)
 ## Piper voices
 From this cobbled-together list: https://community.home-assistant.io/t/collections-of-pre-trained-piper-voices/915666/2
 
+### Included
 https://huggingface.co/rhasspy/piper-voices/tree/main
 
 https://github.com/simoniz0r/piper-voice-models/tree/main
-https://huggingface.co/BibEBobberson/Piper/tree/main
 https://huggingface.co/campwill/HAL-9000-Piper-TTS/tree/main
 https://huggingface.co/csukuangfj/vits-piper-en_US-glados-high/tree/main
 https://github.com/dividebysandwich/piper-voice-models
-https://grace-central.net/Projects/piper/
-https://huggingface.co/poisson-fish/piper-vasco/tree/main/onnx
 https://github.com/DJMalachite/PiperVoiceModels/tree/main/Titanfall2/BT7274
+
+### Pending
+
+https://huggingface.co/BibEBobberson/Piper/tree/main # this has voices in tgz files
+https://grace-central.net/Projects/piper/ # voices are in zip files
+
+https://huggingface.co/poisson-fish/piper-vasco/tree/main/onnx # Hugging face seems to think this is suspicious
+
 https://github.com/hopkira/k9_piper_voice
 https://huggingface.co/davet2001/wheatley1/tree/main
 https://huggingface.co/russdill/kronk/tree/main/en/en_US/kronk/medium

@@ -1085,6 +1085,78 @@
                     ]
                 }
             }
+        },
+        {
+            "name": "campwill/HAL-9000-Piper-TTS",
+            "reference": "https://huggingface.co/campwill/HAL-9000-Piper-TTS/tree/main",
+            "voices": {
+                "en_US-hal-9000-medium": {
+                    "download_urls": [
+                        "https://huggingface.co/campwill/HAL-9000-Piper-TTS/resolve/main/hal.onnx",
+                        "https://huggingface.co/campwill/HAL-9000-Piper-TTS/resolve/main/hal.onnx.json"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "csukuangfj/vits-piper-en_US-glados-high",
+            "reference": "https://huggingface.co/csukuangfj/vits-piper-en_US-glados-high/tree/main",
+            "voices": {
+                "en_US-glados-high": {
+                    "download_urls": [
+                        "https://huggingface.co/csukuangfj/vits-piper-en_US-glados-high/resolve/main/en_US-glados-high.onnx",
+                        "https://huggingface.co/csukuangfj/vits-piper-en_US-glados-high/resolve/main/en_US-glados-high.onnx.json"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "dividebysandwich/piper-voice-models",
+            "reference": "https://github.com/dividebysandwich/piper-voice-models",
+            "voices": {
+                "en_US-data_7024-medium": {
+                    "download_urls": [
+                        "https://github.com/dividebysandwich/piper-voice-models/raw/refs/heads/main/Data/en_US-data_7024-medium.onnx",
+                        "https://raw.githubusercontent.com/dividebysandwich/piper-voice-models/refs/heads/main/Data/en_US-data_7024-medium.onnx.json"
+                    ]
+                },
+                "en_US-picard_7399-medium": {
+                    "download_urls": [
+                        "https://github.com/dividebysandwich/piper-voice-models/raw/refs/heads/main/Picard/en_US-picard_7399-medium.onnx",
+                        "https://raw.githubusercontent.com/dividebysandwich/piper-voice-models/refs/heads/main/Picard/en_US-picard_7399-medium.onnx.json"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "DJMalachite/PiperVoiceModels",
+            "reference": "https://github.com/DJMalachite/PiperVoiceModels/tree/main",
+            "voices": {
+                "en_US-BT7274-medium": {
+                    "download_urls": [
+                        "https://github.com/DJMalachite/PiperVoiceModels/raw/refs/heads/main/Titanfall2/BT7274/BT7274.onnx",
+                        "https://raw.githubusercontent.com/DJMalachite/PiperVoiceModels/refs/heads/main/Titanfall2/BT7274/BT7274.onnx.json"
+                    ]
+                },
+                "en_US-PDA-medium": {
+                    "download_urls": [
+                        "https://github.com/DJMalachite/PiperVoiceModels/raw/refs/heads/main/Subnautica/PDA/PDA.onnx",
+                        "https://raw.githubusercontent.com/DJMalachite/PiperVoiceModels/refs/heads/main/Subnautica/PDA/PDA.onnx.json"
+                    ]
+                }
+            }
+        },
+        {
+            "name": "https://github.com/Davis8483/portal2-announcer-piper-tts/raw/refs/heads/main/announcer.onnx",
+            "reference": "https://github.com/Davis8483/portal2-announcer-piper-tts/raw/refs/heads/main",
+            "voices": {
+                "en_US-portal2_announcer-medium": {
+                    "download_urls": [
+                        "https://github.com/Davis8483/portal2-announcer-piper-tts/raw/refs/heads/main/announcer.onnx",
+                        "https://raw.githubusercontent.com/Davis8483/portal2-announcer-piper-tts/refs/heads/main/announcer.onnx.json"
+                    ]
+                }
+            }
         }
     ]
 }
