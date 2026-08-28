@@ -24,6 +24,7 @@ import { StatusEventService } from './services/status-event.service';
 import { UserEventService } from './services/user-event.service';
 import { MigrationService } from './services/migration.service';
 import { PiperHttpServerService } from './services/piper-http-server.service';
+import { PiperVoiceCatalogService } from './services/piper-voice-catalog.service';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { PiperHttpServerService } from './services/piper-http-server.service';
       useFactory: (speakerttsVoiceProvider: SpeakerttsVoiceProvider) => [speakerttsVoiceProvider],
     },
     PiperHttpServerService,
+    PiperVoiceCatalogService,
     VoiceProviderService,
     CustomVoicesService,
     AudioProcessorService,

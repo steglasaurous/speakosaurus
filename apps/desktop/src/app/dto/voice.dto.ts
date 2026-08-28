@@ -76,5 +76,22 @@ export class VoiceDto {
 
   @ApiPropertyOptional({ type: VoiceTweaksDto })
   tweaks?: VoiceTweaksDto;
+
+  @ApiPropertyOptional({
+    description: 'True when this Piper catalog voice is not installed yet',
+  })
+  needsDownload?: boolean;
+
+  @ApiPropertyOptional({
+    description: 'Catalog source for a Piper voice from piper-voices.json',
+    example: {
+      name: 'simoniz0r/piper-voice-models',
+      reference: 'https://github.com/simoniz0r/piper-voice-models/tree/main',
+    },
+  })
+  catalogSource?: {
+    name: string;
+    reference: string;
+  };
 }
 

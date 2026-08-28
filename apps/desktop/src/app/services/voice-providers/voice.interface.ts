@@ -20,4 +20,11 @@ export interface Voice {
   isCustom?: boolean;
   baseVoiceId?: string;
   tweaks?: VoiceTweakSettings;
+  /** True when this Piper catalog voice is not installed yet. */
+  needsDownload?: boolean;
+  /** Catalog source for a Piper voice that came from piper-voices.json. */
+  catalogSource?: {
+    name: string;
+    reference: string;
+  };
 }

@@ -16,10 +16,13 @@ import { StatusEventService } from "../status-event.service";
 import { PiperHttpServerService } from "../piper-http-server.service";
 import { CustomVoicesService } from "../custom-voices.service";
 import { VoiceTweakSettings } from "./voice-tweak-settings.interface";
+import { PiperVoiceCatalogService } from "../piper-voice-catalog.service";
+import { stripPiperOnnxSuffix } from "../piper-voice-catalog.util";
 
 @Injectable()
 export class VoiceProviderService implements OnModuleInit {
     private cachedVoices: Voice[] | null = null;
+    private voiceCacheGeneration = 0;
     private logger: Logger = new Logger(VoiceProviderService.constructor.name);
     private voiceProviders: VoiceProvider[] = [];
     private pendingMessages = 0;
@@ -32,6 +35,7 @@ export class VoiceProviderService implements OnModuleInit {
         private readonly statusEventService: StatusEventService,
         private readonly piperHttpServerService: PiperHttpServerService,
         private readonly customVoicesService: CustomVoicesService,
+        private readonly piperVoiceCatalogService: PiperVoiceCatalogService,
     ) {
         // Start with the initial providers (typically just SpeakerttsVoiceProvider)
         this.voiceProviders = [...this.initialVoiceProviders];
@@ -51,7 +55,8 @@ export class VoiceProviderService implements OnModuleInit {
         if (this.cachedVoices !== null && !forceReload) {
             return this.cachedVoices;
         }
-        
+
+        const generation = ++this.voiceCacheGeneration;
         const output: Voice[] = [];
         for (const provider of this.voiceProviders) {
             let voices: Voice[] = [];
@@ -75,7 +80,9 @@ export class VoiceProviderService implements OnModuleInit {
             return a.providerName.localeCompare(b.providerName);
         });
 
-        this.cachedVoices = output;
+        if (generation === this.voiceCacheGeneration) {
+            this.cachedVoices = output;
+        }
         return output;
     }
 
@@ -92,11 +99,10 @@ export class VoiceProviderService implements OnModuleInit {
 
     async getVoice(voiceId: string, providerName: string): Promise<Voice | null> {
         const voices = await this.getVoices();
-        const voice = voices.find(v => v.voiceId === voiceId && v.providerName === providerName);
-        if (!voice) {
-            return null;
-        }
-        return voice;
+        const matches = voices.filter(
+            (v) => v.voiceId === voiceId && v.providerName === providerName,
+        );
+        return matches.find((v) => !v.needsDownload) ?? matches[0] ?? null;
     }
 
     async getRenderedMessage(
@@ -108,6 +114,12 @@ export class VoiceProviderService implements OnModuleInit {
         
         if (!provider) {
             throw new Error(`Voice provider '${voice.providerName}' not found`);
+        }
+
+        if (this.isVoiceUnavailable(voice)) {
+            throw new Error(
+                `Piper voice '${voice.voiceId}' must be downloaded before it can be used`,
+            );
         }
 
         const engineVoiceId = voice.isCustom && voice.baseVoiceId
@@ -173,25 +185,27 @@ export class VoiceProviderService implements OnModuleInit {
      */
     async getDefaultVoice(): Promise<Voice> {
         const defaultVoiceSetting = await this.settingsService.getSetting(Setting.DEFAULT_VOICE);
-        if (!defaultVoiceSetting || defaultVoiceSetting.value === null) {
-            // We'll grab the first available voice from speakertts, as that's the built-in voices from either windows or mac.
-            const voices = await this.getVoices();
-            for (const voice of voices) {
-                if (voice.providerName === 'speakertts') {
-                    return voice;
-                }
+        if (defaultVoiceSetting?.value) {
+            const configured = await this.voiceFromSettingJson(defaultVoiceSetting.value);
+            if (configured && !this.isVoiceUnavailable(configured)) {
+                return configured;
             }
-
-            // If we don't have any speakertts voices, return the first one in voices.
-            if (voices.length > 0) {
-                return voices[0];
-            }
-
-            throw new Error('No voices are available - configure at least one voice provider');
         }
 
-        const voice = await this.voiceFromSettingJson(defaultVoiceSetting.value);
-        return voice as Voice;
+        const voices = (await this.getVoices()).filter(
+            (voice) => !this.isVoiceUnavailable(voice),
+        );
+        for (const voice of voices) {
+            if (voice.providerName === 'speakertts') {
+                return voice;
+            }
+        }
+
+        if (voices.length > 0) {
+            return voices[0];
+        }
+
+        throw new Error('No voices are available - configure at least one voice provider');
     }
 
     /**
@@ -214,7 +228,11 @@ export class VoiceProviderService implements OnModuleInit {
         }
 
         try {
-            return await this.voiceFromSettingJson(setting.value);
+            const voice = await this.voiceFromSettingJson(setting.value);
+            if (!voice || this.isVoiceUnavailable(voice)) {
+                return null;
+            }
+            return voice;
         } catch (error) {
             this.logger.warn(
                 `Failed to resolve ${settingName}; falling back to the global default voice`,
@@ -267,14 +285,14 @@ export class VoiceProviderService implements OnModuleInit {
                 this.voiceProviders.push(elevenLabsProvider);
                 this.logger.log('ElevenLabs provider added');
                 // Clear cache so new voices are loaded
-                this.cachedVoices = null;
+                this.invalidateVoiceCache();
             } catch (error) {
                 this.logger.error('Failed to initialize ElevenLabs provider', error);
             }
         } else {
             this.logger.log('ElevenLabs provider not added - API key not set');
             // Clear cache so voices are refreshed
-            this.cachedVoices = null;
+            this.invalidateVoiceCache();
         }
     }
 
@@ -286,11 +304,11 @@ export class VoiceProviderService implements OnModuleInit {
             this.voiceProviders.push(ttsMonsterProvider);
             this.logger.log('TTS Monster provider added');
             // Clear cache so new voices are loaded
-            this.cachedVoices = null;
+            this.invalidateVoiceCache();
         } else {
             this.logger.log('TTS Monster provider not added - API key not set');
             // Clear cache so voices are refreshed
-            this.cachedVoices = null;
+            this.invalidateVoiceCache();
         }
     }
 
@@ -307,7 +325,7 @@ export class VoiceProviderService implements OnModuleInit {
 
             const ttsMonsterUnofficialProvider = new TTSMonsterUnofficialVoiceProvider(userId, apiKey, this.httpService);
             this.voiceProviders.push(ttsMonsterUnofficialProvider);
-            this.cachedVoices = null;
+            this.invalidateVoiceCache();
             this.logger.log('TTS MonsterUnofficial provider added');
         }
     }
@@ -322,12 +340,12 @@ export class VoiceProviderService implements OnModuleInit {
         if (apiKey && region && endpoint && apiKey.trim() !== '' && region.trim() !== '' && endpoint.trim() !== '') {
             const azureProvider = new AzureVoiceProvider(apiKey, region, endpoint);
             this.voiceProviders.push(azureProvider);
-            this.cachedVoices = null;
+            this.invalidateVoiceCache();
             this.logger.log('Azure provider added');
         } else {
             this.logger.log('Azure provider not added - API key, region, or endpoint not set');
             // Clear cache so voices are refreshed
-            this.cachedVoices = null;
+            this.invalidateVoiceCache();
         }
     }
 
@@ -346,18 +364,26 @@ export class VoiceProviderService implements OnModuleInit {
 
         if (externalUrl) {
             await this.piperHttpServerService.stop();
-            const piperProvider = new PiperVoiceProvider(externalUrl, this.httpService);
+            const piperProvider = new PiperVoiceProvider(
+                externalUrl,
+                this.httpService,
+                this.piperVoiceCatalogService,
+            );
             this.voiceProviders.push(piperProvider);
-            this.cachedVoices = null;
+            this.invalidateVoiceCache();
             this.logger.log('Piper provider added (external URL)', { baseUrl: externalUrl });
             return;
         }
 
         const managedUrl = await this.piperHttpServerService.ensureStarted();
         if (managedUrl) {
-            const piperProvider = new PiperVoiceProvider(managedUrl, this.httpService);
+            const piperProvider = new PiperVoiceProvider(
+                managedUrl,
+                this.httpService,
+                this.piperVoiceCatalogService,
+            );
             this.voiceProviders.push(piperProvider);
-            this.cachedVoices = null;
+            this.invalidateVoiceCache();
             this.logger.log('Piper provider added (bundled managed server)', {
                 baseUrl: managedUrl,
                 voicesDir: this.piperHttpServerService.getVoicesDirectory(),
@@ -365,10 +391,30 @@ export class VoiceProviderService implements OnModuleInit {
             return;
         }
 
-        this.cachedVoices = null;
+        this.invalidateVoiceCache();
         this.logger.log(
             'Piper provider not added — no external URL and bundled runtime unavailable',
         );
+    }
+
+    /**
+     * Download a Piper catalog voice into the app voices directory, then
+     * refresh the voice cache so it appears as installed.
+     */
+    async downloadPiperVoice(voiceId: string): Promise<Voice> {
+        const downloaded = await this.piperVoiceCatalogService.download(voiceId);
+        this.invalidateVoiceCache();
+        const voices = await this.getVoices(true);
+        const id = stripPiperOnnxSuffix(voiceId);
+        const found = voices.find(
+            (voice) =>
+                voice.providerName === 'piper' &&
+                stripPiperOnnxSuffix(voice.voiceId) === id,
+        );
+        if (found && !found.needsDownload) {
+            return found;
+        }
+        return downloaded;
     }
 
     /**
@@ -376,5 +422,22 @@ export class VoiceProviderService implements OnModuleInit {
      */
     getPendingMessagesCount(): number {
         return this.pendingMessages;
+    }
+
+    private invalidateVoiceCache(): void {
+        this.cachedVoices = null;
+        this.voiceCacheGeneration += 1;
+    }
+
+    private isVoiceUnavailable(voice: Voice): boolean {
+        if (!voice.needsDownload) {
+            return false;
+        }
+        if (voice.providerName !== 'piper') {
+            return true;
+        }
+        return !this.piperVoiceCatalogService
+            .getInstalledVoiceIds()
+            .has(stripPiperOnnxSuffix(voice.voiceId));
     }
 }

@@ -58,12 +58,22 @@ export class VoicePlaygroundComponent implements OnInit {
   }
 
   onVoiceSelected(voice: Voice | null): void {
+    const sameVoice =
+      !!this.selectedVoice &&
+      !!voice &&
+      this.selectedVoice.voiceId === voice.voiceId &&
+      this.selectedVoice.providerName === voice.providerName;
     this.selectedVoice = voice;
     this.errorMessage = '';
-    this.statusMessage = '';
+    if (!sameVoice) {
+      this.statusMessage = '';
+    }
     if (!voice) {
       this.tweaks = { ...DEFAULT_VOICE_TWEAKS };
       this.customName = '';
+      return;
+    }
+    if (sameVoice) {
       return;
     }
     this.tweaks = {
@@ -80,7 +90,7 @@ export class VoicePlaygroundComponent implements OnInit {
   }
 
   playSelected(): void {
-    if (!this.selectedVoice) {
+    if (!this.selectedVoice || this.selectedVoice.needsDownload) {
       return;
     }
     this.playingSelected = true;

@@ -1,0 +1,34 @@
+{
+    "voice_sources": [
+        {
+            "name": "simoniz0r/piper-voice-models",
+            "reference": "https://github.com/simoniz0r/piper-voice-models/tree/main",
+            "voices": {
+                "en_US-carl-medium": {
+                    "download_urls": [
+                        "https://github.com/simoniz0r/piper-voice-models/releases/download/carl/en_US-carl-medium.onnx",
+                        "https://github.com/simoniz0r/piper-voice-models/releases/download/carl/en_US-carl-medium.onnx.json"
+                    ]
+                },
+                "en_US-patrick-medium": {
+                    "download_urls": [
+                        "https://github.com/simoniz0r/piper-voice-models/releases/download/patrick/en_US-patrick-medium.onnx",
+                        "https://github.com/simoniz0r/piper-voice-models/releases/download/patrick/en_US-patrick-medium.onnx.json"
+                    ]
+                },
+                "en_US-eminem-medium": {
+                    "download_urls": [
+                        "https://github.com/simoniz0r/piper-voice-models/releases/download/eminem/en_US-eminem-medium.onnx",
+                        "https://github.com/simoniz0r/piper-voice-models/releases/download/eminem/en_US-eminem-medium.onnx.json"
+                    ]
+                },
+                "en_US-bobby-medium": {
+                    "download_urls": [
+                        "https://github.com/simoniz0r/piper-voice-models/releases/download/bobby/en_US-bobby-medium.onnx",
+                        "https://github.com/simoniz0r/piper-voice-models/releases/download/bobby/en_US-bobby-medium.onnx.json"
+                    ]
+                }
+            }
+        }
+    ]
+}

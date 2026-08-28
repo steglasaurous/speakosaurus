@@ -48,6 +48,12 @@ export interface Voice {
   isCustom?: boolean;
   baseVoiceId?: string;
   tweaks?: VoiceTweakSettings;
+  /** True when this Piper catalog voice is not installed yet. */
+  needsDownload?: boolean;
+  catalogSource?: {
+    name: string;
+    reference: string;
+  };
 }
 
 @Injectable({
@@ -149,6 +155,13 @@ export class VoicesService {
     }
 
     return this.http.post(`${this.apiUrl}/speak/preview`, previewPayload);
+  }
+
+  downloadPiperVoice(voiceId: string): Observable<Voice> {
+    return this.http.post<Voice>(
+      `${this.apiUrl}/voices/piper/${encodeURIComponent(voiceId)}/download`,
+      {},
+    );
   }
 }
 

@@ -17,5 +17,7 @@ export function toVoiceDto(voice: Voice): VoiceDto {
     isCustom: voice.isCustom,
     baseVoiceId: voice.baseVoiceId,
     tweaks: voice.tweaks,
+    needsDownload: voice.needsDownload,
+    catalogSource: voice.catalogSource,
   };
 }

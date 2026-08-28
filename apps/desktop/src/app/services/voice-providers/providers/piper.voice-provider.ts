@@ -8,6 +8,7 @@ import { writeFileSync } from "fs";
 import { join } from "path";
 import { tmpdir } from "os";
 import { v4 as uuid } from "uuid";
+import { PiperVoiceCatalogService } from "../../piper-voice-catalog.service";
 
 /** Piper HTTP server `GET /voices` body: voice id -> model metadata (see piper voice JSON). */
 type PiperVoicesResponse = Record<
@@ -35,11 +36,28 @@ export class PiperVoiceProvider implements VoiceProvider {
 
     constructor(
         private readonly piperUrl = 'http://localhost:5000',
-        private readonly httpService: HttpService) {
-
-    }
+        private readonly httpService: HttpService,
+        private readonly catalogService?: PiperVoiceCatalogService,
+    ) {}
 
     async getVoices(): Promise<Voice[]> {
+        let local: Voice[] = [];
+        try {
+            local = await this.fetchLocalVoices();
+        } catch (error) {
+            this.logger.warn(
+                'Failed to list Piper HTTP voices; showing catalog only',
+                error,
+            );
+        }
+
+        if (!this.catalogService) {
+            return local;
+        }
+        return this.catalogService.merge(local);
+    }
+
+    private async fetchLocalVoices(): Promise<Voice[]> {
         const response = await firstValueFrom(
             this.httpService.get<PiperVoicesResponse>(`${this.piperUrl}/voices`),
         );

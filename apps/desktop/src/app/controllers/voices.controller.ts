@@ -1,4 +1,4 @@
-import { Controller, Get, Query } from '@nestjs/common';
+import { Controller, Get, Param, Post, Query } from '@nestjs/common';
 import { ApiOperation, ApiQuery, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { VoiceProviderService } from '../services/voice-providers/voice-provider.service';
 import { VoiceDto } from '../dto/voice.dto';
@@ -31,5 +31,20 @@ export class VoicesController {
     const voices = await this.voiceProviderService.getVoices(shouldForceReload);
     return voices.map(toVoiceDto);
   }
-}
 
+  @Post('piper/:voiceId/download')
+  @ApiOperation({
+    summary: 'Download a Piper catalog voice',
+    description:
+      'Downloads the .onnx model and .onnx.json config for a catalog voice into the app voices folder',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Voice downloaded and ready to use',
+    type: VoiceDto,
+  })
+  async downloadPiperVoice(@Param('voiceId') voiceId: string): Promise<VoiceDto> {
+    const voice = await this.voiceProviderService.downloadPiperVoice(voiceId);
+    return toVoiceDto(voice);
+  }
+}

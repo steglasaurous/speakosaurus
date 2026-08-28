@@ -313,6 +313,9 @@
                         @if (voice.isCustom) {
                           <span class="custom-pill">custom</span>
                         }
+                        @if (voice.needsDownload) {
+                          <span class="download-pill">download</span>
+                        }
                         @if (voiceGroup.key === 'favourites' || voiceGroup.key === 'custom') {
                           <span class="provider-pill tiny">{{ voice.providerName }}</span>
                         }
@@ -335,24 +338,44 @@
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      class="play-btn"
-                      [class.playing]="isPlaying(voice)"
-                      (click)="playPreview($event, voice)"
-                      [attr.aria-label]="'Preview ' + voice.voiceName"
-                      title="Preview voice"
-                    >
-                      @if (!isPlaying(voice)) {
-                        <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M8 5v14l11-7z"/>
-                        </svg>
-                      } @else {
-                        <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
-                          <path d="M6 5h4v14H6zm8 0h4v14h-4z"/>
-                        </svg>
-                      }
-                    </button>
+                    @if (voice.needsDownload) {
+                      <button
+                        type="button"
+                        class="play-btn download"
+                        [class.downloading]="isDownloading(voice)"
+                        [disabled]="isDownloading(voice)"
+                        (click)="downloadVoice($event, voice)"
+                        [attr.aria-label]="'Download ' + voice.voiceName"
+                        [title]="downloadTitle(voice)"
+                      >
+                        @if (isDownloading(voice)) {
+                          <span class="download-spinner" aria-hidden="true"></span>
+                        } @else {
+                          <svg width="14" height="14" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 3v12m0 0l-4-4m4 4l4-4M5 21h14"/>
+                          </svg>
+                        }
+                      </button>
+                    } @else {
+                      <button
+                        type="button"
+                        class="play-btn"
+                        [class.playing]="isPlaying(voice)"
+                        (click)="playPreview($event, voice)"
+                        [attr.aria-label]="'Preview ' + voice.voiceName"
+                        title="Preview voice"
+                      >
+                        @if (!isPlaying(voice)) {
+                          <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M8 5v14l11-7z"/>
+                          </svg>
+                        } @else {
+                          <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
+                            <path d="M6 5h4v14H6zm8 0h4v14h-4z"/>
+                          </svg>
+                        }
+                      </button>
+                    }
                   </div>
                 }
               </div>
@@ -377,7 +400,7 @@
               <button
                 type="button"
                 class="btn btn-primary play-selected"
-                [disabled]="!pendingVoice || playingSelected"
+                [disabled]="!pendingVoice || playingSelected || pendingVoice.needsDownload"
                 (click)="playSelected()"
               >
                 {{ playingSelected ? 'Playing…' : 'Play selected voice' }}
@@ -396,7 +419,7 @@
 
       @if (!isEmbedded) {
         <footer class="modal-footer">
-          <span class="footer-hint">★ favourites · custom · orange dot = assigned to another user</span>
+          <span class="footer-hint">★ favourites · custom · orange dot = assigned to another user · ↓ download Piper voice</span>
           <div class="footer-actions">
             <button type="button" class="btn btn-ghost" (click)="closeModal()">Cancel</button>
             <button

@@ -97,6 +97,7 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
   playingVoiceId: string | null = null;
   playingProviderName: string | null = null;
   playingSelected = false;
+  downloadingVoiceIds = new Set<string>();
   modalTweaks: VoiceTweakSettings = { ...DEFAULT_VOICE_TWEAKS };
   modalSampleText = 'Welcome to the stream! Thanks for the follow, I really appreciate it.';
 
@@ -191,7 +192,7 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   get canApply(): boolean {
-    if (!this.pendingVoice) {
+    if (!this.pendingVoice || this.pendingVoice.needsDownload) {
       return false;
     }
     if (!this.selectedVoice) {
@@ -287,7 +288,7 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   playSelected(): void {
-    if (!this.pendingVoice || this.playingSelected) {
+    if (!this.pendingVoice || this.playingSelected || this.pendingVoice.needsDownload) {
       return;
     }
     this.playingSelected = true;
@@ -463,6 +464,10 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
     event.preventDefault();
     event.stopPropagation();
 
+    if (voice.needsDownload) {
+      return;
+    }
+
     if (this.isPlaying(voice)) {
       this.playingVoiceId = null;
       this.playingProviderName = null;
@@ -498,6 +503,43 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
         console.error('Error playing voice preview:', error);
         this.playingVoiceId = null;
         this.playingProviderName = null;
+      },
+    });
+  }
+
+  isDownloading(voice: Voice): boolean {
+    return this.downloadingVoiceIds.has(voice.voiceId);
+  }
+
+  downloadTitle(voice: Voice): string {
+    const source = voice.catalogSource?.name;
+    if (source) {
+      return `Download ${voice.voiceName} (${source})`;
+    }
+    return `Download ${voice.voiceName}`;
+  }
+
+  downloadVoice(event: Event, voice: Voice): void {
+    event.preventDefault();
+    event.stopPropagation();
+
+    if (!voice.needsDownload || this.isDownloading(voice)) {
+      return;
+    }
+
+    const next = new Set(this.downloadingVoiceIds);
+    next.add(voice.voiceId);
+    this.downloadingVoiceIds = next;
+
+    this.voicesService.downloadPiperVoice(voice.voiceId).subscribe({
+      next: (downloaded) => {
+        this.clearDownloading(voice.voiceId);
+        this.adoptUpdatedVoice(downloaded);
+        this.loadVoices(true);
+      },
+      error: (error) => {
+        console.error('Error downloading Piper voice:', error);
+        this.clearDownloading(voice.voiceId);
       },
     });
   }
@@ -688,12 +730,39 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
     this.voicesService.getVoices(forceReload).subscribe({
       next: (voices) => {
         this.availableVoices = voices;
+        if (this.pendingVoice) {
+          const updated = voices.find((voice) =>
+            this.pendingVoice ? this.isSameVoice(voice, this.pendingVoice) : false
+          );
+          if (updated) {
+            this.adoptUpdatedVoice(updated);
+          }
+        }
         this.refreshDerivedLists();
       },
       error: (error) => {
         console.error('Error loading voices:', error);
       },
     });
+  }
+
+  private clearDownloading(voiceId: string): void {
+    const next = new Set(this.downloadingVoiceIds);
+    next.delete(voiceId);
+    this.downloadingVoiceIds = next;
+  }
+
+  private adoptUpdatedVoice(updated: Voice): void {
+    const installed = { ...updated, needsDownload: updated.needsDownload || undefined };
+    this.pendingVoice = installed;
+    this.availableVoices = this.availableVoices.map((voice) =>
+      this.isSameVoice(voice, installed) ? installed : voice
+    );
+    this.refreshDerivedLists();
+    if (this.isEmbedded) {
+      this.selectedVoice = installed;
+      this.voiceSelected.emit(installed);
+    }
   }
 
   private loadFavourites(): void {
@@ -817,6 +886,7 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
         voice.locale,
         voice.gender,
         voice.description,
+        voice.catalogSource?.name,
       ]
         .filter(Boolean)
         .join(' ')
