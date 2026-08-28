@@ -318,6 +318,10 @@ label {
   cursor: pointer;
 }
 
+.toggle-row + .toggle-row {
+  margin-top: 10px;
+}
+
 .switch {
   position: relative;
   width: 40px;

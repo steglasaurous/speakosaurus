@@ -88,6 +88,7 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
   localeFilter = 'all';
   genderFilter = 'all';
   unassignedOnly = false;
+  piperDownloadedOnly = false;
   pendingVoice: Voice | null = null;
   favouriteKeys = new Set<string>();
   assignmentMap = new Map<string, string>();
@@ -187,6 +188,7 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
       this.localeFilter !== 'all' ||
       this.genderFilter !== 'all' ||
       this.unassignedOnly ||
+      this.piperDownloadedOnly ||
       this.searchQuery.trim() !== ''
     );
   }
@@ -225,6 +227,7 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
     this.localeFilter = 'all';
     this.genderFilter = 'all';
     this.unassignedOnly = false;
+    this.piperDownloadedOnly = false;
     this.collapsedGroups = new Set();
     this.expandedFilterSections = new Set(['provider']);
     this.modalOpen = true;
@@ -348,12 +351,18 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
     this.refreshDerivedLists();
   }
 
+  onPiperDownloadedChange(value: boolean): void {
+    this.piperDownloadedOnly = value;
+    this.refreshDerivedLists();
+  }
+
   clearFilters(): void {
     this.providerFilter = 'all';
     this.languageFilter = 'all';
     this.localeFilter = 'all';
     this.genderFilter = 'all';
     this.unassignedOnly = false;
+    this.piperDownloadedOnly = false;
     this.searchQuery = '';
     this.refreshDerivedLists();
   }
@@ -415,8 +424,16 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
           : this.genderFilter === UNKNOWN_FILTER_KEY
             ? 'Unknown'
             : this.genderLabel(this.genderFilter);
-      case 'availability':
-        return this.unassignedOnly ? 'Unassigned only' : null;
+      case 'availability': {
+        const parts: string[] = [];
+        if (this.unassignedOnly) {
+          parts.push('Unassigned only');
+        }
+        if (this.piperDownloadedOnly) {
+          parts.push('Downloaded Piper only');
+        }
+        return parts.length ? parts.join(' · ') : null;
+      }
       default:
         return null;
     }
@@ -839,10 +856,19 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
       locale?: boolean;
       gender?: boolean;
       unassigned?: boolean;
+      piperDownloaded?: boolean;
       search?: boolean;
     } = {}
   ): boolean {
     if (!omit.unassigned && this.unassignedOnly && this.isAssignedToOther(voice)) {
+      return false;
+    }
+    if (
+      !omit.piperDownloaded &&
+      this.piperDownloadedOnly &&
+      voice.providerName === 'piper' &&
+      voice.needsDownload
+    ) {
       return false;
     }
     if (!omit.language && this.languageFilter !== 'all') {
@@ -919,6 +945,7 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
       locale?: boolean;
       gender?: boolean;
       unassigned?: boolean;
+      piperDownloaded?: boolean;
       search?: boolean;
     } = {}
   ): boolean {

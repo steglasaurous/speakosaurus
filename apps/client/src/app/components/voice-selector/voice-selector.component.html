@@ -221,6 +221,17 @@
                 <span class="slider"></span>
               </span>
             </label>
+            <label class="toggle-row">
+              <span>Downloaded Piper only</span>
+              <span class="switch">
+                <input
+                  type="checkbox"
+                  [ngModel]="piperDownloadedOnly"
+                  (ngModelChange)="onPiperDownloadedChange($event)"
+                >
+                <span class="slider"></span>
+              </span>
+            </label>
           }
         </div>
 
