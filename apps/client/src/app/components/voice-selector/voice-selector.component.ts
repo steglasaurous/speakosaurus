@@ -39,6 +39,8 @@ interface FilterNavItem {
 }
 
 const FAVOURITE_VOICES_SETTING = 'favouriteVoices';
+const DEFAULT_LANGUAGE_SETTING = 'defaultLanguage';
+const DEFAULT_LANGUAGE_FALLBACK = 'en';
 const UNKNOWN_FILTER_KEY = '__unknown__';
 const PROVIDER_LABELS: Record<string, string> = {
   favourites: 'Favourites',
@@ -91,6 +93,7 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
   piperDownloadedOnly = false;
   pendingVoice: Voice | null = null;
   favouriteKeys = new Set<string>();
+  defaultLanguage = DEFAULT_LANGUAGE_FALLBACK;
   assignmentMap = new Map<string, string>();
   collapsedGroups = new Set<string>();
   /** Sidebar filter sections; only provider starts expanded. */
@@ -127,6 +130,7 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
   ngOnInit(): void {
     this.loadVoices();
     this.loadFavourites();
+    this.loadDefaultLanguage();
 
     this.subscriptions.add(
       this.usersService.users$.subscribe((users) => {
@@ -234,6 +238,7 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
     this.attachEscapeHandler();
     this.seedTweaksForVoice(this.pendingVoice);
     this.loadFavourites();
+    this.loadDefaultLanguage();
     this.loadVoices();
     this.refreshDerivedLists();
   }
@@ -593,7 +598,9 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
   }
 
   private refreshDerivedLists(): void {
-    const filtered = this.availableVoices.filter((v) => this.matchesFilters(v));
+    const filtered = this.availableVoices
+      .filter((v) => this.matchesFilters(v))
+      .sort((a, b) => this.compareVoicesByDefaultLanguage(a, b));
     this.filteredCount = filtered.length;
 
     this.providerNav = this.buildProviderNav();
@@ -795,6 +802,23 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
     });
   }
 
+  private loadDefaultLanguage(): void {
+    this.settingsService.getSetting(DEFAULT_LANGUAGE_SETTING).subscribe({
+      next: (setting) => {
+        const value = (setting.value || setting.default || DEFAULT_LANGUAGE_FALLBACK)
+          .trim()
+          .toLowerCase()
+          .slice(0, 2);
+        this.defaultLanguage = value || DEFAULT_LANGUAGE_FALLBACK;
+        this.refreshDerivedLists();
+      },
+      error: () => {
+        this.defaultLanguage = DEFAULT_LANGUAGE_FALLBACK;
+        this.refreshDerivedLists();
+      },
+    });
+  }
+
   private persistFavourites(): void {
     const refs: FavouriteVoiceRef[] = [...this.favouriteKeys].map((key) => {
       const [providerName, ...rest] = key.split('::');
@@ -959,6 +983,16 @@ export class VoiceSelectorComponent implements OnInit, OnChanges, OnDestroy {
     return [...new Set(voices.map((v) => v.providerName))].sort((a, b) =>
       this.providerLabel(a).localeCompare(this.providerLabel(b))
     );
+  }
+
+  private compareVoicesByDefaultLanguage(a: Voice, b: Voice): number {
+    const preferred = this.defaultLanguage || DEFAULT_LANGUAGE_FALLBACK;
+    const aMatch = this.voiceLanguage(a) === preferred ? 0 : 1;
+    const bMatch = this.voiceLanguage(b) === preferred ? 0 : 1;
+    if (aMatch !== bMatch) {
+      return aMatch - bMatch;
+    }
+    return (a.voiceName || a.voiceId).localeCompare(b.voiceName || b.voiceId);
   }
 
   private voiceLanguage(voice: Voice): string | null {

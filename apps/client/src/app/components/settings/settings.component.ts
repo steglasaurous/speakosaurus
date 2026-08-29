@@ -308,6 +308,14 @@ export class SettingsComponent implements OnInit {
     return setting.value;
   }
 
+  getEnumOptionLabel(setting: Setting, option: string): string {
+    const description = setting.optionDescriptions?.[option];
+    if (setting.name === 'defaultLanguage' && description) {
+      return description;
+    }
+    return description ? `${option} - ${description}` : option;
+  }
+
   onSettingChange(setting: Setting, value: any): void {
     let stringValue: string;
     

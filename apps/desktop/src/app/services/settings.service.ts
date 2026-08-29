@@ -8,6 +8,7 @@ import { eq } from 'drizzle-orm';
 // When defining a new setting, make sure to add it to this enum AND the settingDefinition.
 export enum Setting {
   MODE = 'mode',
+  DEFAULT_LANGUAGE = 'defaultLanguage',
   TRIGGER_COMMANDS = 'triggerCommands',
   DEFAULT_VOICE = 'defaultVoice',
   DEFAULT_INTRO_VOICE = 'defaultIntroVoice',
@@ -56,6 +57,37 @@ export enum SettingGroup {
   INTERNAL = 'Internal',
   STREAMERBOT_ACTIONS = 'StreamerBot Actions',
 }
+
+/**
+ * ISO 639-1 codes covering languages used by Piper, Azure, and other TTS providers.
+ */
+const TTS_LANGUAGE_CODES = [
+  'af', 'am', 'ar', 'az', 'bg', 'bn', 'bs', 'ca', 'cs', 'cy', 'da', 'de',
+  'el', 'en', 'es', 'et', 'eu', 'fa', 'fi', 'fr', 'ga', 'gl', 'gu', 'he',
+  'hi', 'hr', 'hu', 'hy', 'id', 'is', 'it', 'ja', 'ka', 'kk', 'km', 'kn',
+  'ko', 'ku', 'lb', 'lo', 'lt', 'lv', 'mk', 'ml', 'mn', 'mr', 'ms', 'mt',
+  'my', 'nb', 'ne', 'nl', 'no', 'pl', 'ps', 'pt', 'ro', 'ru', 'sk', 'sl',
+  'sq', 'sr', 'sv', 'sw', 'ta', 'te', 'th', 'tr', 'uk', 'ur', 'uz', 'vi',
+  'zh', 'zu',
+];
+
+function buildLanguageEnumOptions(): {
+  options: string[];
+  optionDescriptions: { [key: string]: string };
+} {
+  const displayNames = new Intl.DisplayNames(['en'], { type: 'language' });
+  const labeled = TTS_LANGUAGE_CODES.map((code) => ({
+    code,
+    name: displayNames.of(code) || code,
+  }));
+  labeled.sort((a, b) => a.name.localeCompare(b.name));
+  return {
+    options: labeled.map((item) => item.code),
+    optionDescriptions: Object.fromEntries(labeled.map((item) => [item.code, item.name])),
+  };
+}
+
+const LANGUAGE_ENUM_OPTIONS = buildLanguageEnumOptions();
 
 export interface SettingDefinition {
   name: Setting;
@@ -125,6 +157,17 @@ export class SettingsService {
         'always': 'read all chat messages',
       },
       required: true,
+    },
+    {
+      name: Setting.DEFAULT_LANGUAGE,
+      displayName: 'Default Language',
+      group: SettingGroup.GENERAL,
+      description:
+        'Preferred language for the voice picker. Voices in this language are listed first for each provider.',
+      type: SettingType.ENUM,
+      default: 'en',
+      options: LANGUAGE_ENUM_OPTIONS.options,
+      optionDescriptions: LANGUAGE_ENUM_OPTIONS.optionDescriptions,
     },
     {
       name: Setting.TRIGGER_COMMANDS,

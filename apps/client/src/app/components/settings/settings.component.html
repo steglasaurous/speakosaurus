@@ -133,7 +133,7 @@
             (ngModelChange)="onSettingChange(setting, $event)"
           >
             <option *ngFor="let option of setting.options" [value]="option">
-              {{ option }}{{ setting.optionDescriptions && setting.optionDescriptions[option] ? ' - ' + setting.optionDescriptions[option] : '' }}
+              {{ getEnumOptionLabel(setting, option) }}
             </option>
           </select>
         </div>
