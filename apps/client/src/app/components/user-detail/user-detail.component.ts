@@ -91,15 +91,22 @@ export class UserDetailComponent implements OnInit {
         this.originalCustomIntros = [...(user.customIntros || [])].map(intro => ({ ...intro }));
 
         // Set selected voice if user has one
-        if (user.ttsProviderName && user.ttsVoiceId) {
+        const assignedProvider = user.ttsProviderName;
+        const assignedVoiceId = user.ttsVoiceId;
+        if (assignedProvider && assignedVoiceId) {
           this.voicesService.getVoices().subscribe({
             next: (voices) => {
               const found = voices.find(
-                (v) => v.providerName === user.ttsProviderName && v.voiceId === user.ttsVoiceId
-              ) || null;
+                (v) => v.providerName === assignedProvider && v.voiceId === assignedVoiceId
+              );
               this.selectedVoice = found
                 ? { ...found, tweaks: user.ttsTweaks ?? found.tweaks }
-                : null;
+                : {
+                    voiceId: assignedVoiceId,
+                    providerName: assignedProvider,
+                    voiceName: assignedVoiceId,
+                    tweaks: user.ttsTweaks ?? undefined,
+                  };
             },
           });
         } else {

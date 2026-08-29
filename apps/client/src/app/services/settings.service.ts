@@ -29,6 +29,7 @@ export interface Setting {
   optionDescriptions?: { [key: string]: string };
   sensitive?: boolean;
   required?: boolean;
+  subGroupToggle?: boolean;
   value: string | null;
 }
 

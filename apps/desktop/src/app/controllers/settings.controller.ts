@@ -74,21 +74,7 @@ export class SettingsController {
       createSettingDto.name,
       createSettingDto.value,
     );
-    
-    // If ElevenLabs API key was updated, update the voice provider
-    if (createSettingDto.name === Setting.ELEVENLABS_API_KEY) {
-      await this.voiceProviderService.updateElevenLabsProvider();
-    }
-
-    if (createSettingDto.name === Setting.PIPER_HTTP_URL) {
-      await this.voiceProviderService.updatePiperProvider();
-    }
-    
-    // If StreamerBot WebSocket URL was updated, reconnect the service
-    if (createSettingDto.name === Setting.STREAMERBOT_WEBSOCKET_URL) {
-      await this.streamerBotManagerService.updateStreamerBotService();
-    }
-    
+    await this.refreshVoiceProvidersForSetting(createSettingDto.name);
     return result;
   }
 
@@ -121,20 +107,7 @@ export class SettingsController {
       result = await this.settingsService.setSetting(name, updateSettingDto.value);
     }
 
-    // If ElevenLabs API key was updated, update the voice provider
-    if (name === Setting.ELEVENLABS_API_KEY) {
-      await this.voiceProviderService.updateElevenLabsProvider();
-    }
-
-    if (name === Setting.PIPER_HTTP_URL) {
-      await this.voiceProviderService.updatePiperProvider();
-    }
-
-    // If StreamerBot WebSocket URL was updated, reconnect the service
-    if (name === Setting.STREAMERBOT_WEBSOCKET_URL) {
-      await this.streamerBotManagerService.updateStreamerBotService();
-    }
-
+    await this.refreshVoiceProvidersForSetting(name);
     return result;
   }
 
@@ -158,25 +131,44 @@ export class SettingsController {
   })
   async deleteSetting(@Param('name') name: string): Promise<{ success: boolean; message: string }> {
     await this.settingsService.deleteSetting(name);
-
-    // If ElevenLabs API key was deleted, update the voice provider
-    if (name === Setting.ELEVENLABS_API_KEY) {
-      await this.voiceProviderService.updateElevenLabsProvider();
-    }
-
-    if (name === Setting.PIPER_HTTP_URL) {
-      await this.voiceProviderService.updatePiperProvider();
-    }
-
-    // If StreamerBot WebSocket URL was deleted, reconnect the service (will use default)
-    if (name === Setting.STREAMERBOT_WEBSOCKET_URL) {
-      await this.streamerBotManagerService.updateStreamerBotService();
-    }
+    await this.refreshVoiceProvidersForSetting(name);
 
     return {
       success: true,
       message: `Setting '${name}' successfully deleted`,
     };
+  }
+
+  private async refreshVoiceProvidersForSetting(name: string): Promise<void> {
+    switch (name) {
+      case Setting.ELEVENLABS_API_KEY:
+      case Setting.ELEVENLABS_ENABLED:
+        await this.voiceProviderService.updateElevenLabsProvider();
+        break;
+      case Setting.TTS_MONSTER_API_KEY:
+      case Setting.TTS_MONSTER_ENABLED:
+        await this.voiceProviderService.updateTTSMonsterProvider();
+        break;
+      case Setting.TTS_MONSTER_UNOFFICIAL_USER_ID:
+      case Setting.TTS_MONSTER_UNOFFICIAL_API_KEY:
+      case Setting.TTS_MONSTER_UNOFFICIAL_ENABLED:
+        await this.voiceProviderService.updateTTSMonsterUnofficialProvider();
+        break;
+      case Setting.AZURE_SPEECH_KEY:
+      case Setting.AZURE_SPEECH_REGION:
+      case Setting.AZURE_ENDPOINT:
+      case Setting.AZURE_ENABLED:
+        await this.voiceProviderService.updateAzureProvider();
+        break;
+      case Setting.PIPER_HTTP_URL:
+      case Setting.PIPER_USE_BUILT_IN:
+      case Setting.PIPER_ENABLED:
+        await this.voiceProviderService.updatePiperProvider();
+        break;
+      case Setting.STREAMERBOT_WEBSOCKET_URL:
+        await this.streamerBotManagerService.updateStreamerBotService();
+        break;
+    }
   }
 }
 

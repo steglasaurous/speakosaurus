@@ -51,15 +51,38 @@
 
     <div class="tab-content">
       <ng-container *ngIf="getSettingsForActiveTab()">
-        <div *ngFor="let subGroup of getSettingsForActiveTab()!.subGroups" class="subgroup-container">
-          <h3 *ngIf="subGroup.subGroup" class="subgroup-header">{{ subGroup.subGroup }}</h3>
+        <div
+          *ngFor="let subGroup of getSettingsForActiveTab()!.subGroups"
+          class="subgroup-container"
+          [class.collapsed]="!isSubGroupEnabled(subGroup)"
+        >
+          <div *ngIf="subGroup.subGroup" class="subgroup-header-row">
+            <h3 class="subgroup-header">{{ subGroup.subGroup }}</h3>
+            <label
+              *ngIf="getSubGroupToggle(subGroup) as toggle"
+              class="subgroup-toggle-label"
+              [attr.for]="'setting-' + toggle.name"
+            >
+              <input
+                type="checkbox"
+                class="toggle-input"
+                [id]="'setting-' + toggle.name"
+                [checked]="getSettingValue(toggle) === 'true'"
+                (change)="onSettingChange(toggle, $any($event.target).checked)"
+              >
+              <span class="toggle-slider"></span>
+              <span class="subgroup-toggle-text">{{ getSettingValue(toggle) === 'true' ? 'Enabled' : 'Disabled' }}</span>
+            </label>
+          </div>
+          <ng-container *ngIf="isSubGroupEnabled(subGroup)">
           <div 
             *ngIf="getSubGroupDescription(getSettingsForActiveTab()!.group, subGroup.subGroup)" 
             class="subgroup-description"
             [innerHTML]="getSubGroupDescription(getSettingsForActiveTab()!.group, subGroup.subGroup)"
             (click)="onSubGroupDescriptionClick($event)"
           ></div>
-          <div *ngFor="let setting of subGroup.settings" class="setting-item">
+          <ng-container *ngFor="let setting of subGroup.settings">
+          <div *ngIf="isSettingVisible(setting)" class="setting-item">
             <div class="setting-header">
               <label [for]="'setting-' + setting.name" class="setting-label">
                 {{ setting.displayName }}
@@ -393,6 +416,8 @@
           </div>
         </div>
           </div>
+          </ng-container>
+          </ng-container>
         </div>
         <div *ngIf="activeTab === 'Default Voices'" class="pronoun-population-action">
           <div>

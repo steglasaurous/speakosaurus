@@ -130,6 +130,8 @@ export class AudioProcessorService {
             }
             
             // Send audio data to renderer process via IPC
+            // TODO: Evaluate moving play queue handling to the frontend completely, and have the backend instead
+            //       return rendered messages synchronously. This way the API could operate remotely in the future (for moderator use).
             if (App.mainWindow && !App.mainWindow.isDestroyed()) {
                 App.mainWindow.webContents.send('audio:play', {
                     base64,

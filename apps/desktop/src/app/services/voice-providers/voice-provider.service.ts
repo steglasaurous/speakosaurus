@@ -26,6 +26,7 @@ export class VoiceProviderService implements OnModuleInit {
     private logger: Logger = new Logger(VoiceProviderService.constructor.name);
     private voiceProviders: VoiceProvider[] = [];
     private pendingMessages = 0;
+    private piperProviderUpdate: Promise<void> = Promise.resolve();
 
     constructor(
         @Inject(VOICE_PROVIDERS) private readonly initialVoiceProviders: VoiceProvider[],
@@ -42,7 +43,7 @@ export class VoiceProviderService implements OnModuleInit {
     }
 
     async onModuleInit() {
-        // Check if ElevenLabs API key is set and add provider if available
+        await this.settingsService.getAllSettings();
         await this.updateElevenLabsProvider();
         await this.updateTTSMonsterProvider();
         await this.updateTTSMonsterUnofficialProvider();
@@ -89,7 +90,11 @@ export class VoiceProviderService implements OnModuleInit {
     async getVoices(forceReload = false): Promise<Voice[]> {
         const stock = await this.getStockVoices(forceReload);
         const custom = await this.customVoicesService.toVoices(stock);
-        return [...stock, ...custom];
+        const registered = new Set(this.voiceProviders.map((provider) => provider.providerName));
+        return [
+            ...stock,
+            ...custom.filter((voice) => registered.has(voice.providerName)),
+        ];
     }
 
     async getStockVoice(voiceId: string, providerName: string): Promise<Voice | null> {
@@ -109,11 +114,20 @@ export class VoiceProviderService implements OnModuleInit {
         voice: Voice,
         message: string,
         tweaksOverride?: VoiceTweakSettings,
+        allowFallback = true,
     ): Promise<AudioData> {
         const provider = this.voiceProviders.find(p => p.providerName === voice.providerName);
         
         if (!provider) {
-            throw new Error(`Voice provider '${voice.providerName}' not found`);
+            if (!allowFallback) {
+                throw new Error(`Voice provider '${voice.providerName}' not found`);
+            }
+            this.logger.warn(
+                `Voice provider '${voice.providerName}' is not registered; falling back to the default voice`,
+                { voiceId: voice.voiceId, providerName: voice.providerName },
+            );
+            const fallback = await this.getDefaultVoice();
+            return this.getRenderedMessage(fallback, message, undefined, false);
         }
 
         if (this.isVoiceUnavailable(voice)) {
@@ -263,19 +277,23 @@ export class VoiceProviderService implements OnModuleInit {
     }
 
     /**
-     * Update the ElevenLabs provider based on whether the API key is set in settings.
-     * This method is called on module init and when the API key setting changes.
+     * Update the ElevenLabs provider based on whether it is enabled and the API key is set.
+     * This method is called on module init and when related settings change.
      */
     async updateElevenLabsProvider(): Promise<void> {
-        const apiKeySetting = await this.settingsService.getSetting(Setting.ELEVENLABS_API_KEY);
-        const apiKey = apiKeySetting?.value;
-
-        // Remove existing ElevenLabs provider if present
         this.voiceProviders = this.voiceProviders.filter(
             provider => provider.providerName !== 'elevenlabs'
         );
 
-        // Add ElevenLabs provider if API key is set
+        if (!(await this.isSettingTrue(Setting.ELEVENLABS_ENABLED))) {
+            this.logger.log('ElevenLabs provider not added - disabled');
+            this.invalidateVoiceCache();
+            return;
+        }
+
+        const apiKeySetting = await this.settingsService.getSetting(Setting.ELEVENLABS_API_KEY);
+        const apiKey = apiKeySetting?.value;
+
         if (apiKey && apiKey.trim() !== '') {
             try {
                 const elevenLabsClient = new ElevenLabsClient({
@@ -284,53 +302,78 @@ export class VoiceProviderService implements OnModuleInit {
                 const elevenLabsProvider = new ElevenLabsVoiceProvider(elevenLabsClient);
                 this.voiceProviders.push(elevenLabsProvider);
                 this.logger.log('ElevenLabs provider added');
-                // Clear cache so new voices are loaded
                 this.invalidateVoiceCache();
             } catch (error) {
                 this.logger.error('Failed to initialize ElevenLabs provider', error);
+                this.invalidateVoiceCache();
             }
         } else {
             this.logger.log('ElevenLabs provider not added - API key not set');
-            // Clear cache so voices are refreshed
             this.invalidateVoiceCache();
         }
     }
 
     async updateTTSMonsterProvider(): Promise<void> {
+        this.voiceProviders = this.voiceProviders.filter(
+            provider => provider.providerName !== 'ttsMonster'
+        );
+
+        if (!(await this.isSettingTrue(Setting.TTS_MONSTER_ENABLED))) {
+            this.logger.log('TTS Monster provider not added - disabled');
+            this.invalidateVoiceCache();
+            return;
+        }
+
         const apiKeySetting = await this.settingsService.getSetting(Setting.TTS_MONSTER_API_KEY);
         const apiKey = apiKeySetting?.value;
         if (apiKey && apiKey.trim() !== '') {
             const ttsMonsterProvider = new TTSMonsterVoiceProvider(apiKey, this.httpService);
             this.voiceProviders.push(ttsMonsterProvider);
             this.logger.log('TTS Monster provider added');
-            // Clear cache so new voices are loaded
             this.invalidateVoiceCache();
         } else {
             this.logger.log('TTS Monster provider not added - API key not set');
-            // Clear cache so voices are refreshed
             this.invalidateVoiceCache();
         }
     }
 
     async updateTTSMonsterUnofficialProvider(): Promise<void> {
+        this.voiceProviders = this.voiceProviders.filter(
+            provider => provider.providerName !== 'ttsMonsterUnofficial'
+        );
+
+        if (!(await this.isSettingTrue(Setting.TTS_MONSTER_UNOFFICIAL_ENABLED))) {
+            this.logger.log('TTS MonsterUnofficial provider not added - disabled');
+            this.invalidateVoiceCache();
+            return;
+        }
+
         const userIdSetting = await this.settingsService.getSetting(Setting.TTS_MONSTER_UNOFFICIAL_USER_ID);
         const userId = userIdSetting?.value;
         const apiKeySetting = await this.settingsService.getSetting(Setting.TTS_MONSTER_UNOFFICIAL_API_KEY);
         const apiKey = apiKeySetting?.value;
         if (userId && apiKey && userId.trim() !== '' && apiKey.trim() !== '') {
-            // Remove existing TTS MonsterUnofficial provider if present
-            this.voiceProviders = this.voiceProviders.filter(
-                provider => provider.providerName !== 'ttsMonsterUnofficial'
-            );
-
             const ttsMonsterUnofficialProvider = new TTSMonsterUnofficialVoiceProvider(userId, apiKey, this.httpService);
             this.voiceProviders.push(ttsMonsterUnofficialProvider);
             this.invalidateVoiceCache();
             this.logger.log('TTS MonsterUnofficial provider added');
+        } else {
+            this.logger.log('TTS MonsterUnofficial provider not added - user ID or API key not set');
+            this.invalidateVoiceCache();
         }
     }
 
     async updateAzureProvider(): Promise<void> {
+        this.voiceProviders = this.voiceProviders.filter(
+            provider => provider.providerName !== 'azure'
+        );
+
+        if (!(await this.isSettingTrue(Setting.AZURE_ENABLED))) {
+            this.logger.log('Azure provider not added - disabled');
+            this.invalidateVoiceCache();
+            return;
+        }
+
         const apiKeySetting = await this.settingsService.getSetting(Setting.AZURE_SPEECH_KEY);
         const apiKey = apiKeySetting?.value;
         const regionSetting = await this.settingsService.getSetting(Setting.AZURE_SPEECH_REGION);
@@ -344,26 +387,69 @@ export class VoiceProviderService implements OnModuleInit {
             this.logger.log('Azure provider added');
         } else {
             this.logger.log('Azure provider not added - API key, region, or endpoint not set');
-            // Clear cache so voices are refreshed
             this.invalidateVoiceCache();
         }
     }
 
     /**
      * Add or remove the Piper provider.
-     * Non-empty {@link Setting.PIPER_HTTP_URL} uses an external server (managed child stopped).
-     * Empty URL uses the bundled managed Piper HTTP child when available.
+     * {@link Setting.PIPER_USE_BUILT_IN} starts the bundled managed server.
+     * Otherwise a non-empty {@link Setting.PIPER_HTTP_URL} uses an external server
+     * (managed child stopped). Concurrent calls are serialized.
      */
     async updatePiperProvider(): Promise<void> {
+        this.piperProviderUpdate = this.piperProviderUpdate
+            .catch(() => undefined)
+            .then(() => this.updatePiperProviderInternal());
+        return this.piperProviderUpdate;
+    }
+
+    private async updatePiperProviderInternal(): Promise<void> {
         this.voiceProviders = this.voiceProviders.filter(
             (p) => p.providerName !== 'piper',
         );
 
+        if (!(await this.isSettingTrue(Setting.PIPER_ENABLED))) {
+            await this.piperHttpServerService.stop();
+            this.invalidateVoiceCache();
+            this.logger.log('Piper provider not added - disabled');
+            return;
+        }
+
+        const useBuiltInSetting = await this.settingsService.getSetting(
+            Setting.PIPER_USE_BUILT_IN,
+        );
+        const useBuiltIn = useBuiltInSetting?.value !== 'false';
         const urlSetting = await this.settingsService.getSetting(Setting.PIPER_HTTP_URL);
         const externalUrl = urlSetting?.value?.trim();
 
+        if (useBuiltIn) {
+            const managedUrl = await this.piperHttpServerService.ensureStarted();
+            if (managedUrl) {
+                const piperProvider = new PiperVoiceProvider(
+                    managedUrl,
+                    this.httpService,
+                    this.piperVoiceCatalogService,
+                );
+                this.voiceProviders.push(piperProvider);
+                this.invalidateVoiceCache();
+                this.logger.log('Piper provider added (bundled managed server)', {
+                    baseUrl: managedUrl,
+                    voicesDir: this.piperHttpServerService.getVoicesDirectory(),
+                });
+                return;
+            }
+
+            this.invalidateVoiceCache();
+            this.logger.log(
+                'Piper provider not added — built-in instance requested but bundled runtime unavailable',
+            );
+            return;
+        }
+
+        await this.piperHttpServerService.stop();
+
         if (externalUrl) {
-            await this.piperHttpServerService.stop();
             const piperProvider = new PiperVoiceProvider(
                 externalUrl,
                 this.httpService,
@@ -375,25 +461,9 @@ export class VoiceProviderService implements OnModuleInit {
             return;
         }
 
-        const managedUrl = await this.piperHttpServerService.ensureStarted();
-        if (managedUrl) {
-            const piperProvider = new PiperVoiceProvider(
-                managedUrl,
-                this.httpService,
-                this.piperVoiceCatalogService,
-            );
-            this.voiceProviders.push(piperProvider);
-            this.invalidateVoiceCache();
-            this.logger.log('Piper provider added (bundled managed server)', {
-                baseUrl: managedUrl,
-                voicesDir: this.piperHttpServerService.getVoicesDirectory(),
-            });
-            return;
-        }
-
         this.invalidateVoiceCache();
         this.logger.log(
-            'Piper provider not added — no external URL and bundled runtime unavailable',
+            'Piper provider not added — built-in instance off and no external URL',
         );
     }
 
@@ -427,6 +497,11 @@ export class VoiceProviderService implements OnModuleInit {
     private invalidateVoiceCache(): void {
         this.cachedVoices = null;
         this.voiceCacheGeneration += 1;
+    }
+
+    private async isSettingTrue(name: Setting): Promise<boolean> {
+        const setting = await this.settingsService.getSetting(name);
+        return setting?.value === 'true';
     }
 
     private isVoiceUnavailable(voice: Voice): boolean {

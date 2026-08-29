@@ -271,12 +271,17 @@ export class SettingsComponent implements OnInit {
                       v.providerName === voiceData.providerName &&
                       v.voiceId === voiceData.voiceId
                   );
-                  if (voice) {
-                    this.selectedVoices[setting.name] = {
-                      ...voice,
-                      tweaks: voiceData.tweaks ?? voice.tweaks,
-                    };
-                  }
+                  this.selectedVoices[setting.name] = voice
+                    ? {
+                        ...voice,
+                        tweaks: voiceData.tweaks ?? voice.tweaks,
+                      }
+                    : {
+                        providerName: voiceData.providerName,
+                        voiceId: voiceData.voiceId,
+                        voiceName: voiceData.voiceName ?? voiceData.voiceId,
+                        tweaks: voiceData.tweaks,
+                      };
                 },
               });
             }
@@ -306,6 +311,36 @@ export class SettingsComponent implements OnInit {
       return setting.default || '';
     }
     return setting.value;
+  }
+
+  isSettingVisible(setting: Setting): boolean {
+    if (setting.subGroupToggle) {
+      return false;
+    }
+    if (setting.name === 'piperHttpUrl' && this.isPiperBuiltInEnabled()) {
+      return false;
+    }
+    return true;
+  }
+
+  getSubGroupToggle(subGroup: SubGroupedSettings): Setting | null {
+    return subGroup.settings.find((setting) => setting.subGroupToggle) ?? null;
+  }
+
+  isSubGroupEnabled(subGroup: SubGroupedSettings): boolean {
+    const toggle = this.getSubGroupToggle(subGroup);
+    if (!toggle) {
+      return true;
+    }
+    return this.getSettingValue(toggle) === 'true';
+  }
+
+  isPiperBuiltInEnabled(): boolean {
+    const useBuiltIn = this.settings.find((s) => s.name === 'piperUseBuiltIn');
+    if (!useBuiltIn) {
+      return false;
+    }
+    return this.getSettingValue(useBuiltIn) === 'true';
   }
 
   getEnumOptionLabel(setting: Setting, option: string): string {
@@ -795,6 +830,17 @@ export class SettingsComponent implements OnInit {
         settingsToSave.forEach((setting) => {
           this.originalValues[setting.name] = setting.value;
         });
+        const savedTtsProvider = settingsToSave.some(
+          (setting) => setting.group === 'TTS Providers',
+        );
+        if (savedTtsProvider) {
+          this.voicesService.getVoices(true).subscribe({
+            next: () => this.initializeVoiceSettings(),
+            error: (error) => {
+              console.error('Error reloading voices after provider settings save:', error);
+            },
+          });
+        }
         if (this.modalMode) {
           this.saving = false;
           this.closed.emit();

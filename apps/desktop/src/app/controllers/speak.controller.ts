@@ -1,4 +1,4 @@
-import { Body, Controller, NotFoundException, Post } from '@nestjs/common';
+import { Body, Controller, Logger, NotFoundException, Post } from '@nestjs/common';
 import { ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { VoiceProviderService } from '../services/voice-providers/voice-provider.service';
 import { SpeakDto } from '../dto/speak.dto';
@@ -15,6 +15,8 @@ import { AudioData } from '../services/voice-providers/audio-data.interface';
 @ApiTags('speak')
 @Controller('speak')
 export class SpeakController {
+  private readonly logger = new Logger(SpeakController.name);
+
   constructor(
     private readonly voiceProviderService: VoiceProviderService,
     private readonly audioProcessorService: AudioProcessorService,
@@ -47,12 +49,17 @@ export class SpeakController {
         );
 
         if (!voice) {
-          throw new NotFoundException(
-            `Voice with ID '${speakDto.voiceId}' not found in provider '${speakDto.voiceProvider}'`,
+          this.logger.warn(
+            `Requested voice is unavailable; falling back to a default voice`,
+            {
+              voiceId: speakDto.voiceId,
+              voiceProvider: speakDto.voiceProvider,
+            },
           );
         }
-      } else {
-        // Prefer a configured pronoun-specific default, then use the global default.
+      }
+
+      if (!voice) {
         voice = await this.voiceProviderService.getPronounDefaultVoice(
           speakDto.pronouns,
         );

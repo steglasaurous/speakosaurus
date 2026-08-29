@@ -19,14 +19,20 @@ export enum Setting {
   CHAT_MESSAGE_PREFIX_OMIT_SAME_USER_TIMEOUT = 'chatMessagePrefixOmitSameUserTimeout',
   PAUSE_BETWEEN_MESSAGES_MS = 'pauseBetweenMessagesMs',
   STREAMERBOT_WEBSOCKET_URL = 'streamerbotWebsocketUrl',
+  ELEVENLABS_ENABLED = 'elevenLabsEnabled',
   ELEVENLABS_API_KEY = 'elevenLabsApiKey',
+  TTS_MONSTER_ENABLED = 'ttsMonsterEnabled',
   TTS_MONSTER_API_KEY = 'ttsMonsterApiKey',
   TWITCH_CLIENT_ID = 'twitchClientId',
+  TTS_MONSTER_UNOFFICIAL_ENABLED = 'ttsMonsterUnofficialEnabled',
   TTS_MONSTER_UNOFFICIAL_USER_ID = 'ttsMonsterUnofficialUserId',
   TTS_MONSTER_UNOFFICIAL_API_KEY = 'ttsMonsterUnofficialApiKey',
+  AZURE_ENABLED = 'azureEnabled',
   AZURE_SPEECH_KEY = 'azureSpeechKey',
   AZURE_SPEECH_REGION = 'azureSpeechRegion',
   AZURE_ENDPOINT = 'azureEndpoint',
+  PIPER_ENABLED = 'piperEnabled',
+  PIPER_USE_BUILT_IN = 'piperUseBuiltIn',
   PIPER_HTTP_URL = 'piperHttpUrl',
   IGNORED_USERS = 'ignoredUsers',
   WORD_REPLACEMENTS = 'wordReplacements',
@@ -124,6 +130,11 @@ export interface SettingDefinition {
    */
   sensitive?: boolean;
   required?: boolean;
+  /**
+   * If true, this boolean is rendered as the subgroup header enable/disable switch
+   * instead of as a normal setting row.
+   */
+  subGroupToggle?: boolean;
   /**
    * The value of the setting in the database, if present. Otherwise is populated by default, if set.
    */
@@ -238,6 +249,16 @@ export class SettingsService {
       default: '1', // Set to 1ms which seems reasonable for most cases
     },
     {
+      name: Setting.ELEVENLABS_ENABLED,
+      displayName: 'Enabled',
+      group: SettingGroup.TTS_PROVIDERS,
+      subGroup: 'ElevenLabs',
+      description: 'Enable ElevenLabs as a TTS provider',
+      type: SettingType.BOOLEAN,
+      default: 'false',
+      subGroupToggle: true,
+    },
+    {
       name: Setting.ELEVENLABS_API_KEY,
       displayName: 'ElevenLabs API Key',
       group: SettingGroup.TTS_PROVIDERS,
@@ -254,6 +275,16 @@ export class SettingsService {
       description: 'The API key for the elevenlabs API',
       type: SettingType.STRING,
       sensitive: true,
+    },
+    {
+      name: Setting.TTS_MONSTER_ENABLED,
+      displayName: 'Enabled',
+      group: SettingGroup.TTS_PROVIDERS,
+      subGroup: 'TTS Monster',
+      description: 'Enable TTS Monster as a TTS provider',
+      type: SettingType.BOOLEAN,
+      default: 'false',
+      subGroupToggle: true,
     },
     {
       name: Setting.TTS_MONSTER_API_KEY,
@@ -282,6 +313,16 @@ export class SettingsService {
       type: SettingType.STRING,
     },
     {
+      name: Setting.TTS_MONSTER_UNOFFICIAL_ENABLED,
+      displayName: 'Enabled',
+      group: SettingGroup.TTS_PROVIDERS,
+      subGroup: 'Unofficial TTS Monster',
+      description: 'Enable unofficial TTS Monster as a TTS provider',
+      type: SettingType.BOOLEAN,
+      default: 'false',
+      subGroupToggle: true,
+    },
+    {
       name: Setting.TTS_MONSTER_UNOFFICIAL_USER_ID,
       displayName: 'TTS MonsterUnofficial User ID',
       group: SettingGroup.TTS_PROVIDERS,
@@ -306,6 +347,16 @@ export class SettingsService {
       description: 'The API key for the tts.monster Unofficial API',
       type: SettingType.STRING,
       sensitive: true,
+    },
+    {
+      name: Setting.AZURE_ENABLED,
+      displayName: 'Enabled',
+      group: SettingGroup.TTS_PROVIDERS,
+      subGroup: 'Azure',
+      description: 'Enable Azure Speech as a TTS provider',
+      type: SettingType.BOOLEAN,
+      default: 'false',
+      subGroupToggle: true,
     },
     {
       name: Setting.AZURE_SPEECH_KEY,
@@ -343,20 +394,39 @@ export class SettingsService {
       type: SettingType.STRING,
     },
     {
-      name: Setting.PIPER_HTTP_URL,
-      displayName: 'Piper HTTP server URL',
+      name: Setting.PIPER_ENABLED,
+      displayName: 'Enabled',
+      group: SettingGroup.TTS_PROVIDERS,
+      subGroup: 'Piper',
+      description: 'Enable Piper as a TTS provider',
+      type: SettingType.BOOLEAN,
+      default: 'false',
+      subGroupToggle: true,
+    },
+    {
+      name: Setting.PIPER_USE_BUILT_IN,
+      displayName: 'Use built-in Piper instance',
       group: SettingGroup.TTS_PROVIDERS,
       subGroup: 'Piper',
       subGroupDescription: `
-        <p>SpeakManager can auto-start a bundled Piper TTS server on <strong>Windows and Linux</strong>
-        when this field is left empty. Leave empty to use the bundled server (recommended).</p>
-        <p>To use your own Piper HTTP server instead, set the base URL without a trailing path
-        (e.g. <code>http://localhost:5000</code>). That stops the bundled server.</p>
+        <p>SpeakManager can auto-start a bundled Piper TTS server on <strong>Windows and Linux</strong>.
+        Leave <strong>Use built-in Piper instance</strong> enabled (recommended) to run that server.</p>
+        <p>To use your own Piper HTTP server instead, turn the checkbox off and set the base URL without a
+        trailing path (e.g. <code>http://localhost:5000</code>). Saving then stops the bundled server.</p>
         <p>Extra voices: drop matching <code>Name.onnx</code> and <code>Name.onnx.json</code> files into the
         app voices folder under your user data directory
         (<code>…/speakmanager2/piper/voices</code>). They appear in the voice list without restarting the app.</p>
       `,
-      description: 'Optional external Piper HTTP URL (empty = bundled Piper)',
+      description: 'Start SpeakManager’s bundled Piper TTS server instead of an external URL',
+      type: SettingType.BOOLEAN,
+      default: 'true',
+    },
+    {
+      name: Setting.PIPER_HTTP_URL,
+      displayName: 'Piper HTTP server URL',
+      group: SettingGroup.TTS_PROVIDERS,
+      subGroup: 'Piper',
+      description: 'External Piper HTTP URL (used when the built-in instance is off)',
       type: SettingType.STRING,
     },
     {
@@ -430,12 +500,23 @@ export class SettingsService {
       settingsMap.set(setting.name as Setting, setting);
     }
 
+    const dbTrimmed = (name: Setting): string =>
+      ((settingsMap.get(name)?.value as string | undefined) ?? '').trim();
+
     // Build SettingDto[] based on definitions, filling value from db or default/null
     for (const def of this.settingDefinitions) {
       const dbSetting = settingsMap.get(def.name);
+      let value = dbSetting?.value ?? def.default ?? null;
+      if (def.name === Setting.PIPER_USE_BUILT_IN && !dbSetting) {
+        const url = dbTrimmed(Setting.PIPER_HTTP_URL);
+        value = url ? 'false' : 'true';
+      }
+      if (def.subGroupToggle && !dbSetting) {
+        value = this.inferProviderEnabled(def.name, dbTrimmed) ? 'true' : (def.default ?? 'false');
+      }
       this.settingsMap.set(def.name, {
         ...def,
-        value: dbSetting?.value ?? def.default ?? null,
+        value,
       });
     }
 
@@ -501,6 +582,36 @@ export class SettingsService {
     await this.drizzleService.db
       .delete(schema.settings as any)
       .where(eq(schema.settings.name, name) as any);
+  }
+
+  private inferProviderEnabled(
+    name: Setting,
+    dbTrimmed: (setting: Setting) => string,
+  ): boolean {
+    switch (name) {
+      case Setting.ELEVENLABS_ENABLED:
+        return !!dbTrimmed(Setting.ELEVENLABS_API_KEY);
+      case Setting.TTS_MONSTER_ENABLED:
+        return !!dbTrimmed(Setting.TTS_MONSTER_API_KEY);
+      case Setting.TTS_MONSTER_UNOFFICIAL_ENABLED:
+        return !!(
+          dbTrimmed(Setting.TTS_MONSTER_UNOFFICIAL_USER_ID) &&
+          dbTrimmed(Setting.TTS_MONSTER_UNOFFICIAL_API_KEY)
+        );
+      case Setting.AZURE_ENABLED:
+        return !!(
+          dbTrimmed(Setting.AZURE_SPEECH_KEY) &&
+          dbTrimmed(Setting.AZURE_SPEECH_REGION) &&
+          dbTrimmed(Setting.AZURE_ENDPOINT)
+        );
+      case Setting.PIPER_ENABLED:
+        return (
+          !!dbTrimmed(Setting.PIPER_HTTP_URL) ||
+          dbTrimmed(Setting.SETUP_COMPLETED) === 'true'
+        );
+      default:
+        return false;
+    }
   }
 }
 

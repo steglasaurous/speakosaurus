@@ -69,6 +69,12 @@ export class SettingDto implements SettingDefinition {
   })
   required?: boolean;
 
+  @ApiPropertyOptional({
+    description: 'If true, this boolean is rendered as the subgroup header enable/disable switch',
+    example: true,
+  })
+  subGroupToggle?: boolean;
+
   @ApiProperty({
     description: 'Name of the setting',
     example: 'theme',
