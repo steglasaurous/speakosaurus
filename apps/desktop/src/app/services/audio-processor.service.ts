@@ -4,6 +4,7 @@ import { extname } from 'path';
 import { AudioData } from './voice-providers/audio-data.interface';
 import { Setting, SettingsService } from './settings.service';
 import { StatusEventService } from './status-event.service';
+import { RenderTimingService } from './render-timing.service';
 import App from '../app';
 
 @Injectable()
@@ -26,6 +27,7 @@ export class AudioProcessorService {
     constructor(
       private readonly settingsService: SettingsService,
       private readonly statusEventService: StatusEventService,
+      private readonly renderTimingService: RenderTimingService,
     ) {}
 
     getQueueSize(): number {
@@ -112,6 +114,7 @@ export class AudioProcessorService {
 
     private async playAudio(audioData: AudioData, stopEpochAtPlay: number): Promise<void> {
         try {
+            const transferStarted = audioData.timingId ? Date.now() : 0;
             // Read audio file and convert to base64
             const audioBuffer = readFileSync(audioData.audioFilePath);
             const base64 = audioBuffer.toString('base64');
@@ -138,6 +141,7 @@ export class AudioProcessorService {
                     format,
                     message: audioData.message,
                     volume: audioData.volume ?? 1,
+                    timingId: audioData.timingId,
                     voice: {
                         providerName: audioData.voice.providerName,
                         voiceId: audioData.voice.voiceId,
@@ -146,6 +150,14 @@ export class AudioProcessorService {
                     },
                 });
                 this.logger.log('Sent audio data to renderer', { format, message: audioData.message });
+                if (audioData.timingId) {
+                    this.renderTimingService.log({
+                        id: audioData.timingId,
+                        stage: 'transfer',
+                        audioBytes: audioBuffer.length,
+                        ms: Date.now() - transferStarted,
+                    });
+                }
             } else {
                 this.logger.warn('Main window not available, cannot send audio to renderer');
             }

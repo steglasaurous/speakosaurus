@@ -52,6 +52,10 @@
         "filter": [
           "**/*"
         ]
+      },
+      {
+        "from": "scripts/piper_http_server_wrapper.py",
+        "to": "piper/piper_http_server_wrapper.py"
       }
     ]
   },

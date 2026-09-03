@@ -419,6 +419,20 @@
           </ng-container>
           </ng-container>
         </div>
+        <div *ngIf="activeTab === 'Debugging'" class="tab-extra-action">
+          <div>
+            <h3>Logs folder</h3>
+            <p>Opens the folder that contains render-timing.log in your file manager.</p>
+          </div>
+          <button
+            type="button"
+            class="open-logs-button"
+            (click)="openLogsFolder()"
+            [disabled]="openingLogsFolder || saving || loading"
+          >
+            {{ openingLogsFolder ? 'Opening...' : 'Open logs folder' }}
+          </button>
+        </div>
         <div *ngIf="activeTab === 'Default Voices'" class="pronoun-population-action">
           <div>
             <h3>Populate User Pronouns</h3>

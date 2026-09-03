@@ -34,6 +34,8 @@ export enum Setting {
   PIPER_ENABLED = 'piperEnabled',
   PIPER_USE_BUILT_IN = 'piperUseBuiltIn',
   PIPER_HTTP_URL = 'piperHttpUrl',
+  PIPER_CPU_THREADS = 'piperCpuThreads',
+  LOG_RENDER_TIMING = 'logRenderTiming',
   IGNORED_USERS = 'ignoredUsers',
   WORD_REPLACEMENTS = 'wordReplacements',
   STREAMERBOT_ACTION_INTRO = 'streamerbotActionIntro',
@@ -60,6 +62,7 @@ export enum SettingGroup {
   GENERAL = 'General',
   DEFAULT_VOICES = 'Default Voices',
   TTS_PROVIDERS = 'TTS Providers',
+  DEBUGGING = 'Debugging',
   INTERNAL = 'Internal',
   STREAMERBOT_ACTIONS = 'StreamerBot Actions',
 }
@@ -428,6 +431,32 @@ export class SettingsService {
       subGroup: 'Piper',
       description: 'External Piper HTTP URL (used when the built-in instance is off)',
       type: SettingType.STRING,
+    },
+    {
+      name: Setting.PIPER_CPU_THREADS,
+      displayName: 'CPU threads',
+      group: SettingGroup.TTS_PROVIDERS,
+      subGroup: 'Piper',
+      description:
+        'Limits how many CPU threads the built-in Piper server may use. Lower values leave more CPU for games and streaming; synthesis may take longer. Auto uses all cores. Only applies to the built-in instance; saving restarts Piper.',
+      type: SettingType.ENUM,
+      default: '2',
+      options: ['auto', '1', '2', '4'],
+      optionDescriptions: {
+        auto: 'Use all CPU cores (fastest synthesis, may hitch games)',
+        '1': 'One thread (least impact on games)',
+        '2': 'Two threads (recommended)',
+        '4': 'Four threads',
+      },
+    },
+    {
+      name: Setting.LOG_RENDER_TIMING,
+      displayName: 'Log message rendering times',
+      group: SettingGroup.DEBUGGING,
+      description:
+        'When enabled, writes per-utterance TTS timings (render, transfer to the renderer, decode) as JSON lines to render-timing.log in the app logs folder under user data (Speakosaurus/logs/render-timing.log). Applies to all voice providers.',
+      type: SettingType.BOOLEAN,
+      default: 'false',
     },
     {
       name: Setting.IGNORED_USERS,

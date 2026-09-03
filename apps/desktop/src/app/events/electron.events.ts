@@ -4,6 +4,8 @@
  */
 
 import { app, ipcMain, shell } from 'electron';
+import { mkdirSync } from 'fs';
+import { join } from 'path';
 import { environment } from '../../environments/environment';
 
 export default class ElectronEvents {
@@ -31,6 +33,22 @@ ipcMain.handle('open-external-url', async (event, url: string) => {
     return { success: true };
   } catch (error) {
     console.error('Error opening external URL:', error);
+    return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
+  }
+});
+
+// Open the app logs folder in the OS file manager (Explorer, Nautilus, etc.)
+ipcMain.handle('open-logs-folder', async () => {
+  try {
+    const logsDir = join(app.getPath('userData'), 'logs');
+    mkdirSync(logsDir, { recursive: true });
+    const errorMessage = await shell.openPath(logsDir);
+    if (errorMessage) {
+      return { success: false, error: errorMessage };
+    }
+    return { success: true };
+  } catch (error) {
+    console.error('Error opening logs folder:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 });
