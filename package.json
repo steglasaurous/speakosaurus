@@ -1,5 +1,5 @@
 {
-  "name": "@speakmanager2/source",
+  "name": "@speakosaurus/source",
   "version": "0.1.5",
   "license": "MIT",
   "scripts": {
@@ -28,9 +28,9 @@
   },
   "private": true,
   "build": {
-    "productName": "speakmanager2",
-    "appId": "com.speakmanager2.app",
-    "executableName": "speakmanager2",
+    "productName": "Speakosaurus",
+    "appId": "com.speakosaurus.app",
+    "executableName": "Speakosaurus",
     "win": {
       "sign": false
     },

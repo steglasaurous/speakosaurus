@@ -159,7 +159,7 @@ export class PiperVoiceCatalogService {
       maxContentLength: Infinity,
       maxBodyLength: Infinity,
       headers: {
-        'User-Agent': 'speakmanager2',
+        'User-Agent': 'Speakosaurus',
       },
     });
 

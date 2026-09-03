@@ -409,15 +409,15 @@ export class SettingsService {
       group: SettingGroup.TTS_PROVIDERS,
       subGroup: 'Piper',
       subGroupDescription: `
-        <p>SpeakManager can auto-start a bundled Piper TTS server on <strong>Windows and Linux</strong>.
+        <p>Speakosaurus can auto-start a bundled Piper TTS server on <strong>Windows and Linux</strong>.
         Leave <strong>Use built-in Piper instance</strong> enabled (recommended) to run that server.</p>
         <p>To use your own Piper HTTP server instead, turn the checkbox off and set the base URL without a
         trailing path (e.g. <code>http://localhost:5000</code>). Saving then stops the bundled server.</p>
         <p>Extra voices: drop matching <code>Name.onnx</code> and <code>Name.onnx.json</code> files into the
         app voices folder under your user data directory
-        (<code>…/speakmanager2/piper/voices</code>). They appear in the voice list without restarting the app.</p>
+        (<code>…/Speakosaurus/piper/voices</code>). They appear in the voice list without restarting the app.</p>
       `,
-      description: 'Start SpeakManager’s bundled Piper TTS server instead of an external URL',
+      description: 'Start Speakosaurus’s bundled Piper TTS server instead of an external URL',
       type: SettingType.BOOLEAN,
       default: 'true',
     },

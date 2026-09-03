@@ -1,8 +1,10 @@
 import SquirrelEvents from './app/events/squirrel.events';
 import ElectronEvents from './app/events/electron.events';
 import { app, BrowserWindow } from 'electron';
+import { existsSync, cpSync, mkdirSync } from 'fs';
+import { join } from 'path';
 import App from './app/app';
-import { electronAppName } from './app/constants';
+import { electronAppName, previousElectronAppName } from './app/constants';
 
 // Linux dev: Chromium's setuid sandbox often fails without chrome-sandbox (containers, etc.).
 // Set ELECTRON_DISABLE_SANDBOX=1 to force off on any platform when debugging packaged builds.
@@ -16,6 +18,7 @@ if (
 export default class Main {
   static initialize() {
     // Force a stable runtime app name so Electron resolves userData predictably.
+    Main.migrateUserDataIfRenamed();
     app.setName(electronAppName);
 
     if (SquirrelEvents.handleEvents()) {
@@ -35,6 +38,34 @@ export default class Main {
     if (!App.isDevelopmentMode()) {
       // UpdateEvents.initAutoUpdateService();
     }
+  }
+
+  /**
+   * Copy settings/database from the previous app-name userData folder
+   * so a rename does not look like a fresh install.
+   */
+  private static migrateUserDataIfRenamed() {
+    if (previousElectronAppName === electronAppName) {
+      return;
+    }
+
+    app.setName(previousElectronAppName);
+    const previousUserData = app.getPath('userData');
+    app.setName(electronAppName);
+    const userData = app.getPath('userData');
+
+    if (previousUserData === userData || !existsSync(previousUserData)) {
+      return;
+    }
+
+    const previousDatabase = join(previousUserData, 'database.sqlite');
+    const newDatabase = join(userData, 'database.sqlite');
+    if (!existsSync(previousDatabase) || existsSync(newDatabase)) {
+      return;
+    }
+
+    mkdirSync(userData, { recursive: true });
+    cpSync(previousUserData, userData, { recursive: true });
   }
 
   static setupErrorHandlers() {

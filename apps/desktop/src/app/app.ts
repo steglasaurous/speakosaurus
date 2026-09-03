@@ -1,5 +1,5 @@
 import { BrowserWindow, shell, screen } from 'electron';
-import { rendererAppName, rendererAppPort } from './constants';
+import { rendererAppName, rendererAppPort, electronAppName } from './constants';
 import { environment } from '../environments/environment';
 import { join } from 'path';
 import { format } from 'url';
@@ -108,7 +108,7 @@ export default class App {
     });
     
     const config = new DocumentBuilder()
-      .setTitle('Speak Manager API')
+      .setTitle('Speakosaurus API')
       .setDescription('API for managing voice providers and voices')
       .setVersion('1.0')
       .build();
@@ -159,6 +159,7 @@ export default class App {
     App.mainWindow = new BrowserWindow({
       width: width,
       height: height,
+      title: electronAppName,
       show: false,
       webPreferences: {
         contextIsolation: true,

@@ -1,11 +1,11 @@
 {
-  "name": "speakmanager2",
-  "productName": "speakmanager2",
+  "name": "speakosaurus",
+  "productName": "Speakosaurus",
   "main": "index.js",
   "build": {
-    "executableName": "speakmanager2",
-    "appId": "com.speakmanager2.app",
-    "productName": "speakmanager2",
+    "executableName": "Speakosaurus",
+    "appId": "com.speakosaurus.app",
+    "productName": "Speakosaurus",
     "linux": {
       "target": ["AppImage"],
       "category": "Utility"

@@ -34,7 +34,7 @@ export class MigrationService {
       let resourcesPath = process.resourcesPath;
       if (!resourcesPath) {
         // Fallback: calculate from execPath (executable location)
-        // Structure: .../win-unpacked/SpeakManager2.exe -> .../win-unpacked/resources
+        // Structure: .../win-unpacked/Speakosaurus.exe -> .../win-unpacked/resources
         resourcesPath = join(process.execPath, '..', '..', 'resources');
       }
       const resourcesDrizzlePath = join(resourcesPath, 'drizzle');

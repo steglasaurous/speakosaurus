@@ -15,7 +15,7 @@ import { filter } from 'rxjs/operators';
   styleUrl: './app.scss',
 })
 export class App implements OnInit, OnDestroy {
-  protected title = 'client';
+  protected title = 'Speakosaurus';
   settingsModalOpen = false;
   playgroundModalOpen = false;
   private audioService = inject(AudioService);

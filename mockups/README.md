@@ -1,6 +1,6 @@
-# Speak Manager UI Mockups
+# Speakosaurus UI Mockups
 
-This directory contains HTML mockups for the Speak Manager application UI.
+This directory contains HTML mockups for the Speakosaurus application UI.
 
 ## Viewing the Mockups
 
