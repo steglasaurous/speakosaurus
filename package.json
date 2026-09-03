@@ -1,6 +1,6 @@
 {
   "name": "@speakosaurus/source",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "license": "MIT",
   "scripts": {
     "db:generate": "drizzle-kit generate",
