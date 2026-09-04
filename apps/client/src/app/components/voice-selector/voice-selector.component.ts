@@ -9,7 +9,7 @@ import {
   SimpleChanges,
   inject,
 } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { VoicesService, Voice, VoiceTweakSettings, DEFAULT_VOICE_TWEAKS } from '../../services/voices.service';
 import { SettingsService } from '../../services/settings.service';
@@ -56,7 +56,7 @@ const PROVIDER_LABELS: Record<string, string> = {
 @Component({
   selector: 'app-voice-selector',
   standalone: true,
-  imports: [CommonModule, FormsModule, VoiceTweaksComponent],
+  imports: [FormsModule, VoiceTweaksComponent],
   templateUrl: './voice-selector.component.html',
   styleUrl: './voice-selector.component.scss',
   host: {

@@ -1,5 +1,5 @@
 import { Component, inject, OnDestroy, OnInit } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { Router, RouterModule, NavigationEnd } from '@angular/router';
 import { StatusBarComponent } from './components/status-bar/status-bar.component';
 import { SettingsComponent } from './components/settings/settings.component';
@@ -9,7 +9,7 @@ import { SettingsService } from './services/settings.service';
 import { filter } from 'rxjs/operators';
 
 @Component({
-  imports: [CommonModule, RouterModule, StatusBarComponent, SettingsComponent, VoicePlaygroundComponent],
+  imports: [RouterModule, StatusBarComponent, SettingsComponent, VoicePlaygroundComponent],
   selector: 'app-root',
   templateUrl: './app.html',
   styleUrl: './app.scss',

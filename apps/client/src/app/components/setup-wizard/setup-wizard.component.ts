@@ -1,5 +1,5 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import { SettingsService, Setting } from '../../services/settings.service';
@@ -12,7 +12,7 @@ enum SetupStep {
 @Component({
   selector: 'app-setup-wizard',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './setup-wizard.component.html',
   styleUrl: './setup-wizard.component.scss',
 })

@@ -4,34 +4,36 @@
 ></app-status-bar>
 <router-outlet></router-outlet>
 
-<div
-  *ngIf="settingsModalOpen"
-  class="settings-modal"
-  role="dialog"
-  aria-modal="true"
-  aria-label="Settings"
-  (click)="settings.requestClose()"
-  (keydown.escape)="settings.requestClose(); $event.stopPropagation()"
->
-  <app-settings
-    #settings
-    [modalMode]="true"
-    (closed)="closeSettings()"
-    (click)="$event.stopPropagation()"
-  ></app-settings>
-</div>
+@if (settingsModalOpen) {
+  <div
+    class="settings-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Settings"
+    (click)="settings.requestClose()"
+    (keydown.escape)="settings.requestClose(); $event.stopPropagation()"
+    >
+    <app-settings
+      #settings
+      [modalMode]="true"
+      (closed)="closeSettings()"
+      (click)="$event.stopPropagation()"
+    ></app-settings>
+  </div>
+}
 
-<div
-  *ngIf="playgroundModalOpen"
-  class="playground-modal"
-  role="dialog"
-  aria-modal="true"
-  aria-label="Voice playground"
-  (click)="playground.requestClose()"
-  (keydown.escape)="playground.requestClose(); $event.stopPropagation()"
->
-  <app-voice-playground
-    #playground
-    (closed)="closePlayground()"
-  ></app-voice-playground>
-</div>
+@if (playgroundModalOpen) {
+  <div
+    class="playground-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Voice playground"
+    (click)="playground.requestClose()"
+    (keydown.escape)="playground.requestClose(); $event.stopPropagation()"
+    >
+    <app-voice-playground
+      #playground
+      (closed)="closePlayground()"
+    ></app-voice-playground>
+  </div>
+}

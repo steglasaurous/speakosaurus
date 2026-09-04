@@ -1,5 +1,5 @@
 import { Component, ElementRef, EventEmitter, HostListener, Input, OnInit, Output, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -31,7 +31,7 @@ interface GroupedSettings {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, VoiceSelectorComponent],
+  imports: [FormsModule, RouterModule, VoiceSelectorComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })

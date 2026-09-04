@@ -1,29 +1,38 @@
-<div class="form-group" *ngIf="!isEmbedded">
-  <label [for]="inputId" *ngIf="showLabel">
-    <ng-content select="[slot=label]">Voice</ng-content>
-    <span class="label-hint" *ngIf="hint">{{ hint }}</span>
-  </label>
-
-  <button
-    type="button"
-    class="voice-trigger"
-    [id]="inputId"
-    (click)="openModal()"
-    [attr.aria-haspopup]="'dialog'"
-    [attr.aria-expanded]="modalOpen"
-  >
-    <span class="provider-pill" *ngIf="selectedVoice">{{ selectedVoice.providerName }}</span>
-    <span class="provider-pill empty" *ngIf="!selectedVoice">voice</span>
-    <span class="trigger-meta">
-      <span class="trigger-name">{{ displayName }}</span>
-      <span class="trigger-detail">{{ displayDetail }}</span>
-    </span>
-    <span class="change-hint">Change</span>
-    <svg class="chevron" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
-    </svg>
-  </button>
-</div>
+@if (!isEmbedded) {
+  <div class="form-group">
+    @if (showLabel) {
+      <label [for]="inputId">
+        <ng-content select="[slot=label]">Voice</ng-content>
+        @if (hint) {
+          <span class="label-hint">{{ hint }}</span>
+        }
+      </label>
+    }
+    <button
+      type="button"
+      class="voice-trigger"
+      [id]="inputId"
+      (click)="openModal()"
+      [attr.aria-haspopup]="'dialog'"
+      [attr.aria-expanded]="modalOpen"
+      >
+      @if (selectedVoice) {
+        <span class="provider-pill">{{ selectedVoice.providerName }}</span>
+      }
+      @if (!selectedVoice) {
+        <span class="provider-pill empty">voice</span>
+      }
+      <span class="trigger-meta">
+        <span class="trigger-name">{{ displayName }}</span>
+        <span class="trigger-detail">{{ displayDetail }}</span>
+      </span>
+      <span class="change-hint">Change</span>
+      <svg class="chevron" width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+      </svg>
+    </button>
+  </div>
+}
 
 @if (isPickerVisible) {
   <div
@@ -32,7 +41,7 @@
     (click)="onOverlayClick($event)"
     (keydown)="onOverlayKeydown($event)"
     role="presentation"
-  >
+    >
     <div
       class="voice-picker-modal"
       [class.embedded]="isEmbedded"
@@ -42,14 +51,18 @@
       [attr.aria-labelledby]="isEmbedded ? null : 'voice-picker-title'"
       (click)="$event.stopPropagation()"
       (keydown)="$event.stopPropagation()"
-    >
+      >
       @if (!isEmbedded) {
         <header class="modal-header">
           <h2 id="voice-picker-title">Choose a voice</h2>
-          <span class="current-chip" *ngIf="selectedVoice">
-            Currently: {{ selectedVoice.providerName }} — {{ selectedVoice.voiceName }}
-          </span>
-          <span class="current-chip" *ngIf="!selectedVoice">No voice selected</span>
+          @if (selectedVoice) {
+            <span class="current-chip">
+              Currently: {{ selectedVoice.providerName }} — {{ selectedVoice.voiceName }}
+            </span>
+          }
+          @if (!selectedVoice) {
+            <span class="current-chip">No voice selected</span>
+          }
           <button type="button" class="icon-btn" (click)="closeModal()" aria-label="Close">
             <svg width="18" height="18" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -65,7 +78,7 @@
             class="filter-section-header"
             (click)="toggleFilterSection('provider')"
             [attr.aria-expanded]="isFilterSectionExpanded('provider')"
-          >
+            >
             <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
@@ -84,7 +97,7 @@
                   [class.fav-nav]="item.favourite"
                   [class.custom-nav]="item.custom"
                   (click)="setProviderFilter(item.key)"
-                >
+                  >
                   <span class="label">
                     @if (item.favourite) {
                       <span>★ </span>
@@ -104,7 +117,7 @@
             class="filter-section-header"
             (click)="toggleFilterSection('language')"
             [attr.aria-expanded]="isFilterSectionExpanded('language')"
-          >
+            >
             <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
@@ -121,7 +134,7 @@
                   class="filter-nav-btn"
                   [class.active]="languageFilter === item.key"
                   (click)="setLanguageFilter(item.key)"
-                >
+                  >
                   <span class="label">{{ item.label }}</span>
                   <span class="count">{{ item.count }}</span>
                 </button>
@@ -136,7 +149,7 @@
             class="filter-section-header"
             (click)="toggleFilterSection('locale')"
             [attr.aria-expanded]="isFilterSectionExpanded('locale')"
-          >
+            >
             <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
@@ -153,7 +166,7 @@
                   class="filter-nav-btn"
                   [class.active]="localeFilter === item.key"
                   (click)="setLocaleFilter(item.key)"
-                >
+                  >
                   <span class="label">{{ item.label }}</span>
                   <span class="count">{{ item.count }}</span>
                 </button>
@@ -168,7 +181,7 @@
             class="filter-section-header"
             (click)="toggleFilterSection('gender')"
             [attr.aria-expanded]="isFilterSectionExpanded('gender')"
-          >
+            >
             <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
@@ -185,7 +198,7 @@
                   class="filter-nav-btn"
                   [class.active]="genderFilter === item.key"
                   (click)="setGenderFilter(item.key)"
-                >
+                  >
                   <span class="label">{{ item.label }}</span>
                   <span class="count">{{ item.count }}</span>
                 </button>
@@ -200,7 +213,7 @@
             class="filter-section-header"
             (click)="toggleFilterSection('availability')"
             [attr.aria-expanded]="isFilterSectionExpanded('availability')"
-          >
+            >
             <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
             </svg>
@@ -217,7 +230,7 @@
                   type="checkbox"
                   [ngModel]="unassignedOnly"
                   (ngModelChange)="onUnassignedChange($event)"
-                >
+                  >
                 <span class="slider"></span>
               </span>
             </label>
@@ -228,7 +241,7 @@
                   type="checkbox"
                   [ngModel]="piperDownloadedOnly"
                   (ngModelChange)="onPiperDownloadedChange($event)"
-                >
+                  >
                 <span class="slider"></span>
               </span>
             </label>
@@ -240,7 +253,7 @@
           class="clear-filters"
           [disabled]="!filtersActive"
           (click)="clearFilters()"
-        >
+          >
           Clear filters
         </button>
       </aside>
@@ -258,7 +271,7 @@
               [ngModel]="searchQuery"
               (ngModelChange)="onSearchChange($event)"
               autocomplete="off"
-            >
+              >
           </div>
           <span class="result-meta">{{ resultCountLabel }}</span>
         </div>
@@ -268,14 +281,14 @@
             <section
               class="voice-group"
               [class.collapsed]="isGroupCollapsed(voiceGroup.key)"
-            >
+              >
               <button
                 type="button"
                 class="group-header"
                 [class.fav]="voiceGroup.key === 'favourites'"
                 [class.custom]="voiceGroup.key === 'custom'"
                 (click)="toggleGroup(voiceGroup.key)"
-              >
+                >
                 <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                   <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
                 </svg>
@@ -297,7 +310,7 @@
                     role="option"
                     tabindex="0"
                     [attr.aria-selected]="isPending(voice)"
-                  >
+                    >
                     <button
                       type="button"
                       class="star-btn"
@@ -305,7 +318,7 @@
                       (click)="toggleFavourite($event, voice)"
                       [attr.title]="isFavourite(voice) ? 'Remove favourite' : 'Add favourite'"
                       [attr.aria-label]="isFavourite(voice) ? 'Remove favourite' : 'Add favourite'"
-                    >
+                      >
                       <svg
                         width="16"
                         height="16"
@@ -313,7 +326,7 @@
                         [attr.fill]="isFavourite(voice) ? 'currentColor' : 'none'"
                         stroke="currentColor"
                         stroke-width="2"
-                      >
+                        >
                         <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
                       </svg>
                     </button>
@@ -358,7 +371,7 @@
                         (click)="downloadVoice($event, voice)"
                         [attr.aria-label]="'Download ' + voice.voiceName"
                         [title]="downloadTitle(voice)"
-                      >
+                        >
                         @if (isDownloading(voice)) {
                           <span class="download-spinner" aria-hidden="true"></span>
                         } @else {
@@ -375,7 +388,7 @@
                         (click)="playPreview($event, voice)"
                         [attr.aria-label]="'Preview ' + voice.voiceName"
                         title="Preview voice"
-                      >
+                        >
                         @if (!isPlaying(voice)) {
                           <svg width="12" height="12" fill="currentColor" viewBox="0 0 24 24">
                             <path d="M8 5v14l11-7z"/>
@@ -413,7 +426,7 @@
                 class="btn btn-primary play-selected"
                 [disabled]="!pendingVoice || playingSelected || pendingVoice.needsDownload"
                 (click)="playSelected()"
-              >
+                >
                 {{ playingSelected ? 'Playing…' : 'Play selected voice' }}
               </button>
             </div>
@@ -438,7 +451,7 @@
               class="btn btn-primary"
               [disabled]="!canApply"
               (click)="applySelection()"
-            >
+              >
               Select voice
             </button>
           </div>

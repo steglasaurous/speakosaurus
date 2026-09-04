@@ -1,5 +1,5 @@
 import { Component, inject, OnInit, OnDestroy, ChangeDetectorRef, ViewChild, ElementRef } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { Subject, firstValueFrom, Subscription } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
@@ -11,7 +11,7 @@ import { UserDetailComponent } from '../user-detail/user-detail.component';
 @Component({
   selector: 'app-user-list',
   standalone: true,
-  imports: [CommonModule, FormsModule, UserDetailComponent],
+  imports: [FormsModule, UserDetailComponent],
   templateUrl: './user-list.component.html',
   styleUrl: './user-list.component.scss',
 })

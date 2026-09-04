@@ -6,449 +6,512 @@
         class="back-button"
         (click)="onBackClick($event)"
         [attr.aria-label]="modalMode ? 'Close settings' : 'Go back to users list'"
-      >
-        <svg *ngIf="!modalMode" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-        </svg>
-        <svg *ngIf="modalMode" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"></path>
-        </svg>
+        >
+        @if (!modalMode) {
+          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        }
+        @if (modalMode) {
+          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"></path>
+          </svg>
+        }
       </button>
       <h1>Settings</h1>
     </div>
-    <button 
-      class="save-all-button" 
-      (click)="saveAllSettings()" 
+    <button
+      class="save-all-button"
+      (click)="saveAllSettings()"
       [disabled]="saving || populatingPronouns || loading || !hasUnsavedChanges()"
-    >
+      >
       {{ saving ? 'Saving...' : 'Save Changes' }}
     </button>
   </div>
 
-  <div *ngIf="loading" class="loading-state">
-    <p>Loading settings...</p>
-  </div>
-
-  <div *ngIf="error" class="error-state">
-    <p>{{ error }}</p>
-  </div>
-
-  <div *ngIf="successMessage" class="success-state">
-    <p>{{ successMessage }}</p>
-  </div>
-
-  <div *ngIf="!loading && groupedSettings.length > 0" class="settings-content">
-    <div class="tabs">
-      <button
-        *ngFor="let group of groupedSettings"
-        class="tab-button"
-        [class.active]="activeTab === group.group"
-        (click)="selectTab(group.group)"
-      >
-        {{ group.group }}
-      </button>
+  @if (loading) {
+    <div class="loading-state">
+      <p>Loading settings...</p>
     </div>
+  }
 
-    <div class="tab-content">
-      <ng-container *ngIf="getSettingsForActiveTab()">
-        <div
-          *ngFor="let subGroup of getSettingsForActiveTab()!.subGroups"
-          class="subgroup-container"
-          [class.collapsed]="!isSubGroupEnabled(subGroup)"
-        >
-          <div *ngIf="subGroup.subGroup" class="subgroup-header-row">
-            <h3 class="subgroup-header">{{ subGroup.subGroup }}</h3>
-            <label
-              *ngIf="getSubGroupToggle(subGroup) as toggle"
-              class="subgroup-toggle-label"
-              [attr.for]="'setting-' + toggle.name"
-            >
-              <input
-                type="checkbox"
-                class="toggle-input"
-                [id]="'setting-' + toggle.name"
-                [checked]="getSettingValue(toggle) === 'true'"
-                (change)="onSettingChange(toggle, $any($event.target).checked)"
-              >
-              <span class="toggle-slider"></span>
-              <span class="subgroup-toggle-text">{{ getSettingValue(toggle) === 'true' ? 'Enabled' : 'Disabled' }}</span>
-            </label>
-          </div>
-          <ng-container *ngIf="isSubGroupEnabled(subGroup)">
-          <div 
-            *ngIf="getSubGroupDescription(getSettingsForActiveTab()!.group, subGroup.subGroup)" 
-            class="subgroup-description"
-            [innerHTML]="getSubGroupDescription(getSettingsForActiveTab()!.group, subGroup.subGroup)"
-            (click)="onSubGroupDescriptionClick($event)"
-          ></div>
-          <ng-container *ngFor="let setting of subGroup.settings">
-          <div *ngIf="isSettingVisible(setting)" class="setting-item">
-            <div class="setting-header">
-              <label [for]="'setting-' + setting.name" class="setting-label">
-                {{ setting.displayName }}
-                <span *ngIf="setting.required" class="required-indicator">*</span>
-              </label>
-            </div>
-            <p class="setting-description">{{ setting.description }}</p>
-
-        <!-- STRING type -->
-        <div *ngIf="setting.type === 'string'" class="form-group">
-          <div class="input-wrapper" [class.has-sensitive-toggle]="setting.sensitive">
-            <input
-              [type]="setting.sensitive && !isSensitiveVisible(setting) ? 'password' : 'text'"
-              [id]="'setting-' + setting.name"
-              class="form-input"
-              [class.form-input-sensitive]="setting.sensitive"
-              [value]="getSettingValue(setting)"
-              (input)="onSettingChange(setting, $any($event.target).value)"
-              [placeholder]="setting.default || ''"
-            >
-            <button
-              *ngIf="setting.sensitive"
-              type="button"
-              class="sensitive-toggle-button"
-              (click)="toggleSensitiveVisibility(setting)"
-              [attr.aria-label]="isSensitiveVisible(setting) ? 'Hide value' : 'Show value'"
-              title="{{ isSensitiveVisible(setting) ? 'Hide value' : 'Show value' }}"
-            >
-              <svg *ngIf="!isSensitiveVisible(setting)" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
-              </svg>
-              <svg *ngIf="isSensitiveVisible(setting)" width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
-              </svg>
-            </button>
-          </div>
-        </div>
-
-        <!-- NUMBER type -->
-        <div *ngIf="setting.type === 'number'" class="form-group">
-          <input
-            type="number"
-            [id]="'setting-' + setting.name"
-            class="form-input"
-            [value]="getSettingValue(setting)"
-            (input)="onSettingChange(setting, $any($event.target).value)"
-            [placeholder]="setting.default || ''"
-          >
-        </div>
-
-        <!-- BOOLEAN type -->
-        <div *ngIf="setting.type === 'boolean'" class="form-group">
-          <label class="checkbox-label">
-            <input
-              type="checkbox"
-              [id]="'setting-' + setting.name"
-              [checked]="getSettingValue(setting) === 'true'"
-              (change)="onSettingChange(setting, $any($event.target).checked)"
-            >
-            <span>{{ getSettingValue(setting) === 'true' ? 'Enabled' : 'Disabled' }}</span>
-          </label>
-        </div>
-
-        <!-- ENUM type -->
-        <div *ngIf="setting.type === 'enum' && setting.options" class="form-group">
-          <select
-            [id]="'setting-' + setting.name"
-            class="form-select"
-            [ngModel]="getSettingValue(setting)"
-            (ngModelChange)="onSettingChange(setting, $event)"
-          >
-            <option *ngFor="let option of setting.options" [value]="option">
-              {{ getEnumOptionLabel(setting, option) }}
-            </option>
-          </select>
-        </div>
-
-        <!-- ARRAY type -->
-        <div *ngIf="setting.type === 'array'" class="form-group">
-          <div class="array-items">
-            <div
-              *ngFor="let item of parseArrayValue(setting); let i = index; trackBy: trackByIndex"
-              class="array-item"
-            >
-              <input
-                type="text"
-                class="form-input array-input"
-                [ngModel]="item"
-                (ngModelChange)="updateArrayItem(setting, i, $event)"
-                [placeholder]="'Item ' + (i + 1)"
-              >
-              <button
-                class="remove-array-item-button"
-                (click)="removeArrayItem(setting, i)"
-                type="button"
-              >
-                Remove
-              </button>
-            </div>
-            <button
-              class="add-array-item-button"
-              (click)="addArrayItem(setting)"
-              type="button"
-            >
-              + Add Item
-            </button>
-          </div>
-        </div>
-
-        <!-- WORD_REPLACEMENTS type -->
-        <div *ngIf="setting.type === 'wordReplacements'" class="form-group">
-          <div class="word-replacements">
-            <div
-              *ngFor="let item of parseWordReplacementsValue(setting); let i = index; trackBy: trackByIndex"
-              class="word-replacement-item"
-            >
-              <input
-                type="text"
-                class="form-input word-replacement-input"
-                [ngModel]="item.from"
-                (ngModelChange)="updateWordReplacementField(setting, i, 'from', $event)"
-                placeholder="Match"
-                [attr.aria-label]="'Match word or phrase ' + (i + 1)"
-              >
-              <span class="word-replacement-arrow" aria-hidden="true">→</span>
-              <input
-                type="text"
-                class="form-input word-replacement-input"
-                [ngModel]="item.to"
-                (ngModelChange)="updateWordReplacementField(setting, i, 'to', $event)"
-                placeholder="Replacement"
-                [attr.aria-label]="'Replacement ' + (i + 1)"
-              >
-              <label class="word-replacement-case">
-                <input
-                  type="checkbox"
-                  [ngModel]="item.caseSensitive"
-                  (ngModelChange)="updateWordReplacementCaseSensitive(setting, i, $event)"
-                >
-                <span>Case sensitive</span>
-              </label>
-              <button
-                class="remove-array-item-button"
-                (click)="removeWordReplacement(setting, i)"
-                type="button"
-              >
-                Remove
-              </button>
-            </div>
-            <button
-              class="add-array-item-button"
-              (click)="addWordReplacement(setting)"
-              type="button"
-            >
-              + Add replacement
-            </button>
-          </div>
-        </div>
-
-        <!-- JSON type -->
-        <div *ngIf="setting.type === 'json'" class="form-group">
-          <textarea
-            [id]="'setting-' + setting.name"
-            class="form-textarea"
-            [value]="getSettingValue(setting)"
-            (input)="onSettingChange(setting, $any($event.target).value)"
-            rows="4"
-            placeholder="Enter JSON..."
-          ></textarea>
-        </div>
-
-        <!-- VOICE type -->
-        <div *ngIf="setting.type === 'voice'">
-          <app-voice-selector
-            [selectedVoice]="selectedVoices[setting.name]"
-            [assignmentTweaks]="selectedVoices[setting.name]?.tweaks"
-            [inputId]="'setting-' + setting.name"
-            [showLabel]="false"
-            (voiceSelected)="onVoiceSelected(setting, $event)"
-          >
-          </app-voice-selector>
-        </div>
-
-        <!-- STREAMERBOT_ACTION type -->
-        <div *ngIf="setting.type === 'streamerbotAction'" class="form-group">
-          <div class="streamerbot-action-container">
-            <!-- Auto-complete input -->
-            <div class="streamerbot-action-autocomplete-wrapper">
-              <input
-                type="text"
-                class="form-input streamerbot-action-search-input"
-                [id]="'setting-' + setting.name + '-search'"
-                [value]="streamerBotActionSearchQueries[setting.name] || getStreamerBotActionDisplayName(setting) || ''"
-                (input)="onStreamerBotActionSearchInput(setting, $any($event.target).value)"
-                (focus)="onStreamerBotActionFocus(setting)"
-                (blur)="onStreamerBotActionBlur(setting)"
-                placeholder="Search for StreamerBot actions..."
-              >
-              <div *ngIf="streamerBotActionSearching[setting.name]" class="streamerbot-action-loading">
-                <div class="spinner-small"></div>
-              </div>
-
-              <!-- Dropdown results -->
-              <div
-                *ngIf="streamerBotActionShowDropdown[setting.name] && streamerBotActionSearchResults[setting.name] && streamerBotActionSearchResults[setting.name].length > 0"
-                class="streamerbot-action-dropdown"
-                [class.streamerbot-action-dropdown-above]="streamerBotActionDropdownAbove[setting.name]"
-              >
-                <div
-                  *ngFor="let action of streamerBotActionSearchResults[setting.name]"
-                  class="streamerbot-action-dropdown-item"
-                  (mousedown)="selectStreamerBotAction(setting, action); $event.preventDefault()"
-                >
-                  <div class="streamerbot-action-dropdown-info">
-                    <div class="streamerbot-action-dropdown-name">{{ action.name }}</div>
-                    <div *ngIf="action.group" class="streamerbot-action-dropdown-group">{{ action.group }}</div>
-                  </div>
-                </div>
-              </div>
-              <div
-                *ngIf="streamerBotActionShowDropdown[setting.name] && !streamerBotActionSearching[setting.name] && (!streamerBotActionSearchResults[setting.name] || streamerBotActionSearchResults[setting.name].length === 0) && (streamerBotActionSearchQueries[setting.name] || '').trim().length > 0"
-                class="streamerbot-action-dropdown-empty"
-                [class.streamerbot-action-dropdown-above]="streamerBotActionDropdownAbove[setting.name]"
-              >
-                No actions found
-              </div>
-            </div>
-            <!-- Display selected action -->
-            <div *ngIf="getStreamerBotActionDisplayName(setting)" class="streamerbot-action-selected">
-              <span class="streamerbot-action-selected-name">{{ getStreamerBotActionDisplayName(setting) }}</span>
-              <button
-                class="remove-streamerbot-action-button"
-                (click)="clearStreamerBotAction(setting)"
-                type="button"
-                title="Clear action"
-              >
-                ×
-              </button>
-            </div>
-          </div>
-        </div>
-
-        <!-- USER_LIST type -->
-        <div *ngIf="setting.type === 'userList'" class="form-group">
-          <div class="user-list-container">
-            <!-- Current users list -->
-            <div class="user-list-items">
-              <div
-                *ngFor="let username of parseUserListValue(setting); let i = index; trackBy: trackByIndex"
-                class="user-list-item"
-              >
-                <span class="user-list-username">{{ username }}</span>
-                <button
-                  class="remove-user-button"
-                  (click)="removeUserFromList(setting, i)"
-                  type="button"
-                  title="Remove user"
-                >
-                  ×
-                </button>
-              </div>
-            </div>
-
-            <!-- Auto-complete input -->
-            <div class="user-list-autocomplete-wrapper">
-              <input
-                type="text"
-                class="form-input user-list-search-input"
-                [id]="'setting-' + setting.name + '-search'"
-                [value]="userListSearchQueries[setting.name] || ''"
-                (input)="onUserListSearchInput(setting, $any($event.target).value)"
-                (focus)="onUserListFocus(setting)"
-                (blur)="onUserListBlur(setting)"
-                placeholder="Search for Twitch users..."
-              >
-              <div *ngIf="userListSearching[setting.name]" class="user-list-loading">
-                <div class="spinner-small"></div>
-              </div>
-
-              <!-- Dropdown results -->
-              <div
-                *ngIf="userListShowDropdown[setting.name] && ((userListLocalUsers[setting.name] && userListLocalUsers[setting.name].length > 0) || (userListSearchResults[setting.name] && userListSearchResults[setting.name].length > 0))"
-                class="user-list-dropdown"
-                [class.user-list-dropdown-above]="userListDropdownAbove[setting.name]"
-              >
-                <!-- Local users group -->
-                <div *ngIf="userListLocalUsers[setting.name] && userListLocalUsers[setting.name].length > 0" class="user-list-group">
-                  <div class="user-list-group-header">Users in System</div>
-                  <div
-                    *ngFor="let user of userListLocalUsers[setting.name]"
-                    class="user-list-dropdown-item"
-                    (mousedown)="addLocalUserToList(setting, user); $event.preventDefault()"
-                  >
-                    <div class="user-list-dropdown-info">
-                      <div class="user-list-dropdown-name">{{ user.twitchUsername }}</div>
-                      <div *ngIf="user.ttsName && user.ttsName !== user.twitchUsername" class="user-list-dropdown-login">{{ user.ttsName }}</div>
-                    </div>
-                  </div>
-                </div>
-
-                <!-- Twitch users group -->
-                <div *ngIf="userListSearchResults[setting.name] && userListSearchResults[setting.name].length > 0" class="user-list-group">
-                  <div class="user-list-group-header">Twitch Users</div>
-                  <div
-                    *ngFor="let twitchUser of userListSearchResults[setting.name]"
-                    class="user-list-dropdown-item"
-                    (mousedown)="addUserToList(setting, twitchUser); $event.preventDefault()"
-                  >
-                    <img
-                      *ngIf="twitchUser.profile_image_url"
-                      [src]="twitchUser.profile_image_url"
-                      [alt]="twitchUser.display_name"
-                      class="user-list-avatar"
-                    >
-                    <div class="user-list-dropdown-info">
-                      <div class="user-list-dropdown-name">{{ twitchUser.display_name }}</div>
-                      <div class="user-list-dropdown-login">&#64;{{ twitchUser.login }}</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              <div
-                *ngIf="userListShowDropdown[setting.name] && !userListSearching[setting.name] && (!userListLocalUsers[setting.name] || userListLocalUsers[setting.name].length === 0) && (!userListSearchResults[setting.name] || userListSearchResults[setting.name].length === 0) && (userListSearchQueries[setting.name] || '').trim().length > 0"
-                class="user-list-dropdown-empty"
-                [class.user-list-dropdown-above]="userListDropdownAbove[setting.name]"
-              >
-                No users found
-              </div>
-            </div>
-          </div>
-        </div>
-          </div>
-          </ng-container>
-          </ng-container>
-        </div>
-        <div *ngIf="activeTab === 'Debugging'" class="tab-extra-action">
-          <div>
-            <h3>Logs folder</h3>
-            <p>Opens the folder that contains render-timing.log in your file manager.</p>
-          </div>
-          <button
-            type="button"
-            class="open-logs-button"
-            (click)="openLogsFolder()"
-            [disabled]="openingLogsFolder || saving || loading"
-          >
-            {{ openingLogsFolder ? 'Opening...' : 'Open logs folder' }}
-          </button>
-        </div>
-        <div *ngIf="activeTab === 'Default Voices'" class="pronoun-population-action">
-          <div>
-            <h3>Populate User Pronouns</h3>
-            <p>Query and populate pronouns for every user who does not already have them set.</p>
-          </div>
-          <button
-            type="button"
-            class="populate-pronouns-button"
-            (click)="populateMissingPronouns()"
-            [disabled]="populatingPronouns || saving || loading"
-          >
-            {{ populatingPronouns ? 'Checking Pronouns...' : 'Populate Pronouns' }}
-          </button>
-        </div>
-      </ng-container>
+  @if (error) {
+    <div class="error-state">
+      <p>{{ error }}</p>
     </div>
-  </div>
+  }
+
+  @if (successMessage) {
+    <div class="success-state">
+      <p>{{ successMessage }}</p>
+    </div>
+  }
+
+  @if (!loading && groupedSettings.length > 0) {
+    <div class="settings-content">
+      <div class="tabs">
+        @for (group of groupedSettings; track group) {
+          <button
+            class="tab-button"
+            [class.active]="activeTab === group.group"
+            (click)="selectTab(group.group)"
+            >
+            {{ group.group }}
+          </button>
+        }
+      </div>
+      <div class="tab-content">
+        @if (getSettingsForActiveTab()) {
+          @for (subGroup of getSettingsForActiveTab()!.subGroups; track subGroup) {
+            <div
+              class="subgroup-container"
+              [class.collapsed]="!isSubGroupEnabled(subGroup)"
+              >
+              @if (subGroup.subGroup) {
+                <div class="subgroup-header-row">
+                  <h3 class="subgroup-header">{{ subGroup.subGroup }}</h3>
+                  @if (getSubGroupToggle(subGroup); as toggle) {
+                    <label
+                      class="subgroup-toggle-label"
+                      [attr.for]="'setting-' + toggle.name"
+                      >
+                      <input
+                        type="checkbox"
+                        class="toggle-input"
+                        [id]="'setting-' + toggle.name"
+                        [checked]="getSettingValue(toggle) === 'true'"
+                        (change)="onSettingChange(toggle, $any($event.target).checked)"
+                        >
+                      <span class="toggle-slider"></span>
+                      <span class="subgroup-toggle-text">{{ getSettingValue(toggle) === 'true' ? 'Enabled' : 'Disabled' }}</span>
+                    </label>
+                  }
+                </div>
+              }
+              @if (isSubGroupEnabled(subGroup)) {
+                @if (getSubGroupDescription(getSettingsForActiveTab()!.group, subGroup.subGroup)) {
+                  <div
+                    class="subgroup-description"
+                    [innerHTML]="getSubGroupDescription(getSettingsForActiveTab()!.group, subGroup.subGroup)"
+                    (click)="onSubGroupDescriptionClick($event)"
+                  ></div>
+                }
+                @for (setting of subGroup.settings; track setting) {
+                  @if (isSettingVisible(setting)) {
+                    <div class="setting-item">
+                      <div class="setting-header">
+                        <label [for]="'setting-' + setting.name" class="setting-label">
+                          {{ setting.displayName }}
+                          @if (setting.required) {
+                            <span class="required-indicator">*</span>
+                          }
+                        </label>
+                      </div>
+                      <p class="setting-description">{{ setting.description }}</p>
+                      <!-- STRING type -->
+                      @if (setting.type === 'string') {
+                        <div class="form-group">
+                          <div class="input-wrapper" [class.has-sensitive-toggle]="setting.sensitive">
+                            <input
+                              [type]="setting.sensitive && !isSensitiveVisible(setting) ? 'password' : 'text'"
+                              [id]="'setting-' + setting.name"
+                              class="form-input"
+                              [class.form-input-sensitive]="setting.sensitive"
+                              [value]="getSettingValue(setting)"
+                              (input)="onSettingChange(setting, $any($event.target).value)"
+                              [placeholder]="setting.default || ''"
+                              >
+                            @if (setting.sensitive) {
+                              <button
+                                type="button"
+                                class="sensitive-toggle-button"
+                                (click)="toggleSensitiveVisibility(setting)"
+                                [attr.aria-label]="isSensitiveVisible(setting) ? 'Hide value' : 'Show value'"
+                                title="{{ isSensitiveVisible(setting) ? 'Hide value' : 'Show value' }}"
+                                >
+                                @if (!isSensitiveVisible(setting)) {
+                                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                                  </svg>
+                                }
+                                @if (isSensitiveVisible(setting)) {
+                                  <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21"></path>
+                                  </svg>
+                                }
+                              </button>
+                            }
+                          </div>
+                        </div>
+                      }
+                      <!-- NUMBER type -->
+                      @if (setting.type === 'number') {
+                        <div class="form-group">
+                          <input
+                            type="number"
+                            [id]="'setting-' + setting.name"
+                            class="form-input"
+                            [value]="getSettingValue(setting)"
+                            (input)="onSettingChange(setting, $any($event.target).value)"
+                            [placeholder]="setting.default || ''"
+                            >
+                        </div>
+                      }
+                      <!-- BOOLEAN type -->
+                      @if (setting.type === 'boolean') {
+                        <div class="form-group">
+                          <label class="checkbox-label">
+                            <input
+                              type="checkbox"
+                              [id]="'setting-' + setting.name"
+                              [checked]="getSettingValue(setting) === 'true'"
+                              (change)="onSettingChange(setting, $any($event.target).checked)"
+                              >
+                            <span>{{ getSettingValue(setting) === 'true' ? 'Enabled' : 'Disabled' }}</span>
+                          </label>
+                        </div>
+                      }
+                      <!-- ENUM type -->
+                      @if (setting.type === 'enum' && setting.options) {
+                        <div class="form-group">
+                          <select
+                            [id]="'setting-' + setting.name"
+                            class="form-select"
+                            [ngModel]="getSettingValue(setting)"
+                            (ngModelChange)="onSettingChange(setting, $event)"
+                            >
+                            @for (option of setting.options; track option) {
+                              <option [value]="option">
+                                {{ getEnumOptionLabel(setting, option) }}
+                              </option>
+                            }
+                          </select>
+                        </div>
+                      }
+                      <!-- ARRAY type -->
+                      @if (setting.type === 'array') {
+                        <div class="form-group">
+                          <div class="array-items">
+                            @for (item of parseArrayValue(setting); track $index; let i = $index) {
+                              <div
+                                class="array-item"
+                                >
+                                <input
+                                  type="text"
+                                  class="form-input array-input"
+                                  [ngModel]="item"
+                                  (ngModelChange)="updateArrayItem(setting, i, $event)"
+                                  [placeholder]="'Item ' + (i + 1)"
+                                  >
+                                <button
+                                  class="remove-array-item-button"
+                                  (click)="removeArrayItem(setting, i)"
+                                  type="button"
+                                  >
+                                  Remove
+                                </button>
+                              </div>
+                            }
+                            <button
+                              class="add-array-item-button"
+                              (click)="addArrayItem(setting)"
+                              type="button"
+                              >
+                              + Add Item
+                            </button>
+                          </div>
+                        </div>
+                      }
+                      <!-- WORD_REPLACEMENTS type -->
+                      @if (setting.type === 'wordReplacements') {
+                        <div class="form-group">
+                          <div class="word-replacements">
+                            @for (item of parseWordReplacementsValue(setting); track $index; let i = $index) {
+                              <div
+                                class="word-replacement-item"
+                                >
+                                <input
+                                  type="text"
+                                  class="form-input word-replacement-input"
+                                  [ngModel]="item.from"
+                                  (ngModelChange)="updateWordReplacementField(setting, i, 'from', $event)"
+                                  placeholder="Match"
+                                  [attr.aria-label]="'Match word or phrase ' + (i + 1)"
+                                  >
+                                <span class="word-replacement-arrow" aria-hidden="true">→</span>
+                                <input
+                                  type="text"
+                                  class="form-input word-replacement-input"
+                                  [ngModel]="item.to"
+                                  (ngModelChange)="updateWordReplacementField(setting, i, 'to', $event)"
+                                  placeholder="Replacement"
+                                  [attr.aria-label]="'Replacement ' + (i + 1)"
+                                  >
+                                <label class="word-replacement-case">
+                                  <input
+                                    type="checkbox"
+                                    [ngModel]="item.caseSensitive"
+                                    (ngModelChange)="updateWordReplacementCaseSensitive(setting, i, $event)"
+                                    >
+                                  <span>Case sensitive</span>
+                                </label>
+                                <button
+                                  class="remove-array-item-button"
+                                  (click)="removeWordReplacement(setting, i)"
+                                  type="button"
+                                  >
+                                  Remove
+                                </button>
+                              </div>
+                            }
+                            <button
+                              class="add-array-item-button"
+                              (click)="addWordReplacement(setting)"
+                              type="button"
+                              >
+                              + Add replacement
+                            </button>
+                          </div>
+                        </div>
+                      }
+                      <!-- JSON type -->
+                      @if (setting.type === 'json') {
+                        <div class="form-group">
+                          <textarea
+                            [id]="'setting-' + setting.name"
+                            class="form-textarea"
+                            [value]="getSettingValue(setting)"
+                            (input)="onSettingChange(setting, $any($event.target).value)"
+                            rows="4"
+                            placeholder="Enter JSON..."
+                          ></textarea>
+                        </div>
+                      }
+                      <!-- VOICE type -->
+                      @if (setting.type === 'voice') {
+                        <div>
+                          <app-voice-selector
+                            [selectedVoice]="selectedVoices[setting.name]"
+                            [assignmentTweaks]="selectedVoices[setting.name]?.tweaks"
+                            [inputId]="'setting-' + setting.name"
+                            [showLabel]="false"
+                            (voiceSelected)="onVoiceSelected(setting, $event)"
+                            >
+                          </app-voice-selector>
+                        </div>
+                      }
+                      <!-- STREAMERBOT_ACTION type -->
+                      @if (setting.type === 'streamerbotAction') {
+                        <div class="form-group">
+                          <div class="streamerbot-action-container">
+                            <!-- Auto-complete input -->
+                            <div class="streamerbot-action-autocomplete-wrapper">
+                              <input
+                                type="text"
+                                class="form-input streamerbot-action-search-input"
+                                [id]="'setting-' + setting.name + '-search'"
+                                [value]="streamerBotActionSearchQueries[setting.name] || getStreamerBotActionDisplayName(setting) || ''"
+                                (input)="onStreamerBotActionSearchInput(setting, $any($event.target).value)"
+                                (focus)="onStreamerBotActionFocus(setting)"
+                                (blur)="onStreamerBotActionBlur(setting)"
+                                placeholder="Search for StreamerBot actions..."
+                                >
+                              @if (streamerBotActionSearching[setting.name]) {
+                                <div class="streamerbot-action-loading">
+                                  <div class="spinner-small"></div>
+                                </div>
+                              }
+                              <!-- Dropdown results -->
+                              @if (streamerBotActionShowDropdown[setting.name] && streamerBotActionSearchResults[setting.name] && streamerBotActionSearchResults[setting.name].length > 0) {
+                                <div
+                                  class="streamerbot-action-dropdown"
+                                  [class.streamerbot-action-dropdown-above]="streamerBotActionDropdownAbove[setting.name]"
+                                  >
+                                  @for (action of streamerBotActionSearchResults[setting.name]; track action) {
+                                    <div
+                                      class="streamerbot-action-dropdown-item"
+                                      (mousedown)="selectStreamerBotAction(setting, action); $event.preventDefault()"
+                                      >
+                                      <div class="streamerbot-action-dropdown-info">
+                                        <div class="streamerbot-action-dropdown-name">{{ action.name }}</div>
+                                        @if (action.group) {
+                                          <div class="streamerbot-action-dropdown-group">{{ action.group }}</div>
+                                        }
+                                      </div>
+                                    </div>
+                                  }
+                                </div>
+                              }
+                              @if (streamerBotActionShowDropdown[setting.name] && !streamerBotActionSearching[setting.name] && (!streamerBotActionSearchResults[setting.name] || streamerBotActionSearchResults[setting.name].length === 0) && (streamerBotActionSearchQueries[setting.name] || '').trim().length > 0) {
+                                <div
+                                  class="streamerbot-action-dropdown-empty"
+                                  [class.streamerbot-action-dropdown-above]="streamerBotActionDropdownAbove[setting.name]"
+                                  >
+                                  No actions found
+                                </div>
+                              }
+                            </div>
+                            <!-- Display selected action -->
+                            @if (getStreamerBotActionDisplayName(setting)) {
+                              <div class="streamerbot-action-selected">
+                                <span class="streamerbot-action-selected-name">{{ getStreamerBotActionDisplayName(setting) }}</span>
+                                <button
+                                  class="remove-streamerbot-action-button"
+                                  (click)="clearStreamerBotAction(setting)"
+                                  type="button"
+                                  title="Clear action"
+                                  >
+                                  ×
+                                </button>
+                              </div>
+                            }
+                          </div>
+                        </div>
+                      }
+                      <!-- USER_LIST type -->
+                      @if (setting.type === 'userList') {
+                        <div class="form-group">
+                          <div class="user-list-container">
+                            <!-- Current users list -->
+                            <div class="user-list-items">
+                              @for (username of parseUserListValue(setting); track $index; let i = $index) {
+                                <div
+                                  class="user-list-item"
+                                  >
+                                  <span class="user-list-username">{{ username }}</span>
+                                  <button
+                                    class="remove-user-button"
+                                    (click)="removeUserFromList(setting, i)"
+                                    type="button"
+                                    title="Remove user"
+                                    >
+                                    ×
+                                  </button>
+                                </div>
+                              }
+                            </div>
+                            <!-- Auto-complete input -->
+                            <div class="user-list-autocomplete-wrapper">
+                              <input
+                                type="text"
+                                class="form-input user-list-search-input"
+                                [id]="'setting-' + setting.name + '-search'"
+                                [value]="userListSearchQueries[setting.name] || ''"
+                                (input)="onUserListSearchInput(setting, $any($event.target).value)"
+                                (focus)="onUserListFocus(setting)"
+                                (blur)="onUserListBlur(setting)"
+                                placeholder="Search for Twitch users..."
+                                >
+                              @if (userListSearching[setting.name]) {
+                                <div class="user-list-loading">
+                                  <div class="spinner-small"></div>
+                                </div>
+                              }
+                              <!-- Dropdown results -->
+                              @if (userListShowDropdown[setting.name] && ((userListLocalUsers[setting.name] && userListLocalUsers[setting.name].length > 0) || (userListSearchResults[setting.name] && userListSearchResults[setting.name].length > 0))) {
+                                <div
+                                  class="user-list-dropdown"
+                                  [class.user-list-dropdown-above]="userListDropdownAbove[setting.name]"
+                                  >
+                                  <!-- Local users group -->
+                                  @if (userListLocalUsers[setting.name] && userListLocalUsers[setting.name].length > 0) {
+                                    <div class="user-list-group">
+                                      <div class="user-list-group-header">Users in System</div>
+                                      @for (user of userListLocalUsers[setting.name]; track user) {
+                                        <div
+                                          class="user-list-dropdown-item"
+                                          (mousedown)="addLocalUserToList(setting, user); $event.preventDefault()"
+                                          >
+                                          <div class="user-list-dropdown-info">
+                                            <div class="user-list-dropdown-name">{{ user.twitchUsername }}</div>
+                                            @if (user.ttsName && user.ttsName !== user.twitchUsername) {
+                                              <div class="user-list-dropdown-login">{{ user.ttsName }}</div>
+                                            }
+                                          </div>
+                                        </div>
+                                      }
+                                    </div>
+                                  }
+                                  <!-- Twitch users group -->
+                                  @if (userListSearchResults[setting.name] && userListSearchResults[setting.name].length > 0) {
+                                    <div class="user-list-group">
+                                      <div class="user-list-group-header">Twitch Users</div>
+                                      @for (twitchUser of userListSearchResults[setting.name]; track twitchUser) {
+                                        <div
+                                          class="user-list-dropdown-item"
+                                          (mousedown)="addUserToList(setting, twitchUser); $event.preventDefault()"
+                                          >
+                                          @if (twitchUser.profile_image_url) {
+                                            <img
+                                              [src]="twitchUser.profile_image_url"
+                                              [alt]="twitchUser.display_name"
+                                              class="user-list-avatar"
+                                              >
+                                          }
+                                          <div class="user-list-dropdown-info">
+                                            <div class="user-list-dropdown-name">{{ twitchUser.display_name }}</div>
+                                            <div class="user-list-dropdown-login">&#64;{{ twitchUser.login }}</div>
+                                          </div>
+                                        </div>
+                                      }
+                                    </div>
+                                  }
+                                </div>
+                              }
+                              @if (userListShowDropdown[setting.name] && !userListSearching[setting.name] && (!userListLocalUsers[setting.name] || userListLocalUsers[setting.name].length === 0) && (!userListSearchResults[setting.name] || userListSearchResults[setting.name].length === 0) && (userListSearchQueries[setting.name] || '').trim().length > 0) {
+                                <div
+                                  class="user-list-dropdown-empty"
+                                  [class.user-list-dropdown-above]="userListDropdownAbove[setting.name]"
+                                  >
+                                  No users found
+                                </div>
+                              }
+                            </div>
+                          </div>
+                        </div>
+                      }
+                    </div>
+                  }
+                }
+              }
+            </div>
+          }
+          @if (activeTab === 'Debugging') {
+            <div class="tab-extra-action">
+              <div>
+                <h3>Logs folder</h3>
+                <p>Opens the folder that contains render-timing.log in your file manager.</p>
+              </div>
+              <button
+                type="button"
+                class="open-logs-button"
+                (click)="openLogsFolder()"
+                [disabled]="openingLogsFolder || saving || loading"
+                >
+                {{ openingLogsFolder ? 'Opening...' : 'Open logs folder' }}
+              </button>
+            </div>
+          }
+          @if (activeTab === 'Default Voices') {
+            <div class="pronoun-population-action">
+              <div>
+                <h3>Populate User Pronouns</h3>
+                <p>Query and populate pronouns for every user who does not already have them set.</p>
+              </div>
+              <button
+                type="button"
+                class="populate-pronouns-button"
+                (click)="populateMissingPronouns()"
+                [disabled]="populatingPronouns || saving || loading"
+                >
+                {{ populatingPronouns ? 'Checking Pronouns...' : 'Populate Pronouns' }}
+              </button>
+            </div>
+          }
+        }
+      </div>
+    </div>
+  }
 </div>
 

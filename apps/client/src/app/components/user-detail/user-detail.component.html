@@ -1,160 +1,181 @@
 <div class="container">
   <div class="header">
     <div class="header-left">
-      <a 
-        class="back-button" 
-        (click)="onBackClick($event)" 
+      <a
+        class="back-button"
+        (click)="onBackClick($event)"
         (keyup.enter)="onBackClick($event)"
         (keyup.space)="onBackClick($event)"
         tabindex="0"
         role="button"
         style="cursor: pointer;"
         [attr.aria-label]="modalMode ? 'Close user editor' : 'Go back to users list'"
-      >
-        <svg *ngIf="!modalMode" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
-        </svg>
-        <svg *ngIf="modalMode" width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"></path>
-        </svg>
+        >
+        @if (!modalMode) {
+          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        }
+        @if (modalMode) {
+          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 6l12 12M18 6L6 18"></path>
+          </svg>
+        }
       </a>
-      <h1 *ngIf="user">Edit User: {{ user.twitchUsername }}</h1>
-      <h1 *ngIf="!user && !loading">User Not Found</h1>
+      @if (user) {
+        <h1>Edit User: {{ user.twitchUsername }}</h1>
+      }
+      @if (!user && !loading) {
+        <h1>User Not Found</h1>
+      }
     </div>
     <button class="save-button" (click)="saveChanges()" [disabled]="saving || loading || !user">
       {{ saving ? 'Saving...' : 'Save Changes' }}
     </button>
   </div>
 
-  <div *ngIf="loading" class="loading-state">
-    <p>Loading user...</p>
-  </div>
-
-  <div *ngIf="error" class="error-state">
-    <p>{{ error }}</p>
-  </div>
-
-  <div *ngIf="user && !loading">
-    <div class="form-section">
-      <h2 class="section-title">Voice Assignment</h2>
-      <app-voice-selector
-        [selectedVoice]="selectedVoice"
-        [assignmentTweaks]="selectedVoice?.tweaks"
-        [currentTwitchUserId]="twitchUserId"
-        inputId="voice-select"
-        (voiceSelected)="onVoiceSelected($event)"
-      >
-        <span slot="label">Voice</span>
-      </app-voice-selector>
+  @if (loading) {
+    <div class="loading-state">
+      <p>Loading user...</p>
     </div>
+  }
 
-    <div class="form-section">
-      <h2 class="section-title">TTS Name</h2>
-      <div class="form-group">
-        <label for="tts-name">
-          TTS Name
-          <span class="label-hint">The name that will be used when speaking this user's messages</span>
-        </label>
-        <div class="tts-name-input-wrapper">
-          <input
-            type="text"
-            id="tts-name"
-            placeholder="Enter TTS name..."
-            [(ngModel)]="ttsName"
+  @if (error) {
+    <div class="error-state">
+      <p>{{ error }}</p>
+    </div>
+  }
+
+  @if (user && !loading) {
+    <div>
+      <div class="form-section">
+        <h2 class="section-title">Voice Assignment</h2>
+        <app-voice-selector
+          [selectedVoice]="selectedVoice"
+          [assignmentTweaks]="selectedVoice?.tweaks"
+          [currentTwitchUserId]="twitchUserId"
+          inputId="voice-select"
+          (voiceSelected)="onVoiceSelected($event)"
           >
-          <button
-            class="play-tts-button"
-            type="button"
-            (click)="playTtsName()"
-            [disabled]="!ttsName || playingTtsName"
-            [class.playing]="playingTtsName"
-            [attr.aria-label]="'Play TTS name: ' + ttsName"
-            title="Play TTS name"
-          >
-            <span *ngIf="!playingTtsName">▶</span>
-            <span *ngIf="playingTtsName">⏸</span>
-          </button>
-        </div>
+          <span slot="label">Voice</span>
+        </app-voice-selector>
       </div>
-    </div>
-
-
-    <div class="form-section">
-      <h2 class="section-title">Pronouns</h2>
-      <div class="form-group">
-        <label for="pronouns">
-          Pronouns
-          <span class="label-hint">Optionally choose the pronouns used by this user</span>
-        </label>
-        <select id="pronouns" [(ngModel)]="pronouns">
-          <option value="">Not set</option>
-          <option value="hehim">He/Him</option>
-          <option value="sheher">She/Her</option>
-          <option value="theythem">They/Them</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="form-section">
-      <h2 class="section-title">Custom Intros</h2>
-      <div class="form-group">
-        <div class="label-wrapper">
-          <span class="label-text">Custom Intro Text</span>
-          <span class="label-hint">Add multiple custom intro texts that can be randomly selected when this user speaks</span>
-        </div>
-        <div class="intros-list">
-          <div *ngFor="let intro of customIntros; let i = index" class="intro-item">
-            <div class="intro-item-header">
-              <span class="intro-number">Intro #{{ i + 1 }}</span>
-              <button class="delete-intro-button" (click)="removeIntro(i)">Delete</button>
-            </div>
-            <div class="intro-text-wrapper">
-              <textarea
-                [id]="'intro-text-' + i"
-                [attr.aria-label]="'Intro text ' + (i + 1)"
-                [(ngModel)]="intro.introText"
-                placeholder="Enter intro text..."
-              ></textarea>
-              <button
-                class="play-intro-button"
-                type="button"
-                (click)="playIntro(i)"
-                [disabled]="!intro.introText || playingIntros.has(i)"
-                [class.playing]="playingIntros.has(i)"
-                [attr.aria-label]="'Play intro ' + (i + 1)"
-                title="Play intro with default intro voice"
+      <div class="form-section">
+        <h2 class="section-title">TTS Name</h2>
+        <div class="form-group">
+          <label for="tts-name">
+            TTS Name
+            <span class="label-hint">The name that will be used when speaking this user's messages</span>
+          </label>
+          <div class="tts-name-input-wrapper">
+            <input
+              type="text"
+              id="tts-name"
+              placeholder="Enter TTS name..."
+              [(ngModel)]="ttsName"
               >
-                <span *ngIf="!playingIntros.has(i)">▶</span>
-                <span *ngIf="playingIntros.has(i)">⏸</span>
-              </button>
-            </div>
-          </div>
-          <div *ngIf="customIntros.length === 0" class="empty-intros">
-            <p>No custom intros yet. Click "Add New Intro" to create one.</p>
+            <button
+              class="play-tts-button"
+              type="button"
+              (click)="playTtsName()"
+              [disabled]="!ttsName || playingTtsName"
+              [class.playing]="playingTtsName"
+              [attr.aria-label]="'Play TTS name: ' + ttsName"
+              title="Play TTS name"
+              >
+              @if (!playingTtsName) {
+                <span>▶</span>
+              }
+              @if (playingTtsName) {
+                <span>⏸</span>
+              }
+            </button>
           </div>
         </div>
-        <button class="add-intro-button" (click)="addIntro()">+ Add New Intro</button>
+      </div>
+      <div class="form-section">
+        <h2 class="section-title">Pronouns</h2>
+        <div class="form-group">
+          <label for="pronouns">
+            Pronouns
+            <span class="label-hint">Optionally choose the pronouns used by this user</span>
+          </label>
+          <select id="pronouns" [(ngModel)]="pronouns">
+            <option value="">Not set</option>
+            <option value="hehim">He/Him</option>
+            <option value="sheher">She/Her</option>
+            <option value="theythem">They/Them</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-section">
+        <h2 class="section-title">Custom Intros</h2>
+        <div class="form-group">
+          <div class="label-wrapper">
+            <span class="label-text">Custom Intro Text</span>
+            <span class="label-hint">Add multiple custom intro texts that can be randomly selected when this user speaks</span>
+          </div>
+          <div class="intros-list">
+            @for (intro of customIntros; track intro; let i = $index) {
+              <div class="intro-item">
+                <div class="intro-item-header">
+                  <span class="intro-number">Intro #{{ i + 1 }}</span>
+                  <button class="delete-intro-button" (click)="removeIntro(i)">Delete</button>
+                </div>
+                <div class="intro-text-wrapper">
+                  <textarea
+                    [id]="'intro-text-' + i"
+                    [attr.aria-label]="'Intro text ' + (i + 1)"
+                    [(ngModel)]="intro.introText"
+                    placeholder="Enter intro text..."
+                  ></textarea>
+                  <button
+                    class="play-intro-button"
+                    type="button"
+                    (click)="playIntro(i)"
+                    [disabled]="!intro.introText || playingIntros.has(i)"
+                    [class.playing]="playingIntros.has(i)"
+                    [attr.aria-label]="'Play intro ' + (i + 1)"
+                    title="Play intro with default intro voice"
+                    >
+                    @if (!playingIntros.has(i)) {
+                      <span>▶</span>
+                    }
+                    @if (playingIntros.has(i)) {
+                      <span>⏸</span>
+                    }
+                  </button>
+                </div>
+              </div>
+            }
+            @if (customIntros.length === 0) {
+              <div class="empty-intros">
+                <p>No custom intros yet. Click "Add New Intro" to create one.</p>
+              </div>
+            }
+          </div>
+          <button class="add-intro-button" (click)="addIntro()">+ Add New Intro</button>
+        </div>
+      </div>
+      <div class="form-section">
+        <h2 class="section-title">Welcome Settings</h2>
+        <div class="form-group">
+          <label class="toggle-label">
+            <input
+              type="checkbox"
+              id="disable-welcome"
+              [(ngModel)]="disableWelcome"
+              class="toggle-input"
+              >
+            <span class="toggle-slider"></span>
+            <span class="toggle-text">
+              Disable Welcome on First Words
+              <span class="label-hint">When enabled, this user will not be welcomed when they speak for the first time</span>
+            </span>
+          </label>
+        </div>
       </div>
     </div>
-    <div class="form-section">
-      <h2 class="section-title">Welcome Settings</h2>
-      <div class="form-group">
-        <label class="toggle-label">
-          <input
-            type="checkbox"
-            id="disable-welcome"
-            [(ngModel)]="disableWelcome"
-            class="toggle-input"
-          >
-          <span class="toggle-slider"></span>
-          <span class="toggle-text">
-            Disable Welcome on First Words
-            <span class="label-hint">When enabled, this user will not be welcomed when they speak for the first time</span>
-          </span>
-        </label>
-      </div>
-    </div>
-
-  </div>
+  }
 </div>
 

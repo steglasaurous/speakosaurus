@@ -1,25 +1,29 @@
 import { Component, OnInit, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { TwitchService } from '../../services/twitch.service';
 
 @Component({
   selector: 'app-twitch-callback',
   standalone: true,
-  imports: [CommonModule],
+  imports: [],
   template: `
     <div class="callback-container">
       <div class="callback-content">
-        <div *ngIf="processing" class="processing">
-          <div class="spinner"></div>
-          <p>Completing authentication...</p>
-        </div>
-        <div *ngIf="error" class="error">
-          <p>{{ error }}</p>
-          <button (click)="closeWindow()">Close</button>
-        </div>
+        @if (processing) {
+          <div class="processing">
+            <div class="spinner"></div>
+            <p>Completing authentication...</p>
+          </div>
+        }
+        @if (error) {
+          <div class="error">
+            <p>{{ error }}</p>
+            <button (click)="closeWindow()">Close</button>
+          </div>
+        }
       </div>
     </div>
-  `,
+    `,
   styles: [`
     .callback-container {
       display: flex;

@@ -1,5 +1,5 @@
 import { Component, EventEmitter, OnInit, Output, ViewChild, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { VoiceSelectorComponent } from '../voice-selector/voice-selector.component';
 import { VoiceTweaksComponent } from '../voice-tweaks/voice-tweaks.component';
@@ -14,7 +14,7 @@ import { CustomVoicesService } from '../../services/custom-voices.service';
 @Component({
   selector: 'app-voice-playground',
   standalone: true,
-  imports: [CommonModule, FormsModule, VoiceSelectorComponent, VoiceTweaksComponent],
+  imports: [FormsModule, VoiceSelectorComponent, VoiceTweaksComponent],
   templateUrl: './voice-playground.component.html',
   styleUrl: './voice-playground.component.scss',
 })

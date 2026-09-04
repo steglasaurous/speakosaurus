@@ -1,5 +1,5 @@
 import { Component, EventEmitter, Input, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import {
   DEFAULT_VOICE_TWEAKS,
@@ -9,7 +9,7 @@ import {
 @Component({
   selector: 'app-voice-tweaks',
   standalone: true,
-  imports: [CommonModule, FormsModule],
+  imports: [FormsModule],
   templateUrl: './voice-tweaks.component.html',
   styleUrl: './voice-tweaks.component.scss',
 })

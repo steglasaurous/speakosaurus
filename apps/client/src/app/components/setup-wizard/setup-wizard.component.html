@@ -19,145 +19,148 @@
     </div>
 
     <!-- Step 1: StreamerBot URL -->
-    <div *ngIf="currentStep === SetupStep.StreamerBotUrl" class="setup-step">
-      <div class="step-icon">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
-        </svg>
-      </div>
-      <h2>Configure StreamerBot Connection</h2>
-      <div class="step-content">
-        <p class="info-text">
-          <strong>StreamerBot is required</strong> for Speakosaurus to function. It connects your app to chat messages and enables TTS functionality.
-        </p>
-        
-        <div class="info-box">
-          <div class="info-box-icon">
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-            </svg>
-          </div>
-          <div class="info-box-content">
-            <p>Don't have StreamerBot yet?</p>
-            <button type="button" class="link-button" (click)="openStreamerBotWebsite()">
-              Visit streamer.bot to download →
-            </button>
-          </div>
+    @if (currentStep === SetupStep.StreamerBotUrl) {
+      <div class="setup-step">
+        <div class="step-icon">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 9l3 3-3 3m5 0h3M5 20h14a2 2 0 002-2V6a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+          </svg>
         </div>
-
-        <div class="form-group">
-          <label for="streamerbot-url" class="form-label">
-            StreamerBot WebSocket URL
-            <span class="required-indicator">*</span>
-          </label>
-          <input
-            id="streamerbot-url"
-            type="text"
-            class="form-input"
-            [(ngModel)]="streamerBotUrl"
-            placeholder="ws://localhost:8080"
-            [disabled]="loading || saving"
-          >
-          <p class="form-help">
-            The WebSocket URL where StreamerBot is running (usually ws://localhost:8080). 
-            <br>
-            <br>
-            Note: To enable the websocket server, in Streamer.bot navigate to Servers/Clients -> WebSocket Server, enable "Auto Start" and click "Start Server".
+        <h2>Configure StreamerBot Connection</h2>
+        <div class="step-content">
+          <p class="info-text">
+            <strong>StreamerBot is required</strong> for Speakosaurus to function. It connects your app to chat messages and enables TTS functionality.
           </p>
-        </div>
-
-        <div *ngIf="error" class="error-message">
-          {{ error }}
-        </div>
-      </div>
-    </div>
-
-    <!-- Step 2: TTS Providers Info -->
-    <div *ngIf="currentStep === SetupStep.TtsProviders" class="setup-step">
-      <div class="step-icon">
-        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
-        </svg>
-      </div>
-      <h2>TTS Voice Providers</h2>
-      <div class="step-content">
-        <div class="success-box">
-          <div class="success-icon">
-            <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
-            </svg>
-          </div>
-          <div>
-            <p class="success-title">Default TTS Engine Configured</p>
-            <p class="success-description">Your system's default text-to-speech engine is already set up and ready to use.</p>
-          </div>
-        </div>
-
-        <div class="info-box">
-          <div class="info-box-icon">
-            <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
-              <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
-            </svg>
-          </div>
-          <div class="info-box-content">
-            <p class="info-title">Want More Voice Options?</p>
-            <p>You can configure additional TTS providers like ElevenLabs, Azure Speech, or TTS Monster for premium voices.</p>
-          </div>
-        </div>
-
-        <div class="choice-section">
-          <p class="choice-label">What would you like to do?</p>
-          <div class="choice-buttons">
-            <button 
-              type="button" 
-              class="choice-button choice-button-primary"
-              (click)="completeSetup(false)"
-              [disabled]="saving"
-            >
-              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+          <div class="info-box">
+            <div class="info-box-icon">
+              <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
               </svg>
-              Configure TTS Providers Now
-            </button>
-            <button 
-              type="button" 
-              class="choice-button choice-button-secondary"
-              (click)="completeSetup(true)"
-              [disabled]="saving"
-            >
-              <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
-              </svg>
-              Skip for Now
-            </button>
+            </div>
+            <div class="info-box-content">
+              <p>Don't have StreamerBot yet?</p>
+              <button type="button" class="link-button" (click)="openStreamerBotWebsite()">
+                Visit streamer.bot to download →
+              </button>
+            </div>
           </div>
-          <p class="choice-help">You can always configure additional providers later in Settings</p>
+          <div class="form-group">
+            <label for="streamerbot-url" class="form-label">
+              StreamerBot WebSocket URL
+              <span class="required-indicator">*</span>
+            </label>
+            <input
+              id="streamerbot-url"
+              type="text"
+              class="form-input"
+              [(ngModel)]="streamerBotUrl"
+              placeholder="ws://localhost:8080"
+              [disabled]="loading || saving"
+              >
+            <p class="form-help">
+              The WebSocket URL where StreamerBot is running (usually ws://localhost:8080).
+              <br>
+                <br>
+                  Note: To enable the websocket server, in Streamer.bot navigate to Servers/Clients -> WebSocket Server, enable "Auto Start" and click "Start Server".
+                </p>
+              </div>
+              @if (error) {
+                <div class="error-message">
+                  {{ error }}
+                </div>
+              }
+            </div>
+          </div>
+        }
+
+        <!-- Step 2: TTS Providers Info -->
+        @if (currentStep === SetupStep.TtsProviders) {
+          <div class="setup-step">
+            <div class="step-icon">
+              <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11a7 7 0 01-7 7m0 0a7 7 0 01-7-7m7 7v4m0 0H8m4 0h4m-4-8a3 3 0 01-3-3V5a3 3 0 116 0v6a3 3 0 01-3 3z"></path>
+              </svg>
+            </div>
+            <h2>TTS Voice Providers</h2>
+            <div class="step-content">
+              <div class="success-box">
+                <div class="success-icon">
+                  <svg width="24" height="24" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"></path>
+                  </svg>
+                </div>
+                <div>
+                  <p class="success-title">Default TTS Engine Configured</p>
+                  <p class="success-description">Your system's default text-to-speech engine is already set up and ready to use.</p>
+                </div>
+              </div>
+              <div class="info-box">
+                <div class="info-box-icon">
+                  <svg width="20" height="20" fill="currentColor" viewBox="0 0 20 20">
+                    <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"></path>
+                  </svg>
+                </div>
+                <div class="info-box-content">
+                  <p class="info-title">Want More Voice Options?</p>
+                  <p>You can configure additional TTS providers like ElevenLabs, Azure Speech, or TTS Monster for premium voices.</p>
+                </div>
+              </div>
+              <div class="choice-section">
+                <p class="choice-label">What would you like to do?</p>
+                <div class="choice-buttons">
+                  <button
+                    type="button"
+                    class="choice-button choice-button-primary"
+                    (click)="completeSetup(false)"
+                    [disabled]="saving"
+                    >
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Configure TTS Providers Now
+                  </button>
+                  <button
+                    type="button"
+                    class="choice-button choice-button-secondary"
+                    (click)="completeSetup(true)"
+                    [disabled]="saving"
+                    >
+                    <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                    </svg>
+                    Skip for Now
+                  </button>
+                </div>
+                <p class="choice-help">You can always configure additional providers later in Settings</p>
+              </div>
+            </div>
+          </div>
+        }
+
+        <!-- Navigation buttons -->
+        <div class="wizard-actions">
+          @if (!isFirstStep) {
+            <button
+              type="button"
+              class="btn btn-secondary"
+              (click)="previousStep()"
+              [disabled]="saving || loading"
+              >
+              ← Back
+            </button>
+          }
+          <div class="spacer"></div>
+          @if (!isLastStep) {
+            <button
+              type="button"
+              class="btn btn-primary"
+              (click)="nextStep()"
+              [disabled]="saving || loading || !streamerBotUrl"
+              >
+              {{ saving ? 'Saving...' : 'Next →' }}
+            </button>
+          }
         </div>
       </div>
     </div>
-
-    <!-- Navigation buttons -->
-    <div class="wizard-actions">
-      <button
-        *ngIf="!isFirstStep"
-        type="button"
-        class="btn btn-secondary"
-        (click)="previousStep()"
-        [disabled]="saving || loading"
-      >
-        ← Back
-      </button>
-      <div class="spacer"></div>
-      <button
-        *ngIf="!isLastStep"
-        type="button"
-        class="btn btn-primary"
-        (click)="nextStep()"
-        [disabled]="saving || loading || !streamerBotUrl"
-      >
-        {{ saving ? 'Saving...' : 'Next →' }}
-      </button>
-    </div>
-  </div>
-</div>
