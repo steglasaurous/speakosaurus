@@ -1,6 +1,11 @@
 {
   "name": "@speakosaurus/source",
   "version": "0.1.6",
+  "author": {
+    "name": "steglasaurous",
+    "email": "me@steglasaurous.com",
+    "url": "https://steglasaurous.com"
+  },
   "license": "MIT",
   "scripts": {
     "db:generate": "drizzle-kit generate",
@@ -27,21 +32,39 @@
     "prepare:piper": "node scripts/prepare-piper-runtime.mjs"
   },
   "private": true,
+  "desktopName": "com.speakosaurus.app",
   "build": {
-    "productName": "Speakosaurus",
+    "productName": "speakosaurus",
     "appId": "com.speakosaurus.app",
-    "executableName": "Speakosaurus",
+    "executableName": "speakosaurus",
+    "directories": {
+      "buildResources": "build"
+    },
+    "icon": "build/icon.png",
     "win": {
       "signAndEditExecutable": false
     },
     "toolsets": {
       "appimage": "1.0.3"
     },
+    "appImage": {
+      "compression": "gzip"
+    },
+    "deb": {
+      "packageName": "speakosaurus"
+    },
     "linux": {
       "target": [
-        "AppImage"
+        "AppImage",
+        "deb"
       ],
-      "category": "Utility"
+      "category": "Utility",
+      "icon": "build/icons",
+      "artifactName": "${productName}-${version}-${arch}.${ext}"
+    },
+    "extraMetadata": {
+      "name": "speakosaurus",
+      "desktopName": "com.speakosaurus.app"
     },
     "extraResources": [
       {

@@ -78,5 +78,6 @@
       "unitTestRunner": "jest"
     }
   },
-  "defaultProject": "desktop"
+  "defaultProject": "desktop",
+  "analytics": false
 }

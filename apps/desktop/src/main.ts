@@ -20,6 +20,8 @@ export default class Main {
     // Force a stable runtime app name so Electron resolves userData predictably.
     Main.migrateUserDataIfRenamed();
     app.setName(electronAppName);
+    // Linux WM_CLASS / app_id come from package.json "desktopName"
+    // (set in root package.json + build.extraMetadata).
 
     if (SquirrelEvents.handleEvents()) {
       // squirrel event handled (except first run event) and app will exit in 1000ms, so don't do anything else
