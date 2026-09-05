@@ -10,6 +10,7 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { type INestApplication, Logger } from '@nestjs/common';
 import { MigrationService } from './services/migration.service';
+import { ElectronLogNestLogger, appLog } from './logging/app-logger';
 
 export default class App {
   // Keep a global reference of the window object, if you don't, the window will
@@ -70,8 +71,7 @@ export default class App {
           App.mainWindow.webContents.executeJavaScript(`
             alert('Failed to start application: ${error instanceof Error ? error.message : String(error)}');
           `).catch(() => {
-            // If we can't show alert, at least log it
-            console.error('Failed to show error dialog');
+            appLog.error('Failed to show error dialog');
           });
         }
         // Re-throw to trigger error handlers
@@ -92,7 +92,9 @@ export default class App {
       // Consider showing a user notification here in production
     }
 
-    const nestApp = await NestFactory.create(AppModule);
+    const nestApp = await NestFactory.create(AppModule, {
+      logger: new ElectronLogNestLogger(),
+    });
     App.nestApp = nestApp;
     nestApp.enableShutdownHooks();
     const globalPrefix = 'api';

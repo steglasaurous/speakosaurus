@@ -7,6 +7,7 @@ import { app, ipcMain, shell } from 'electron';
 import { mkdirSync } from 'fs';
 import { join } from 'path';
 import { environment } from '../../environments/environment';
+import { appLog } from '../logging/app-logger';
 
 export default class ElectronEvents {
   static bootstrapElectronEvents(): Electron.IpcMain {
@@ -16,7 +17,7 @@ export default class ElectronEvents {
 
 // Retrieve app version
 ipcMain.handle('get-app-version', (event) => {
-  console.log(`Fetching application version... [v${environment.version}]`);
+  appLog.info(`Fetching application version... [v${environment.version}]`);
 
   return environment.version;
 });
@@ -32,7 +33,7 @@ ipcMain.handle('open-external-url', async (event, url: string) => {
     await shell.openExternal(url);
     return { success: true };
   } catch (error) {
-    console.error('Error opening external URL:', error);
+    appLog.error('Error opening external URL:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 });
@@ -48,7 +49,7 @@ ipcMain.handle('open-logs-folder', async () => {
     }
     return { success: true };
   } catch (error) {
-    console.error('Error opening logs folder:', error);
+    appLog.error('Error opening logs folder:', error);
     return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
   }
 });
