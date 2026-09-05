@@ -9,12 +9,19 @@ export interface AudioPlayData {
     format: string;
     message: string;
     volume?: number;
+    timingId?: string;
     voice: {
         providerName: string;
         voiceId: string;
         voiceName: string;
         displayName: string;
     };
+}
+
+export interface AudioTimingPayload {
+    timingId: string;
+    stage: string;
+    ms: number;
 }
 
 contextBridge.exposeInMainWorld(
@@ -35,6 +42,9 @@ contextBridge.exposeInMainWorld(
         },
         removeAudioStopListener: () => {
             ipcRenderer.removeAllListeners('audio:stop');
+        },
+        reportAudioTiming: (payload: AudioTimingPayload) => {
+            ipcRenderer.send('audio:timing', payload);
         },
     },
 );

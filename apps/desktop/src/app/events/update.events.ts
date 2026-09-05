@@ -2,6 +2,7 @@ import { app, autoUpdater, dialog, MessageBoxOptions } from 'electron';
 import { platform, arch } from 'os';
 import { updateServerUrl } from '../constants';
 import App from '../app';
+import { appLog } from '../logging/app-logger';
 
 export default class UpdateEvents {
   // initialize auto update service - most be invoked only in production
@@ -14,7 +15,7 @@ export default class UpdateEvents {
     };
 
     if (!App.isDevelopmentMode()) {
-      console.log('Initializing auto update service...\n');
+      appLog.info('Initializing auto update service...');
 
       autoUpdater.setFeedURL(feed);
       UpdateEvents.checkForUpdates();
@@ -48,22 +49,22 @@ autoUpdater.on(
 );
 
 autoUpdater.on('checking-for-update', () => {
-  console.log('Checking for updates...\n');
+  appLog.info('Checking for updates...');
 });
 
 autoUpdater.on('update-available', () => {
-  console.log('New update available!\n');
+  appLog.info('New update available!');
 });
 
 autoUpdater.on('update-not-available', () => {
-  console.log('Up to date!\n');
+  appLog.info('Up to date!');
 });
 
 autoUpdater.on('before-quit-for-update', () => {
-  console.log('Application update is about to begin...\n');
+  appLog.info('Application update is about to begin...');
 });
 
 autoUpdater.on('error', (message) => {
-  console.error('There was a problem updating the application');
-  console.error(message, '\n');
+  appLog.error('There was a problem updating the application');
+  appLog.error(message);
 });

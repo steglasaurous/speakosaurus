@@ -26,10 +26,12 @@
         [value]="status.mode"
         (change)="onModeChange($any($event.target).value)"
         class="mode-select"
-      >
-        <option *ngFor="let option of modeOptions" [value]="option">
-          {{ option }}
-        </option>
+        >
+        @for (option of modeOptions; track option) {
+          <option [value]="option">
+            {{ option }}
+          </option>
+        }
       </select>
     </div>
   </div>

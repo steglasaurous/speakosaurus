@@ -1,5 +1,5 @@
 import { Component, ElementRef, EventEmitter, HostListener, Input, OnInit, Output, inject } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { FormsModule } from '@angular/forms';
 import { RouterModule, Router, ActivatedRoute } from '@angular/router';
 import { DomSanitizer, SafeHtml } from '@angular/platform-browser';
@@ -31,7 +31,7 @@ interface GroupedSettings {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [CommonModule, FormsModule, RouterModule, VoiceSelectorComponent],
+  imports: [FormsModule, RouterModule, VoiceSelectorComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
@@ -46,6 +46,7 @@ export class SettingsComponent implements OnInit {
   loading = false;
   saving = false;
   populatingPronouns = false;
+  openingLogsFolder = false;
   error: string | null = null;
   successMessage: string | null = null;
   
@@ -221,7 +222,11 @@ export class SettingsComponent implements OnInit {
 
     // Then within each group, organize by subGroup
     this.groupedSettings = Object.keys(grouped)
-      .sort()
+      .sort((a, b) => {
+        if (a === 'Debugging') return 1;
+        if (b === 'Debugging') return -1;
+        return a.localeCompare(b);
+      })
       .map((group) => {
         const settings = grouped[group];
         const subGrouped: { [key: string]: Setting[] } = {};
@@ -318,6 +323,9 @@ export class SettingsComponent implements OnInit {
       return false;
     }
     if (setting.name === 'piperHttpUrl' && this.isPiperBuiltInEnabled()) {
+      return false;
+    }
+    if (setting.name === 'piperCpuThreads' && !this.isPiperBuiltInEnabled()) {
       return false;
     }
     return true;
@@ -916,6 +924,32 @@ export class SettingsComponent implements OnInit {
     const key = subGroup ? `${group}::${subGroup}` : group;
     const html = this.subGroupDescriptionCache[key];
     return html ? this.sanitizer.bypassSecurityTrustHtml(html) : null;
+  }
+
+  async openLogsFolder(): Promise<void> {
+    if (this.openingLogsFolder) {
+      return;
+    }
+
+    this.openingLogsFolder = true;
+    this.error = null;
+    try {
+      const electron = (window as any).electron;
+      if (typeof window === 'undefined' || !electron?.openLogsFolder) {
+        this.error = 'Opening the logs folder is only available in the desktop app.';
+        return;
+      }
+
+      const result = await electron.openLogsFolder();
+      if (result && result.success === false) {
+        this.error = result.error || 'Failed to open the logs folder.';
+      }
+    } catch (error) {
+      console.error('Error opening logs folder:', error);
+      this.error = error instanceof Error ? error.message : 'Failed to open the logs folder.';
+    } finally {
+      this.openingLogsFolder = false;
+    }
   }
 
   /**

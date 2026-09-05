@@ -5,132 +5,154 @@
       <p class="subtitle">Manage user voices, TTS names, and custom intros</p>
     </div>
     <div class="header-actions">
-      <button
-        *ngIf="!showTwitchSearch"
-        type="button"
-        class="add-user-button"
-        (click)="toggleTwitchSearch()"
-        title="Add Twitch User"
-      >
-        <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-        </svg>
-        <span>Add User</span>
-      </button>
+      @if (!showTwitchSearch) {
+        <button
+          type="button"
+          class="add-user-button"
+          (click)="toggleTwitchSearch()"
+          title="Add Twitch User"
+          >
+          <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+          </svg>
+          <span>Add User</span>
+        </button>
+      }
     </div>
   </div>
 
   <!-- Twitch Search Panel -->
-  <div *ngIf="showTwitchSearch" class="twitch-search-panel">
-    <div class="twitch-search-header">
-      <div class="twitch-search-header-content">
-        <h2>Search Twitch Users</h2>
-        <p class="twitch-search-subtitle">Search for Twitch users to add to your list</p>
-      </div>
-      <button
-        type="button"
-        class="close-button"
-        (click)="toggleTwitchSearch()"
-        title="Close"
-      >
-        Close
-      </button>
-    </div>
-
-    <!-- Device Code Authentication -->
-    <div *ngIf="!isAuthenticated && !deviceCodeInfo && !isPollingAuth" class="auth-prompt">
-      <p>You need to authenticate with Twitch to search for users.</p>
-      <button type="button" class="auth-button" (click)="startDeviceCodeFlow()">Authenticate with Twitch</button>
-    </div>
-
-    <!-- Device Code Display -->
-    <div *ngIf="deviceCodeInfo" class="device-code-display">
-      <div class="device-code-header">
-        <h3>Enter this code on Twitch</h3>
-        <p class="device-code-subtitle">Go to the verification URL and enter the code below</p>
-      </div>
-      <div class="device-code-box">
-        <div class="device-code-value">{{ deviceCodeInfo.userCode }}</div>
-      </div>
-      <div class="device-code-actions">
-        <button type="button" class="open-url-button" (click)="openVerificationUri()">
-          Open Verification URL
-        </button>
-        <a [href]="deviceCodeInfo.verificationUri" (click)="openVerificationUri(); $event.preventDefault()" rel="noopener noreferrer" class="verification-url">
-          {{ deviceCodeInfo.verificationUri }}
-        </a>
-      </div>
-      <div *ngIf="isPollingAuth" class="polling-status">
-        <div class="spinner-small"></div>
-        <span>Waiting for authorization...</span>
-      </div>
-    </div>
-
-    <!-- Authentication Error -->
-    <div *ngIf="authError" class="auth-error-banner">
-      <p>{{ authError }}</p>
-      <button type="button" class="retry-button" (click)="startDeviceCodeFlow()">Retry</button>
-    </div>
-
-    <!-- Search Input (only shown when authenticated) -->
-    <div *ngIf="isAuthenticated" class="twitch-search-input-wrapper">
-      <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
-      </svg>
-      <input
-        #twitchSearchInput
-        type="text"
-        class="twitch-search-input"
-        placeholder="Search Twitch username..."
-        [(ngModel)]="twitchSearchQuery"
-        (input)="onTwitchSearchInput()"
-        [disabled]="isSearchingTwitch"
-      >
-      <div *ngIf="isSearchingTwitch" class="loading-spinner"></div>
-    </div>
-
-    <!-- Search Results -->
-    <div *ngIf="isAuthenticated && twitchSearchResults.length > 0" class="twitch-results">
-      <div
-        *ngFor="let twitchUser of twitchSearchResults"
-        class="twitch-user-item"
-        [class.already-added]="isUserAlreadyAdded(twitchUser.id)"
-      >
-        <div class="twitch-user-info">
-          <img
-            *ngIf="twitchUser.profile_image_url"
-            [src]="twitchUser.profile_image_url"
-            [alt]="twitchUser.display_name"
-            class="twitch-user-avatar"
-          >
-          <div class="twitch-user-details">
-            <div class="twitch-user-name">{{ twitchUser.display_name }}</div>
-            <div class="twitch-user-login">&#64;{{ twitchUser.login }}</div>
-          </div>
+  @if (showTwitchSearch) {
+    <div class="twitch-search-panel">
+      <div class="twitch-search-header">
+        <div class="twitch-search-header-content">
+          <h2>Search Twitch Users</h2>
+          <p class="twitch-search-subtitle">Search for Twitch users to add to your list</p>
         </div>
         <button
           type="button"
-          class="add-button"
-          (click)="addTwitchUser(twitchUser)"
-          [disabled]="isUserBeingAdded(twitchUser.id) || isUserAlreadyAdded(twitchUser.id)"
-        >
-          <span *ngIf="isUserAlreadyAdded(twitchUser.id)">Added</span>
-          <span *ngIf="!isUserAlreadyAdded(twitchUser.id) && !isUserBeingAdded(twitchUser.id)">Add</span>
-          <span *ngIf="!isUserAlreadyAdded(twitchUser.id) && isUserBeingAdded(twitchUser.id)">Adding...</span>
+          class="close-button"
+          (click)="toggleTwitchSearch()"
+          title="Close"
+          >
+          Close
         </button>
       </div>
+      <!-- Device Code Authentication -->
+      @if (!isAuthenticated && !deviceCodeInfo && !isPollingAuth) {
+        <div class="auth-prompt">
+          <p>You need to authenticate with Twitch to search for users.</p>
+          <button type="button" class="auth-button" (click)="startDeviceCodeFlow()">Authenticate with Twitch</button>
+        </div>
+      }
+      <!-- Device Code Display -->
+      @if (deviceCodeInfo) {
+        <div class="device-code-display">
+          <div class="device-code-header">
+            <h3>Enter this code on Twitch</h3>
+            <p class="device-code-subtitle">Go to the verification URL and enter the code below</p>
+          </div>
+          <div class="device-code-box">
+            <div class="device-code-value">{{ deviceCodeInfo.userCode }}</div>
+          </div>
+          <div class="device-code-actions">
+            <button type="button" class="open-url-button" (click)="openVerificationUri()">
+              Open Verification URL
+            </button>
+            <a [href]="deviceCodeInfo.verificationUri" (click)="openVerificationUri(); $event.preventDefault()" rel="noopener noreferrer" class="verification-url">
+              {{ deviceCodeInfo.verificationUri }}
+            </a>
+          </div>
+          @if (isPollingAuth) {
+            <div class="polling-status">
+              <div class="spinner-small"></div>
+              <span>Waiting for authorization...</span>
+            </div>
+          }
+        </div>
+      }
+      <!-- Authentication Error -->
+      @if (authError) {
+        <div class="auth-error-banner">
+          <p>{{ authError }}</p>
+          <button type="button" class="retry-button" (click)="startDeviceCodeFlow()">Retry</button>
+        </div>
+      }
+      <!-- Search Input (only shown when authenticated) -->
+      @if (isAuthenticated) {
+        <div class="twitch-search-input-wrapper">
+          <svg class="search-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+          <input
+            #twitchSearchInput
+            type="text"
+            class="twitch-search-input"
+            placeholder="Search Twitch username..."
+            [(ngModel)]="twitchSearchQuery"
+            (input)="onTwitchSearchInput()"
+            [disabled]="isSearchingTwitch"
+            >
+          @if (isSearchingTwitch) {
+            <div class="loading-spinner"></div>
+          }
+        </div>
+      }
+      <!-- Search Results -->
+      @if (isAuthenticated && twitchSearchResults.length > 0) {
+        <div class="twitch-results">
+          @for (twitchUser of twitchSearchResults; track twitchUser) {
+            <div
+              class="twitch-user-item"
+              [class.already-added]="isUserAlreadyAdded(twitchUser.id)"
+              >
+              <div class="twitch-user-info">
+                @if (twitchUser.profile_image_url) {
+                  <img
+                    [src]="twitchUser.profile_image_url"
+                    [alt]="twitchUser.display_name"
+                    class="twitch-user-avatar"
+                    >
+                }
+                <div class="twitch-user-details">
+                  <div class="twitch-user-name">{{ twitchUser.display_name }}</div>
+                  <div class="twitch-user-login">&#64;{{ twitchUser.login }}</div>
+                </div>
+              </div>
+              <button
+                type="button"
+                class="add-button"
+                (click)="addTwitchUser(twitchUser)"
+                [disabled]="isUserBeingAdded(twitchUser.id) || isUserAlreadyAdded(twitchUser.id)"
+                >
+                @if (isUserAlreadyAdded(twitchUser.id)) {
+                  <span>Added</span>
+                }
+                @if (!isUserAlreadyAdded(twitchUser.id) && !isUserBeingAdded(twitchUser.id)) {
+                  <span>Add</span>
+                }
+                @if (!isUserAlreadyAdded(twitchUser.id) && isUserBeingAdded(twitchUser.id)) {
+                  <span>Adding...</span>
+                }
+              </button>
+            </div>
+          }
+        </div>
+      }
+      <!-- Empty State -->
+      @if (isAuthenticated && twitchSearchQuery && !isSearchingTwitch && twitchSearchResults.length === 0) {
+        <div class="twitch-empty-state">
+          <p>No users found</p>
+        </div>
+      }
+      <!-- Initial State -->
+      @if (isAuthenticated && !twitchSearchQuery && !isSearchingTwitch) {
+        <div class="twitch-initial-state">
+          <p>Start typing to search for Twitch users...</p>
+        </div>
+      }
     </div>
-
-    <!-- Empty State -->
-    <div *ngIf="isAuthenticated && twitchSearchQuery && !isSearchingTwitch && twitchSearchResults.length === 0" class="twitch-empty-state">
-      <p>No users found</p>
-    </div>
-
-    <!-- Initial State -->
-    <div *ngIf="isAuthenticated && !twitchSearchQuery && !isSearchingTwitch" class="twitch-initial-state">
-      <p>Start typing to search for Twitch users...</p>
-    </div>
-  </div>
+  }
 
   <div class="search-bar">
     <div class="search-input-wrapper">
@@ -143,67 +165,71 @@
         placeholder="Search users by Twitch username or TTS name..."
         [(ngModel)]="searchQuery"
         (input)="filterUsers()"
-      >
+        >
     </div>
   </div>
 
   <div class="users-list">
-    <div *ngIf="filteredUsers.length === 0" class="empty-state">
-      <div class="empty-state-icon">👤</div>
-      <p>No users found.  <br>
-        Users will be added when they write something in chat, or use the Add User button above to add users manually.
-      </p>
-    </div>
-    <button
-      *ngFor="let user of filteredUsers"
-      type="button"
-      (click)="openUser(user)"
-      class="user-item"
-    >
-      <div class="user-info">
-        <div class="user-name">{{ user.twitchUsername }}</div>
-        <div class="user-details">
-          <div class="user-detail-item">
-            <span>TTS Name:</span>
-            <strong>{{ user.ttsName || 'Not set' }}</strong>
-          </div>
-          <div class="user-detail-item">
-            <span>Voice:</span>
-            <span [class.badge]="true" [class.voice]="user.ttsVoiceId" [class]="{'badge': true, 'voice': user.ttsVoiceId}">
-              {{ getVoiceDisplayName(user) }}
-            </span>
-          </div>
-          <div class="user-detail-item">
-            <span>Pronouns:</span>
-            <strong>{{ getPronounDisplayName(user.pronouns) }}</strong>
-          </div>
-          <div class="user-detail-item">
-            <span>Intros:</span>
-            <strong>{{ getIntroCount(user) }}</strong>
+    @if (filteredUsers.length === 0) {
+      <div class="empty-state">
+        <div class="empty-state-icon">👤</div>
+        <p>No users found.  <br>
+          Users will be added when they write something in chat, or use the Add User button above to add users manually.
+        </p>
+      </div>
+    }
+    @for (user of filteredUsers; track user) {
+      <button
+        type="button"
+        (click)="openUser(user)"
+        class="user-item"
+        >
+        <div class="user-info">
+          <div class="user-name">{{ user.twitchUsername }}</div>
+          <div class="user-details">
+            <div class="user-detail-item">
+              <span>TTS Name:</span>
+              <strong>{{ user.ttsName || 'Not set' }}</strong>
+            </div>
+            <div class="user-detail-item">
+              <span>Voice:</span>
+              <span [class.badge]="true" [class.voice]="user.ttsVoiceId" [class]="{'badge': true, 'voice': user.ttsVoiceId}">
+                {{ getVoiceDisplayName(user) }}
+              </span>
+            </div>
+            <div class="user-detail-item">
+              <span>Pronouns:</span>
+              <strong>{{ getPronounDisplayName(user.pronouns) }}</strong>
+            </div>
+            <div class="user-detail-item">
+              <span>Intros:</span>
+              <strong>{{ getIntroCount(user) }}</strong>
+            </div>
           </div>
         </div>
-      </div>
-      <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-      </svg>
-    </button>
+        <svg class="chevron" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+        </svg>
+      </button>
+    }
   </div>
 </div>
 
-<div
-  *ngIf="selectedUserId"
-  class="user-detail-modal"
-  role="dialog"
-  aria-modal="true"
-  aria-label="Edit user"
-  (click)="userDetail.requestClose()"
-  (keydown.escape)="userDetail.requestClose(); $event.stopPropagation()"
->
-  <app-user-detail
-    #userDetail
-    [twitchUserId]="selectedUserId"
-    [modalMode]="true"
-    (closed)="closeUser()"
-    (click)="$event.stopPropagation()"
-  ></app-user-detail>
-</div>
+@if (selectedUserId) {
+  <div
+    class="user-detail-modal"
+    role="dialog"
+    aria-modal="true"
+    aria-label="Edit user"
+    (click)="userDetail.requestClose()"
+    (keydown.escape)="userDetail.requestClose(); $event.stopPropagation()"
+    >
+    <app-user-detail
+      #userDetail
+      [twitchUserId]="selectedUserId"
+      [modalMode]="true"
+      (closed)="closeUser()"
+      (click)="$event.stopPropagation()"
+    ></app-user-detail>
+  </div>
+}

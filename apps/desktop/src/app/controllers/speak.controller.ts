@@ -11,6 +11,7 @@ import { join } from 'path';
 import { tmpdir } from 'os';
 import { v4 as uuid } from 'uuid';
 import { AudioData } from '../services/voice-providers/audio-data.interface';
+import { RenderTimingService } from '../services/render-timing.service';
 
 @ApiTags('speak')
 @Controller('speak')
@@ -21,6 +22,7 @@ export class SpeakController {
     private readonly voiceProviderService: VoiceProviderService,
     private readonly audioProcessorService: AudioProcessorService,
     private readonly httpService: HttpService,
+    private readonly renderTimingService: RenderTimingService,
   ) {}
 
   @Post()
@@ -83,6 +85,7 @@ export class SpeakController {
         } catch {
           // Best-effort cleanup; ignore if temp file already went away.
         }
+        this.logDiscarded(audioData.timingId);
         return {
           success: false,
           message: 'Speech render discarded due to stop',
@@ -188,6 +191,7 @@ export class SpeakController {
         } catch {
           // Best-effort cleanup; ignore if temp file already went away.
         }
+        this.logDiscarded(audioData.timingId);
         return {
           success: false,
           message: 'Preview render discarded due to stop',
@@ -225,6 +229,17 @@ export class SpeakController {
       queueSize: result.queueSize,
       message: 'Stopped playback and cleared pending queue',
     };
+  }
+
+  private logDiscarded(timingId?: string): void {
+    if (!timingId) {
+      return;
+    }
+    this.renderTimingService.log({
+      id: timingId,
+      stage: 'discarded',
+      discarded: true,
+    });
   }
 }
 

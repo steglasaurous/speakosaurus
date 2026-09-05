@@ -19,6 +19,17 @@ const HEALTH_POLL_MS = 500;
 /** Fixed high port avoids clashing with a user Piper on :5000. */
 const PREFERRED_PORT = 18765;
 
+export type PiperThreadCap = 'auto' | '1' | '2' | '4';
+
+export function normalizePiperThreadCap(
+  value?: string | null,
+): PiperThreadCap {
+  if (value === '1' || value === '2' || value === '4') {
+    return value;
+  }
+  return 'auto';
+}
+
 type RuntimeJson = {
   pythonRelative?: string;
   defaultVoice?: string;
@@ -31,6 +42,7 @@ export class PiperHttpServerService implements OnModuleDestroy {
   private baseUrl: string | null = null;
   private starting: Promise<string | null> | null = null;
   private intentionalStop = false;
+  private currentThreadCap: PiperThreadCap | null = null;
 
   isSupportedPlatform(): boolean {
     return process.platform === 'win32' || process.platform === 'linux';
@@ -90,16 +102,25 @@ export class PiperHttpServerService implements OnModuleDestroy {
 
   /**
    * Start the managed Piper HTTP server if the bundled runtime is available.
+   * Restarts the child when the CPU thread cap differs from the running process.
    * Returns the base URL, or null if unavailable.
    */
-  async ensureStarted(): Promise<string | null> {
+  async ensureStarted(threadCap?: string | null): Promise<string | null> {
+    const cap = normalizePiperThreadCap(threadCap);
     if (this.isRunning()) {
-      return this.baseUrl;
+      if (this.currentThreadCap === cap) {
+        return this.baseUrl;
+      }
+      this.logger.log('Restarting managed Piper due to thread cap change', {
+        from: this.currentThreadCap,
+        to: cap,
+      });
+      await this.stop();
     }
     if (this.starting) {
       return this.starting;
     }
-    this.starting = this.startInternal().finally(() => {
+    this.starting = this.startInternal(cap).finally(() => {
       this.starting = null;
     });
     return this.starting;
@@ -110,6 +131,7 @@ export class PiperHttpServerService implements OnModuleDestroy {
     const child = this.child;
     this.child = null;
     this.baseUrl = null;
+    this.currentThreadCap = null;
 
     if (!child || child.exitCode != null) {
       this.intentionalStop = false;
@@ -149,7 +171,7 @@ export class PiperHttpServerService implements OnModuleDestroy {
     await this.stop();
   }
 
-  private async startInternal(): Promise<string | null> {
+  private async startInternal(threadCap: PiperThreadCap): Promise<string | null> {
     if (!this.isSupportedPlatform()) {
       this.logger.log('Bundled Piper not supported on this platform');
       return null;
@@ -179,9 +201,8 @@ export class PiperHttpServerService implements OnModuleDestroy {
     }
 
     const port = await this.findAvailablePort(PREFERRED_PORT);
-    const args = [
-      '-m',
-      'piper.http_server',
+    const wrapperPath = this.resolveWrapperPath(runtimeRoot);
+    const serverArgs = [
       '--host',
       '127.0.0.1',
       '--port',
@@ -193,6 +214,15 @@ export class PiperHttpServerService implements OnModuleDestroy {
       '--download-dir',
       voicesDir,
     ];
+    const args = wrapperPath
+      ? [wrapperPath, ...serverArgs]
+      : ['-m', 'piper.http_server', ...serverArgs];
+
+    if (!wrapperPath) {
+      this.logger.warn(
+        'Piper HTTP wrapper not found; starting piper.http_server without thread cap or alignment patches',
+      );
+    }
 
     this.intentionalStop = false;
     this.logger.log('Starting managed Piper HTTP server', {
@@ -200,11 +230,13 @@ export class PiperHttpServerService implements OnModuleDestroy {
       port,
       voicesDir,
       defaultVoice,
+      threadCap,
+      wrapperPath,
     });
 
     const child = spawn(pythonExe, args, {
       cwd: voicesDir,
-      env: this.cleanedEnv(),
+      env: this.cleanedEnv(threadCap),
       stdio: ['ignore', 'pipe', 'pipe'],
       windowsHide: true,
     });
@@ -223,6 +255,7 @@ export class PiperHttpServerService implements OnModuleDestroy {
       if (this.child === child) {
         this.child = null;
         this.baseUrl = null;
+        this.currentThreadCap = null;
       }
     });
     child.on('error', (err) => {
@@ -230,6 +263,7 @@ export class PiperHttpServerService implements OnModuleDestroy {
       if (this.child === child) {
         this.child = null;
         this.baseUrl = null;
+        this.currentThreadCap = null;
       }
     });
 
@@ -242,8 +276,34 @@ export class PiperHttpServerService implements OnModuleDestroy {
     }
 
     this.baseUrl = url;
-    this.logger.log(`Managed Piper ready at ${url}`);
+    this.currentThreadCap = threadCap;
+    this.logger.log(`Managed Piper ready at ${url}`, { threadCap });
     return url;
+  }
+
+  /**
+   * Wrapper must live outside asar so Python can execute it.
+   * Packaged: extraResources copies it next to the runtime.
+   * Dev: fall back to the repo scripts/ copy.
+   */
+  private resolveWrapperPath(runtimeRoot: string): string | null {
+    const candidates = [join(runtimeRoot, 'piper_http_server_wrapper.py')];
+    if (app.isPackaged) {
+      candidates.push(
+        join(process.resourcesPath || '', 'piper', 'piper_http_server_wrapper.py'),
+      );
+    } else {
+      candidates.push(
+        join(process.cwd(), 'scripts', 'piper_http_server_wrapper.py'),
+        join(__dirname, '..', '..', '..', 'scripts', 'piper_http_server_wrapper.py'),
+      );
+    }
+    for (const candidate of candidates) {
+      if (existsSync(candidate)) {
+        return candidate;
+      }
+    }
+    return null;
   }
 
   /**
@@ -303,12 +363,13 @@ export class PiperHttpServerService implements OnModuleDestroy {
     }
   }
 
-  private cleanedEnv(): NodeJS.ProcessEnv {
+  private cleanedEnv(threadCap: PiperThreadCap): NodeJS.ProcessEnv {
     const env = { ...process.env };
     delete env.PYTHONPATH;
     delete env.PYTHONHOME;
     delete env.VIRTUAL_ENV;
     // Avoid inheriting a venv that could shadow the bundled packages.
+    env.SPEAKMANAGER_PIPER_THREADS = threadCap === 'auto' ? '0' : threadCap;
     return env;
   }
 

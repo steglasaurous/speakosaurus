@@ -12,6 +12,7 @@ import { CreateSettingDto, SettingDto, UpdateSettingDto } from '../dto/setting.d
 import { SettingsService, Setting } from '../services/settings.service';
 import { VoiceProviderService } from '../services/voice-providers/voice-provider.service';
 import { StreamerBotManagerService } from '../services/streamer-bot-manager.service';
+import { RenderTimingService } from '../services/render-timing.service';
 
 @ApiTags('settings')
 @Controller('settings')
@@ -20,6 +21,7 @@ export class SettingsController {
     private readonly settingsService: SettingsService,
     private readonly voiceProviderService: VoiceProviderService,
     private readonly streamerBotManagerService: StreamerBotManagerService,
+    private readonly renderTimingService: RenderTimingService,
   ) {}
 
   @Get()
@@ -163,10 +165,14 @@ export class SettingsController {
       case Setting.PIPER_HTTP_URL:
       case Setting.PIPER_USE_BUILT_IN:
       case Setting.PIPER_ENABLED:
+      case Setting.PIPER_CPU_THREADS:
         await this.voiceProviderService.updatePiperProvider();
         break;
       case Setting.STREAMERBOT_WEBSOCKET_URL:
         await this.streamerBotManagerService.updateStreamerBotService();
+        break;
+      case Setting.LOG_RENDER_TIMING:
+        await this.renderTimingService.refreshEnabled();
         break;
     }
   }

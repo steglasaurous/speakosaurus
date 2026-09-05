@@ -6,6 +6,12 @@
     "executableName": "Speakosaurus",
     "appId": "com.speakosaurus.app",
     "productName": "Speakosaurus",
+    "toolsets": {
+      "appimage": "1.0.3"
+    },
+    "appImage": {
+      "compression": "gzip"
+    },
     "linux": {
       "target": ["AppImage"],
       "category": "Utility"

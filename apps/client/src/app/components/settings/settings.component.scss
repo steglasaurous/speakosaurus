@@ -76,6 +76,7 @@ h1 {
   cursor: not-allowed;
 }
 
+.tab-extra-action,
 .pronoun-population-action {
   display: flex;
   align-items: center;
@@ -86,15 +87,39 @@ h1 {
   border-top: 2px solid #e5e5e7;
 }
 
+.tab-extra-action h3,
 .pronoun-population-action h3 {
   margin: 0 0 6px;
   font-size: 18px;
 }
 
+.tab-extra-action p,
 .pronoun-population-action p {
   margin: 0;
   color: #86868b;
   font-size: 14px;
+}
+
+.open-logs-button {
+  background: #007aff;
+  color: white;
+  border: none;
+  padding: 12px 20px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  white-space: nowrap;
+}
+
+.open-logs-button:hover:not(:disabled) {
+  background: #0051d5;
+}
+
+.open-logs-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
 }
 
 .save-all-button {

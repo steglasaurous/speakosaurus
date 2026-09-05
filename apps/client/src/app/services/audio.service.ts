@@ -6,12 +6,19 @@ export interface AudioPlayData {
   format: string;
   message: string;
   volume?: number;
+  timingId?: string;
   voice: {
     providerName: string;
     voiceId: string;
     voiceName: string;
     displayName: string;
   };
+}
+
+export interface AudioTimingPayload {
+  timingId: string;
+  stage: string;
+  ms: number;
 }
 
 declare global {
@@ -21,6 +28,7 @@ declare global {
       removeAudioPlayListener: () => void;
       onAudioStop: (callback: () => void) => void;
       removeAudioStopListener: () => void;
+      reportAudioTiming?: (payload: AudioTimingPayload) => void;
     };
   }
 }
@@ -157,6 +165,8 @@ export class AudioService implements OnDestroy {
       return;
     }
 
+    const decodeStarted = audioData.timingId ? performance.now() : 0;
+
     try {
       // Convert base64 to ArrayBuffer
       const binaryString = atob(audioData.base64);
@@ -165,17 +175,20 @@ export class AudioService implements OnDestroy {
         bytes[i] = binaryString.charCodeAt(i);
       }
       const arrayBuffer = bytes.buffer;
+      const onPlaybackStarted = () => {
+        this.reportDecodeTiming(audioData.timingId, decodeStarted);
+      };
 
       // Try Web Audio API first (works for WAV and often MP3/M4A)
       if (this.audioContext && this.canUseWebAudioAPI(audioData.format)) {
         try {
-          await this.playWithWebAudioAPI(arrayBuffer, audioData.volume ?? 1);
+          await this.playWithWebAudioAPI(arrayBuffer, audioData.volume ?? 1, onPlaybackStarted);
         } catch (error) {
           console.warn('Web Audio API failed, falling back to HTML5 Audio:', error);
-          await this.playWithHTML5Audio(arrayBuffer, audioData.format, audioData.volume ?? 1);
+          await this.playWithHTML5Audio(arrayBuffer, audioData.format, audioData.volume ?? 1, onPlaybackStarted);
         }
       } else {
-        await this.playWithHTML5Audio(arrayBuffer, audioData.format, audioData.volume ?? 1);
+        await this.playWithHTML5Audio(arrayBuffer, audioData.format, audioData.volume ?? 1, onPlaybackStarted);
       }
 
       // Note: Pause between messages is handled by the main process
@@ -208,7 +221,22 @@ export class AudioService implements OnDestroy {
     return mimeTypes[formatLower] || `audio/${format}`;
   }
 
-  private async playWithWebAudioAPI(arrayBuffer: ArrayBuffer, volume = 1): Promise<void> {
+  private reportDecodeTiming(timingId: string | undefined, started: number): void {
+    if (!timingId || !window.AppBridge?.reportAudioTiming) {
+      return;
+    }
+    window.AppBridge.reportAudioTiming({
+      timingId,
+      stage: 'decode',
+      ms: Math.round(performance.now() - started),
+    });
+  }
+
+  private async playWithWebAudioAPI(
+    arrayBuffer: ArrayBuffer,
+    volume = 1,
+    onPlaybackStarted?: () => void,
+  ): Promise<void> {
     if (!this.audioContext) {
       throw new Error('AudioContext not available');
     }
@@ -240,6 +268,7 @@ export class AudioService implements OnDestroy {
           resolve();
         };
         source.start(0);
+        onPlaybackStarted?.();
       } catch (error) {
         this.currentAudioSource = null;
         reject(error instanceof Error ? error : new Error('Failed to start audio playback'));
@@ -247,7 +276,12 @@ export class AudioService implements OnDestroy {
     });
   }
 
-  private playWithHTML5Audio(arrayBuffer: ArrayBuffer, format: string, volume = 1): Promise<void> {
+  private playWithHTML5Audio(
+    arrayBuffer: ArrayBuffer,
+    format: string,
+    volume = 1,
+    onPlaybackStarted?: () => void,
+  ): Promise<void> {
     // Create blob URL from array buffer with proper MIME type
     const mimeType = this.getMimeType(format);
     const blob = new Blob([arrayBuffer], { type: mimeType });
@@ -270,7 +304,9 @@ export class AudioService implements OnDestroy {
         this.currentAudioSource = null;
         reject(error);
       };
-      audio.play().catch(reject);
+      audio.play().then(() => {
+        onPlaybackStarted?.();
+      }).catch(reject);
     });
   }
 

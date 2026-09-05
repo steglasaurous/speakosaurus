@@ -25,6 +25,7 @@ import { UserEventService } from './services/user-event.service';
 import { MigrationService } from './services/migration.service';
 import { PiperHttpServerService } from './services/piper-http-server.service';
 import { PiperVoiceCatalogService } from './services/piper-voice-catalog.service';
+import { RenderTimingService } from './services/render-timing.service';
 
 @Module({
   imports: [
@@ -45,6 +46,7 @@ import { PiperVoiceCatalogService } from './services/piper-voice-catalog.service
     },
     PiperHttpServerService,
     PiperVoiceCatalogService,
+    RenderTimingService,
     VoiceProviderService,
     CustomVoicesService,
     AudioProcessorService,

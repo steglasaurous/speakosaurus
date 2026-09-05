@@ -5,6 +5,12 @@ import { existsSync, cpSync, mkdirSync } from 'fs';
 import { join } from 'path';
 import App from './app/app';
 import { electronAppName, previousElectronAppName } from './app/constants';
+import {
+  configureAppLogger,
+  ElectronLogNestLogger,
+  appLog,
+} from './app/logging/app-logger';
+import { Logger } from '@nestjs/common';
 
 // Linux dev: Chromium's setuid sandbox often fails without chrome-sandbox (containers, etc.).
 // Set ELECTRON_DISABLE_SANDBOX=1 to force off on any platform when debugging packaged builds.
@@ -20,6 +26,8 @@ export default class Main {
     // Force a stable runtime app name so Electron resolves userData predictably.
     Main.migrateUserDataIfRenamed();
     app.setName(electronAppName);
+    // Linux WM_CLASS / app_id come from package.json "desktopName"
+    // (set in root package.json + build.extraMetadata).
 
     if (SquirrelEvents.handleEvents()) {
       // squirrel event handled (except first run event) and app will exit in 1000ms, so don't do anything else
@@ -69,29 +77,27 @@ export default class Main {
   }
 
   static setupErrorHandlers() {
-    // Handle uncaught exceptions
     process.on('uncaughtException', (error: Error) => {
-      console.error('Uncaught Exception:', error);
-      console.error('Stack:', error.stack);
-      // In production, you might want to show a dialog or log to file
+      appLog.error('Uncaught Exception:', error);
+      if (error.stack) {
+        appLog.error('Stack:', error.stack);
+      }
     });
 
-    // Handle unhandled promise rejections
-    process.on('unhandledRejection', (reason: any, promise: Promise<any>) => {
-      console.error('Unhandled Promise Rejection:', reason);
-      if (reason instanceof Error) {
-        console.error('Stack:', reason.stack);
+    process.on('unhandledRejection', (reason: unknown) => {
+      appLog.error('Unhandled Promise Rejection:', reason);
+      if (reason instanceof Error && reason.stack) {
+        appLog.error('Stack:', reason.stack);
       }
-      // In production, you might want to show a dialog or log to file
     });
   }
 }
 
-// Setup error handlers first
-Main.setupErrorHandlers();
-
-// handle setup events as quickly as possible
+// Set app name before configuring the log path (userData depends on it).
 Main.initialize();
+configureAppLogger(App.isDevelopmentMode());
+Logger.overrideLogger(new ElectronLogNestLogger());
+Main.setupErrorHandlers();
 
 // bootstrap app
 Main.bootstrapApp();

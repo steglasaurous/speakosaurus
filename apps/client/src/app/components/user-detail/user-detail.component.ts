@@ -1,5 +1,5 @@
 import { Component, EventEmitter, HostListener, inject, Input, OnInit, Output } from '@angular/core';
-import { CommonModule } from '@angular/common';
+
 import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
@@ -13,7 +13,7 @@ import { VoiceSelectorComponent } from '../voice-selector/voice-selector.compone
 @Component({
   selector: 'app-user-detail',
   standalone: true,
-  imports: [CommonModule, RouterModule, FormsModule, VoiceSelectorComponent],
+  imports: [RouterModule, FormsModule, VoiceSelectorComponent],
   templateUrl: './user-detail.component.html',
   styleUrl: './user-detail.component.scss',
 })

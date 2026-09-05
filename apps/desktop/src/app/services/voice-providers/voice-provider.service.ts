@@ -18,6 +18,9 @@ import { CustomVoicesService } from "../custom-voices.service";
 import { VoiceTweakSettings } from "./voice-tweak-settings.interface";
 import { PiperVoiceCatalogService } from "../piper-voice-catalog.service";
 import { stripPiperOnnxSuffix } from "../piper-voice-catalog.util";
+import { RenderTimingService } from "../render-timing.service";
+import { statSync } from "fs";
+import { v4 as uuid } from "uuid";
 
 @Injectable()
 export class VoiceProviderService implements OnModuleInit {
@@ -37,6 +40,7 @@ export class VoiceProviderService implements OnModuleInit {
         private readonly piperHttpServerService: PiperHttpServerService,
         private readonly customVoicesService: CustomVoicesService,
         private readonly piperVoiceCatalogService: PiperVoiceCatalogService,
+        private readonly renderTimingService: RenderTimingService,
     ) {
         // Start with the initial providers (typically just SpeakerttsVoiceProvider)
         this.voiceProviders = [...this.initialVoiceProviders];
@@ -151,16 +155,37 @@ export class VoiceProviderService implements OnModuleInit {
         this.statusEventService.emitStatusUpdate({ 
             pendingMessages: this.pendingMessages 
         });
+        const timingEnabled = this.renderTimingService.isEnabled();
+        const timingId = timingEnabled ? uuid() : undefined;
+        const renderStarted = timingEnabled ? Date.now() : 0;
         try {
             const audioData = await provider.getRenderedMessage(message, renderVoice);
             this.pendingMessages--;
             this.statusEventService.emitStatusUpdate({ 
                 pendingMessages: this.pendingMessages 
             });
+            if (timingId) {
+                let audioBytes: number | undefined;
+                try {
+                    audioBytes = statSync(audioData.audioFilePath).size;
+                } catch {
+                    // Temp file may already be gone; omit size.
+                }
+                this.renderTimingService.log({
+                    id: timingId,
+                    stage: 'render',
+                    provider: voice.providerName,
+                    voiceId: renderVoice.voiceId,
+                    messageChars: message.length,
+                    audioBytes,
+                    ms: Date.now() - renderStarted,
+                });
+            }
             return {
                 ...audioData,
                 voice,
                 volume: tweaks?.volume,
+                timingId,
             };
         } catch (error) {
             this.pendingMessages--;
@@ -424,7 +449,12 @@ export class VoiceProviderService implements OnModuleInit {
         const externalUrl = urlSetting?.value?.trim();
 
         if (useBuiltIn) {
-            const managedUrl = await this.piperHttpServerService.ensureStarted();
+            const threadCapSetting = await this.settingsService.getSetting(
+                Setting.PIPER_CPU_THREADS,
+            );
+            const managedUrl = await this.piperHttpServerService.ensureStarted(
+                threadCapSetting?.value,
+            );
             if (managedUrl) {
                 const piperProvider = new PiperVoiceProvider(
                     managedUrl,

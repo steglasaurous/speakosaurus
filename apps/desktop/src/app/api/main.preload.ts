@@ -4,6 +4,8 @@ export interface AudioPlayData {
     base64: string;
     format: string;
     message: string;
+    volume?: number;
+    timingId?: string;
     voice: {
         providerName: string;
         voiceId: string;
@@ -12,10 +14,17 @@ export interface AudioPlayData {
     };
 }
 
+export interface AudioTimingPayload {
+    timingId: string;
+    stage: string;
+    ms: number;
+}
+
 contextBridge.exposeInMainWorld('electron', {
   getAppVersion: () => ipcRenderer.invoke('get-app-version'),
   platform: process.platform,
   openExternal: (url: string) => ipcRenderer.invoke('open-external-url', url),
+  openLogsFolder: () => ipcRenderer.invoke('open-logs-folder'),
 });
 
 contextBridge.exposeInMainWorld(
@@ -36,6 +45,9 @@ contextBridge.exposeInMainWorld(
         },
         removeAudioStopListener: () => {
             ipcRenderer.removeAllListeners('audio:stop');
+        },
+        reportAudioTiming: (payload: AudioTimingPayload) => {
+            ipcRenderer.send('audio:timing', payload);
         },
     },
 );

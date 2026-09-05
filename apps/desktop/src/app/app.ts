@@ -10,6 +10,7 @@ import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { type INestApplication, Logger } from '@nestjs/common';
 import { MigrationService } from './services/migration.service';
+import { ElectronLogNestLogger, appLog } from './logging/app-logger';
 
 export default class App {
   // Keep a global reference of the window object, if you don't, the window will
@@ -70,8 +71,7 @@ export default class App {
           App.mainWindow.webContents.executeJavaScript(`
             alert('Failed to start application: ${error instanceof Error ? error.message : String(error)}');
           `).catch(() => {
-            // If we can't show alert, at least log it
-            console.error('Failed to show error dialog');
+            appLog.error('Failed to show error dialog');
           });
         }
         // Re-throw to trigger error handlers
@@ -92,7 +92,9 @@ export default class App {
       // Consider showing a user notification here in production
     }
 
-    const nestApp = await NestFactory.create(AppModule);
+    const nestApp = await NestFactory.create(AppModule, {
+      logger: new ElectronLogNestLogger(),
+    });
     App.nestApp = nestApp;
     nestApp.enableShutdownHooks();
     const globalPrefix = 'api';
@@ -150,10 +152,21 @@ export default class App {
     }
   }
 
+  private static resolveAppIcon(): string | undefined {
+    const candidates = [
+      join(__dirname, 'assets/icon.png'),
+      // Dev fallback when running from apps/desktop/src without copied assets
+      join(__dirname, '../../../build/icon.png'),
+      join(__dirname, '../../../../build/icon.png'),
+    ];
+    return candidates.find((path) => existsSync(path));
+  }
+
   private static initMainWindow() {
     const workAreaSize = screen.getPrimaryDisplay().workAreaSize;
     const width = Math.min(1280, workAreaSize.width || 1280);
     const height = Math.min(720, workAreaSize.height || 720);
+    const icon = App.resolveAppIcon();
 
     // Create the browser window.
     App.mainWindow = new BrowserWindow({
@@ -161,6 +174,7 @@ export default class App {
       height: height,
       title: electronAppName,
       show: false,
+      ...(icon ? { icon } : {}),
       webPreferences: {
         contextIsolation: true,
         backgroundThrottling: false,

@@ -48,3 +48,7 @@ database.sqlite
 
 # Bundled Piper runtime (prepared by scripts/prepare-piper-runtime.mjs)
 vendor/piper/
+
+.claude/worktrees
+.nx/polygraph
+.nx/self-healing
