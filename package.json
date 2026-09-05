@@ -116,7 +116,7 @@
     "reflect-metadata": "^0.1.13",
     "rxjs": "~7.8.0",
     "sound-play": "^1.1.0",
-    "speakertts": "git@github.com:steglasaurous/speakertts.git#main",
+    "speakertts": "https://github.com/steglasaurous/speakertts.git#main",
     "uuid": "^13.0.0",
     "zone.js": "^0.15.1"
   },
