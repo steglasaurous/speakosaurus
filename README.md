@@ -1,4 +1,6 @@
-![Speakosaurus](./build/icons/512x512.png)
+<p align="center">
+  <img src="speakosaurus.png" alt="Speakosaurus" />
+</p>
 
 Speakosaurus is a text-to-speech chat reader for Twitch (and other platforms supported by Streamer.bot), with custom voice support and per-user management.
 
