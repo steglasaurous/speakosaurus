@@ -12,6 +12,33 @@ permissions:
   contents: read
 
 jobs:
+  version-check:
+    if: github.ref_type != 'tag' && (github.event_name == 'pull_request' || github.ref == 'refs/heads/main')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+
+      - name: Check package.json version bump
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_REF="${{ github.event.pull_request.base.sha }}"
+          else
+            BASE_REF="${{ github.event.before }}"
+            # New branch / empty before SHA — fall back to previous commit on main
+            if [ -z "$BASE_REF" ] || [ "$BASE_REF" = "0000000000000000000000000000000000000000" ]; then
+              BASE_REF="HEAD^"
+            fi
+          fi
+          node scripts/check-version-bump.mjs --base-ref "$BASE_REF"
+
   build:
     strategy:
       fail-fast: false

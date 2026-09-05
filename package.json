@@ -29,7 +29,8 @@
     "nxe:test:backend": "nx test desktop",
     "nxe:package:app": "nx run desktop:make --prepackageOnly",
     "nxe:make:app": "nx run desktop:make",
-    "prepare:piper": "node scripts/prepare-piper-runtime.mjs"
+    "prepare:piper": "node scripts/prepare-piper-runtime.mjs",
+    "check:version": "node scripts/check-version-bump.mjs"
   },
   "private": true,
   "desktopName": "com.speakosaurus.app",
