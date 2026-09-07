@@ -52,3 +52,6 @@ vendor/piper/
 .claude/worktrees
 .nx/polygraph
 .nx/self-healing
+# Bridge local database
+apps/bridge/data/
+*.db

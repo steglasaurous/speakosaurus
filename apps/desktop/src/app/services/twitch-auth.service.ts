@@ -79,7 +79,7 @@ export class TwitchAuthService {
     // Request device code from Twitch
     const params = new URLSearchParams();
     params.append('client_id', clientId);
-    params.append('scopes', 'user:read:email');
+    params.append('scopes', 'user:read:email moderation:read');
     
     const response = await axios.post('https://id.twitch.tv/oauth2/device', params.toString(), {
       headers: {
@@ -435,6 +435,70 @@ export class TwitchAuthService {
     
     this.authProvider = null;
     this.apiClient = null;
+  }
+
+  async getStoredScopes(): Promise<string[]> {
+    const tokens = await this.getStoredTokens();
+    return tokens?.scope ?? [];
+  }
+
+  /**
+   * Tokens for registering a remote-access session on the bridge.
+   */
+  async getTokensForRemoteAccess(): Promise<{
+    accessToken: string;
+    refreshToken: string;
+    expiresIn: number;
+    scope: string[];
+  } | null> {
+    if (!this.apiClient) {
+      await this.initialize();
+    }
+    const tokens = await this.getStoredTokens();
+    if (!tokens) {
+      return null;
+    }
+    return {
+      accessToken: tokens.accessToken,
+      refreshToken: tokens.refreshToken,
+      expiresIn: tokens.expiresIn,
+      scope: tokens.scope,
+    };
+  }
+
+  async getAuthenticatedUser(): Promise<{ id: string; login: string; displayName: string } | null> {
+    const tokens = await this.getStoredTokens();
+    if (!tokens) {
+      return null;
+    }
+    try {
+      const response = await axios.get<{
+        data: Array<{ id: string; login: string; display_name: string }>;
+      }>('https://api.twitch.tv/helix/users', {
+        headers: {
+          'Client-ID': (await this.getClientId()) || '',
+          Authorization: `Bearer ${tokens.accessToken}`,
+        },
+      });
+      const user = response.data.data?.[0];
+      if (!user) {
+        return null;
+      }
+      return {
+        id: user.id,
+        login: user.login,
+        displayName: user.display_name,
+      };
+    } catch (error: any) {
+      if (error?.response?.status === 401) {
+        const refreshed = await this.refreshAccessToken();
+        if (refreshed) {
+          return this.getAuthenticatedUser();
+        }
+      }
+      this.logger.error('Failed to get authenticated Twitch user', error);
+      return null;
+    }
   }
 }
 

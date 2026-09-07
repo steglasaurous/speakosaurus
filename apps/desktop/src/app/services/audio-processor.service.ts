@@ -13,6 +13,7 @@ export class AudioProcessorService {
     private queue: AudioData[] = [];
 
     private isProcessing = false;
+    private isPaused = false;
 
     /**
      * Monotonically increasing value that is bumped whenever the user hits "Stop".
@@ -34,15 +35,77 @@ export class AudioProcessorService {
         return this.queue.length;
     }
 
+    isPausedState(): boolean {
+        return this.isPaused;
+    }
+
+    pause(): void {
+        this.isPaused = true;
+        this.statusEventService.emitStatusUpdate({
+            audioQueueSize: this.queue.length,
+        });
+    }
+
+    resume(): void {
+        this.isPaused = false;
+        if (!this.isProcessing && this.queue.length > 0) {
+            void this.processQueue();
+        }
+        this.statusEventService.emitStatusUpdate({
+            audioQueueSize: this.queue.length,
+        });
+    }
+
+    /**
+     * Stops currently playing audio and continues with the next queued item.
+     */
+    skipCurrent(): void {
+        this.stopEpoch++;
+        this.sendStopToRenderer();
+        if (!this.isProcessing && this.queue.length > 0 && !this.isPaused) {
+            void this.processQueue();
+        }
+        this.statusEventService.emitStatusUpdate({
+            audioQueueSize: this.queue.length,
+        });
+    }
+
+    clearQueue(): void {
+        this.queue = [];
+        this.statusEventService.emitStatusUpdate({ audioQueueSize: 0 });
+    }
+
     async addToQueue(audioData: AudioData) {
         this.queue.push(audioData);
-        // Emit status update
-        this.statusEventService.emitStatusUpdate({ 
-            audioQueueSize: this.queue.length 
+        this.statusEventService.emitStatusUpdate({
+            audioQueueSize: this.queue.length,
         });
-        if (!this.isProcessing) {   
+        if (!this.isProcessing && !this.isPaused) {
             this.logger.log('Processing queue', { queueLength: this.queue.length });
             this.processQueue();
+        }
+    }
+
+    /**
+     * Play already-rendered base64 audio on the local broadcaster speakers
+     * without going through the file-based queue.
+     */
+    async playBase64Directly(payload: {
+        base64: string;
+        format: string;
+        message: string;
+        volume?: number;
+        voice: {
+            providerName: string;
+            voiceId: string;
+            voiceName: string;
+            displayName: string;
+        };
+    }): Promise<void> {
+        if (App.mainWindow && !App.mainWindow.isDestroyed()) {
+            App.mainWindow.webContents.send('audio:play', payload);
+        } else {
+            this.logger.warn('Main window not available, cannot send audio to renderer');
         }
     }
 
@@ -52,16 +115,13 @@ export class AudioProcessorService {
     stopAll(): { success: boolean; queueSize: number } {
         this.logger.log('Stopping all speech playback and clearing queue');
 
-        // Cancel the currently running processing loop, if any.
         this.stopEpoch++;
         this.processingRunId++;
         this.isProcessing = false;
+        this.isPaused = false;
 
-        // Clear pending items.
         this.queue = [];
         this.statusEventService.emitStatusUpdate({ audioQueueSize: 0 });
-
-        // Tell the renderer to stop the currently playing audio.
         this.sendStopToRenderer();
 
         return { success: true, queueSize: 0 };
@@ -81,17 +141,18 @@ export class AudioProcessorService {
         }
 
         while (this.queue.length > 0 && runId === this.processingRunId) {
+            if (this.isPaused) {
+                break;
+            }
             const audioData = this.queue.shift();
             if (audioData) {
-                // Capture epoch at the moment we decide to play this item.
                 const stopEpochAtPlay = this.stopEpoch;
                 this.logger.log('Playing audio data', { audioData });
                 await this.playAudio(audioData, stopEpochAtPlay);
-                // Emit update after playing audio
-                this.statusEventService.emitStatusUpdate({ 
-                    audioQueueSize: this.queue.length 
+                this.statusEventService.emitStatusUpdate({
+                    audioQueueSize: this.queue.length,
                 });
-                
+
                 this.logger.log(`Pausing between messages for ${pauseBetweenMessages}ms`);
                 await this.sleepInterruptible(pauseBetweenMessages, runId);
             }
@@ -102,7 +163,6 @@ export class AudioProcessorService {
     }
 
     private async sleepInterruptible(ms: number, runId: number): Promise<void> {
-        // Wake periodically so we can exit quickly on `stopAll()`.
         const start = Date.now();
         const stepMs = 50;
 
@@ -115,15 +175,10 @@ export class AudioProcessorService {
     private async playAudio(audioData: AudioData, stopEpochAtPlay: number): Promise<void> {
         try {
             const transferStarted = audioData.timingId ? Date.now() : 0;
-            // Read audio file and convert to base64
             const audioBuffer = readFileSync(audioData.audioFilePath);
             const base64 = audioBuffer.toString('base64');
-            
-            // Determine audio format from file extension
-            const format = extname(audioData.audioFilePath).slice(1).toLowerCase(); // Remove leading dot
+            const format = extname(audioData.audioFilePath).slice(1).toLowerCase();
 
-            // If Stop was requested after we captured `stopEpochAtPlay`, suppress playback.
-            // (Prevents `audio:play` from being sent just as the user hits Stop.)
             if (stopEpochAtPlay !== this.stopEpoch) {
                 this.logger.log('Suppressing audio:play due to stop epoch change', {
                     stopEpochAtPlay,
@@ -131,10 +186,7 @@ export class AudioProcessorService {
                 });
                 return;
             }
-            
-            // Send audio data to renderer process via IPC
-            // TODO: Evaluate moving play queue handling to the frontend completely, and have the backend instead
-            //       return rendered messages synchronously. This way the API could operate remotely in the future (for moderator use).
+
             if (App.mainWindow && !App.mainWindow.isDestroyed()) {
                 App.mainWindow.webContents.send('audio:play', {
                     base64,
@@ -161,15 +213,12 @@ export class AudioProcessorService {
             } else {
                 this.logger.warn('Main window not available, cannot send audio to renderer');
             }
-            
-            // Wait a bit for the audio to be sent before deleting the file
-            // The renderer will handle playback, but we give it a moment to receive the data
+
             await new Promise(resolve => setTimeout(resolve, 100));
         } catch (err) {
             this.logger.error('Error processing audio for renderer', err);
             throw err;
         } finally {
-            // Delete the temporary file after sending to renderer
             try {
                 unlinkSync(audioData.audioFilePath);
             } catch (deleteError) {

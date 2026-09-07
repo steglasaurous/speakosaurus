@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { API_URL } from '../constants';
+import { ConnectionConfigService } from './connection-config.service';
 import { Voice, VoiceTweakSettings } from './voices.service';
 
 export interface CreateCustomVoiceRequest {
@@ -20,18 +20,18 @@ export interface UpdateCustomVoiceRequest {
   providedIn: 'root',
 })
 export class CustomVoicesService {
-  private apiUrl = API_URL;
   private http = inject(HttpClient);
+  private connection = inject(ConnectionConfigService);
 
   create(body: CreateCustomVoiceRequest): Observable<Voice> {
-    return this.http.post<Voice>(`${this.apiUrl}/custom-voices`, body);
+    return this.http.post<Voice>(`${this.connection.getApiUrl()}/custom-voices`, body);
   }
 
   update(id: string, body: UpdateCustomVoiceRequest): Observable<Voice> {
-    return this.http.put<Voice>(`${this.apiUrl}/custom-voices/${id}`, body);
+    return this.http.put<Voice>(`${this.connection.getApiUrl()}/custom-voices/${id}`, body);
   }
 
   delete(id: string): Observable<{ success: boolean }> {
-    return this.http.delete<{ success: boolean }>(`${this.apiUrl}/custom-voices/${id}`);
+    return this.http.delete<{ success: boolean }>(`${this.connection.getApiUrl()}/custom-voices/${id}`);
   }
 }

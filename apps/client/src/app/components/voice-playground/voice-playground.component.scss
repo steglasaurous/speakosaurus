@@ -201,3 +201,19 @@ textarea:focus,
     border-bottom: 1px solid #e5e5e7;
   }
 }
+.btn { display:inline-flex; }
+
+.dest-label {
+  display: grid;
+  gap: 6px;
+  margin-top: 10px;
+  font-size: 13px;
+  color: #515154;
+}
+
+.dest-label select {
+  padding: 8px 10px;
+  border-radius: 8px;
+  border: 1px solid #d2d2d7;
+  background: #fff;
+}

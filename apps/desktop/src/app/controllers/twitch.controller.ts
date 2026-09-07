@@ -56,7 +56,12 @@ export class TwitchController {
   })
   async getAuthStatus() {
     const isAuthenticated = await this.twitchAuthService.isAuthenticated();
-    return { isAuthenticated };
+    const scopes = await this.twitchAuthService.getStoredScopes();
+    return {
+      isAuthenticated,
+      scopes,
+      hasModerationRead: scopes.includes('moderation:read'),
+    };
   }
 
   @Post('auth/logout')

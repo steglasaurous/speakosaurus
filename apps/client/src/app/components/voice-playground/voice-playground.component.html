@@ -46,6 +46,16 @@
             >
             {{ playingSelected ? 'Playing…' : 'Play selected voice' }}
           </button>
+          @if (isRemoteMode) {
+            <label class="dest-label">
+              Play on
+              <select [(ngModel)]="playDestination">
+                <option value="remote">This browser (default)</option>
+                <option value="broadcaster">Broadcaster speakers</option>
+                <option value="both">Both</option>
+              </select>
+            </label>
+          }
         </div>
 
         <app-voice-tweaks

@@ -11,6 +11,8 @@ import { StreamerBotService, StreamerBotAction } from '../../services/streamerbo
 import { forkJoin, Subject } from 'rxjs';
 import { debounceTime, distinctUntilChanged, switchMap } from 'rxjs/operators';
 import { VoiceSelectorComponent } from '../voice-selector/voice-selector.component';
+import { RemoteAccessSettingsComponent } from '../remote-access-settings/remote-access-settings.component';
+import { ConnectionConfigService } from '../../services/connection-config.service';
 
 interface WordReplacement {
   from: string;
@@ -31,7 +33,7 @@ interface GroupedSettings {
 @Component({
   selector: 'app-settings',
   standalone: true,
-  imports: [FormsModule, RouterModule, VoiceSelectorComponent],
+  imports: [FormsModule, RouterModule, VoiceSelectorComponent, RemoteAccessSettingsComponent],
   templateUrl: './settings.component.html',
   styleUrl: './settings.component.scss',
 })
@@ -91,10 +93,15 @@ export class SettingsComponent implements OnInit {
   private twitchService = inject(TwitchService);
   private usersService = inject(UsersService);
   private streamerBotService = inject(StreamerBotService);
+  private connection = inject(ConnectionConfigService);
   private router = inject(Router);
   private route = inject(ActivatedRoute);
   private sanitizer = inject(DomSanitizer);
   private elementRef = inject<ElementRef<HTMLElement>>(ElementRef);
+
+  get isRemoteMode(): boolean {
+    return this.connection.isRemoteMode();
+  }
 
   ngOnInit(): void {
     this.loadSettings();
@@ -213,6 +220,15 @@ export class SettingsComponent implements OnInit {
       if (setting.group === 'Internal') {
         return;
       }
+      if (
+        this.isRemoteMode &&
+        (setting.group === 'StreamerBot Actions' ||
+          setting.group === 'Remote Access' ||
+          setting.group === 'Debugging' ||
+          setting.sensitive)
+      ) {
+        return;
+      }
       
       if (!grouped[setting.group]) {
         grouped[setting.group] = [];
@@ -256,6 +272,13 @@ export class SettingsComponent implements OnInit {
           subGroups,
         };
       });
+
+    if (!this.isRemoteMode && !this.groupedSettings.some((g) => g.group === 'Remote Access')) {
+      this.groupedSettings.push({
+        group: 'Remote Access',
+        subGroups: [{ settings: [] }],
+      });
+    }
   }
 
   initializeVoiceSettings(): void {

@@ -42,6 +42,10 @@ export enum Setting {
   SETUP_COMPLETED = 'setupCompleted',
   FAVOURITE_VOICES = 'favouriteVoices',
   CUSTOM_VOICES = 'customVoices',
+  REMOTE_ACCESS_ENABLED = 'remoteAccessEnabled',
+  REMOTE_ACCESS_BRIDGE_URL = 'remoteAccessBridgeUrl',
+  REMOTE_ACCESS_SESSION_ID = 'remoteAccessSessionId',
+  REMOTE_ACCESS_CONNECTION_TOKEN = 'remoteAccessConnectionToken',
 }
 
 export enum SettingType {
@@ -65,6 +69,7 @@ export enum SettingGroup {
   DEBUGGING = 'Debugging',
   INTERNAL = 'Internal',
   STREAMERBOT_ACTIONS = 'StreamerBot Actions',
+  REMOTE_ACCESS = 'Remote Access',
 }
 
 /**
@@ -504,6 +509,39 @@ export class SettingsService {
       description: 'User-saved customized voices with tweak settings',
       type: SettingType.JSON,
       default: '[]',
+    },
+    {
+      name: Setting.REMOTE_ACCESS_ENABLED,
+      displayName: 'Remote Access Enabled',
+      group: SettingGroup.INTERNAL,
+      description: 'Whether remote moderator access is enabled',
+      type: SettingType.BOOLEAN,
+      default: 'false',
+    },
+    {
+      name: Setting.REMOTE_ACCESS_BRIDGE_URL,
+      displayName: 'Bridge Server URL',
+      group: SettingGroup.INTERNAL,
+      description: 'URL of the hosted Speakosaurus bridge/relay',
+      type: SettingType.STRING,
+      default: 'http://localhost:3333',
+    },
+    {
+      name: Setting.REMOTE_ACCESS_SESSION_ID,
+      displayName: 'Remote Access Session ID',
+      group: SettingGroup.INTERNAL,
+      description: 'Active remote access session id',
+      type: SettingType.STRING,
+      default: '',
+    },
+    {
+      name: Setting.REMOTE_ACCESS_CONNECTION_TOKEN,
+      displayName: 'Remote Access Connection Token',
+      group: SettingGroup.INTERNAL,
+      description: 'WebSocket connection token for the bridge',
+      type: SettingType.STRING,
+      sensitive: true,
+      default: '',
     },
   ];
 

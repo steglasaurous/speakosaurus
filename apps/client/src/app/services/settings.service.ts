@@ -1,7 +1,7 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { API_URL } from '../constants';
+import { ConnectionConfigService } from './connection-config.service';
 
 export enum SettingType {
   STRING = 'string',
@@ -41,19 +41,18 @@ export interface UpdateSettingRequest {
   providedIn: 'root',
 })
 export class SettingsService {
-  private apiUrl = API_URL;
   private http = inject(HttpClient);
+  private connection = inject(ConnectionConfigService);
 
   getAllSettings(): Observable<Setting[]> {
-    return this.http.get<Setting[]>(`${this.apiUrl}/settings`);
+    return this.http.get<Setting[]>(`${this.connection.getApiUrl()}/settings`);
   }
 
   getSetting(name: string): Observable<Setting> {
-    return this.http.get<Setting>(`${this.apiUrl}/settings/${name}`);
+    return this.http.get<Setting>(`${this.connection.getApiUrl()}/settings/${name}`);
   }
 
   updateSetting(name: string, value: string): Observable<Setting> {
-    return this.http.put<Setting>(`${this.apiUrl}/settings/${name}`, { value });
+    return this.http.put<Setting>(`${this.connection.getApiUrl()}/settings/${name}`, { value });
   }
 }
-

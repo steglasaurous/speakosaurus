@@ -8,6 +8,38 @@
     <link rel="icon" type="image/x-icon" href="favicon.ico" />
   </head>
   <body>
+    <script>
+      (function () {
+        // Twitch auth-code return uses ?code=&state= on the real URL.
+        // Angular HashLocationStrategy navigations rewrite to /#/route and drop
+        // those query params, so stash them before the app boots.
+        try {
+          var params = new URLSearchParams(window.location.search);
+          var code = params.get('code');
+          var oauthError = params.get('error');
+          if (code || oauthError) {
+            sessionStorage.setItem(
+              'speakosaurus_twitch_oauth_return',
+              JSON.stringify({
+                code: code,
+                state: params.get('state'),
+                error: oauthError,
+                errorDescription: params.get('error_description'),
+                scope: params.get('scope'),
+              })
+            );
+            window.history.replaceState({}, '', window.location.pathname + '#/remote-login');
+          }
+        } catch (e) {}
+
+        // Legacy implicit-flow fragment rewrite
+        var hash = window.location.hash || '';
+        if (hash.indexOf('access_token=') !== -1 && hash.indexOf('/twitch-callback') === -1) {
+          var frag = hash.charAt(0) === '#' ? hash.substring(1) : hash;
+          window.location.replace(window.location.pathname + window.location.search + '#/twitch-callback?' + frag);
+        }
+      })();
+    </script>
     <app-root></app-root>
   </body>
 </html>

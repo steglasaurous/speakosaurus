@@ -56,6 +56,20 @@ export class AudioService implements OnDestroy {
     this.cleanup();
   }
 
+  /**
+   * Enqueue audio for playback (used by remote preview and similar flows).
+   */
+  enqueue(data: AudioPlayData): void {
+    this.playAudio(data);
+  }
+
+  /**
+   * Stop currently playing audio and clear the queue.
+   */
+  stopAll(): void {
+    this.stopAllPlayback();
+  }
+
   private initializeAudioContext(): void {
     try {
       // Create AudioContext for Web Audio API

@@ -493,6 +493,9 @@
               </button>
             </div>
           }
+          @if (activeTab === 'Remote Access' && !isRemoteMode) {
+            <app-remote-access-settings></app-remote-access-settings>
+          }
           @if (activeTab === 'Default Voices') {
             <div class="pronoun-population-action">
               <div>

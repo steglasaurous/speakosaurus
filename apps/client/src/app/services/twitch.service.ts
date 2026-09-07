@@ -2,7 +2,7 @@ import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, interval, throwError } from 'rxjs';
 import { catchError, switchMap, takeWhile, map } from 'rxjs/operators';
-import { API_URL } from '../constants';
+import { ConnectionConfigService } from './connection-config.service';
 
 export interface TwitchUser {
   id: string;
@@ -24,30 +24,50 @@ export interface DeviceCodeInfo {
 })
 export class TwitchService {
   private http = inject(HttpClient);
-  private apiUrl = API_URL;
+  private connection = inject(ConnectionConfigService);
 
   /**
    * Check if user is authenticated
    */
   isAuthenticated(): Observable<boolean> {
-    return this.http.get<{ isAuthenticated: boolean }>(`${this.apiUrl}/twitch/auth/status`).pipe(
-      map(response => response.isAuthenticated),
-      catchError(() => of(false))
-    );
+    return this.getAuthStatus().pipe(map((status) => status.isAuthenticated));
+  }
+
+  getAuthStatus(): Observable<{
+    isAuthenticated: boolean;
+    scopes: string[];
+    hasModerationRead: boolean;
+  }> {
+    return this.http
+      .get<{
+        isAuthenticated: boolean;
+        scopes?: string[];
+        hasModerationRead?: boolean;
+      }>(`${this.connection.getApiUrl()}/twitch/auth/status`)
+      .pipe(
+        map((response) => ({
+          isAuthenticated: !!response.isAuthenticated,
+          scopes: response.scopes ?? [],
+          hasModerationRead: !!response.hasModerationRead,
+        })),
+        catchError(() =>
+          of({ isAuthenticated: false, scopes: [], hasModerationRead: false }),
+        ),
+      );
   }
 
   /**
    * Start device code flow
    */
   startDeviceCodeFlow(): Observable<DeviceCodeInfo> {
-    return this.http.post<DeviceCodeInfo>(`${this.apiUrl}/twitch/auth/device-code`, {});
+    return this.http.post<DeviceCodeInfo>(`${this.connection.getApiUrl()}/twitch/auth/device-code`, {});
   }
 
   /**
    * Poll for device code completion
    */
   pollDeviceCode(): Observable<{ success: boolean; error?: string }> {
-    return this.http.get<{ success: boolean; error?: string }>(`${this.apiUrl}/twitch/auth/poll`);
+    return this.http.get<{ success: boolean; error?: string }>(`${this.connection.getApiUrl()}/twitch/auth/poll`);
   }
 
   /**
@@ -78,7 +98,7 @@ export class TwitchService {
    * Logout from Twitch
    */
   logout(): Observable<{ success: boolean }> {
-    return this.http.post<{ success: boolean }>(`${this.apiUrl}/twitch/auth/logout`, {});
+    return this.http.post<{ success: boolean }>(`${this.connection.getApiUrl()}/twitch/auth/logout`, {});
   }
 
   /**
@@ -90,7 +110,7 @@ export class TwitchService {
     }
 
     const params = new HttpParams().set('query', query);
-    return this.http.get<TwitchUser[]>(`${this.apiUrl}/twitch/users/search`, { params }).pipe(
+    return this.http.get<TwitchUser[]>(`${this.connection.getApiUrl()}/twitch/users/search`, { params }).pipe(
       catchError((error) => {
         console.error('Error searching Twitch users:', error);
         return of([]);
@@ -107,7 +127,7 @@ export class TwitchService {
     }
 
     const params = new HttpParams().set('username', username);
-    return this.http.get<TwitchUser | null>(`${this.apiUrl}/twitch/users/by-username`, { params }).pipe(
+    return this.http.get<TwitchUser | null>(`${this.connection.getApiUrl()}/twitch/users/by-username`, { params }).pipe(
       catchError((error) => {
         console.error('Error getting Twitch user:', error);
         return of(null);

@@ -1,7 +1,7 @@
 import { inject, Injectable, OnDestroy, NgZone } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable, of, BehaviorSubject } from 'rxjs';
-import { API_URL } from '../constants';
+import { ConnectionConfigService } from './connection-config.service';
 import { VoiceTweakSettings } from './voices.service';
 
 export interface CustomIntro {
@@ -60,16 +60,18 @@ export interface InitialUsersEvent {
   users: User[];
 }
 
+const REMOTE_POLL_MS = 4000;
+
 @Injectable({
   providedIn: 'root',
 })
 export class UsersService implements OnDestroy {
-  private apiUrl = API_URL;
-
   private http = inject(HttpClient);
   private ngZone = inject(NgZone);
+  private connection = inject(ConnectionConfigService);
   private usersSubject = new BehaviorSubject<User[]>([]);
   private eventSource: EventSource | null = null;
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
 
   public readonly users$ = this.usersSubject.asObservable();
 
@@ -78,7 +80,7 @@ export class UsersService implements OnDestroy {
   }
 
   getAllUsers(): Observable<User[]> {
-    return this.http.get<User[]>(`${this.apiUrl}/users`);
+    return this.http.get<User[]>(`${this.connection.getApiUrl()}/users`);
   }
 
   searchUsers(query: string): Observable<User[]> {
@@ -87,44 +89,44 @@ export class UsersService implements OnDestroy {
     }
 
     const params = new HttpParams().set('query', query);
-    return this.http.get<User[]>(`${this.apiUrl}/users`, { params });
+    return this.http.get<User[]>(`${this.connection.getApiUrl()}/users`, { params });
   }
 
   getUser(twitchUserId: string): Observable<User> {
-    return this.http.get<User>(`${this.apiUrl}/users/${twitchUserId}`);
+    return this.http.get<User>(`${this.connection.getApiUrl()}/users/${twitchUserId}`);
   }
 
   updateUser(twitchUserId: string, updates: UpdateUserRequest): Observable<User> {
-    return this.http.put<User>(`${this.apiUrl}/users/${twitchUserId}`, updates);
+    return this.http.put<User>(`${this.connection.getApiUrl()}/users/${twitchUserId}`, updates);
   }
 
   addCustomIntro(twitchUserId: string, introText: string): Observable<{ success: boolean; message: string }> {
     return this.http.post<{ success: boolean; message: string }>(
-      `${this.apiUrl}/users/${twitchUserId}/intros`,
+      `${this.connection.getApiUrl()}/users/${twitchUserId}/intros`,
       { introText }
     );
   }
 
   updateCustomIntro(introId: string, introText: string): Observable<{ success: boolean; message: string }> {
     return this.http.put<{ success: boolean; message: string }>(
-      `${this.apiUrl}/users/intros/${introId}`,
+      `${this.connection.getApiUrl()}/users/intros/${introId}`,
       { introText }
     );
   }
 
   deleteCustomIntro(introId: string): Observable<{ success: boolean; message: string }> {
     return this.http.delete<{ success: boolean; message: string }>(
-      `${this.apiUrl}/users/intros/${introId}`
+      `${this.connection.getApiUrl()}/users/intros/${introId}`
     );
   }
 
   createUser(userData: CreateUserRequest): Observable<User> {
-    return this.http.post<User>(`${this.apiUrl}/users`, userData);
+    return this.http.post<User>(`${this.connection.getApiUrl()}/users`, userData);
   }
 
   populateMissingPronouns(): Observable<PopulatePronounsResult> {
     return this.http.post<PopulatePronounsResult>(
-      `${this.apiUrl}/users/populate-pronouns`,
+      `${this.connection.getApiUrl()}/users/populate-pronouns`,
       {}
     );
   }
@@ -137,11 +139,16 @@ export class UsersService implements OnDestroy {
   }
 
   /**
-   * Connect to SSE stream and update users subject
+   * Connect to SSE stream (local) or poll via REST (remote — EventSource can't send Bearer).
    */
   private connectToUsersStream(): void {
+    if (this.connection.isRemoteMode()) {
+      this.startRemotePolling();
+      return;
+    }
+
     try {
-      this.eventSource = new EventSource(`${this.apiUrl}/users/stream`);
+      this.eventSource = new EventSource(`${this.connection.getApiUrl()}/users/stream`);
 
       this.eventSource.onmessage = (event) => {
         try {
@@ -206,6 +213,27 @@ export class UsersService implements OnDestroy {
     }
   }
 
+  private startRemotePolling(): void {
+    const poll = () => {
+      this.getAllUsers().subscribe({
+        next: (users) => {
+          this.ngZone.run(() => {
+            const sorted = [...users].sort((a, b) =>
+              a.twitchUsername.toLowerCase().localeCompare(b.twitchUsername.toLowerCase())
+            );
+            this.usersSubject.next(sorted);
+          });
+        },
+        error: (error) => {
+          console.error('Users poll error:', error);
+        },
+      });
+    };
+
+    poll();
+    this.pollTimer = setInterval(poll, REMOTE_POLL_MS);
+  }
+
   /**
    * Cleanup (call this in ngOnDestroy if needed)
    */
@@ -214,6 +242,9 @@ export class UsersService implements OnDestroy {
       this.eventSource.close();
       this.eventSource = null;
     }
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
   }
 }
-

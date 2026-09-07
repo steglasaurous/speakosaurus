@@ -4,10 +4,10 @@ import { RouterModule, ActivatedRoute, Router } from '@angular/router';
 import { FormsModule } from '@angular/forms';
 import { HttpClient } from '@angular/common/http';
 import { forkJoin } from 'rxjs';
-import { API_URL } from '../../constants';
 import { UsersService, User, CustomIntro } from '../../services/users.service';
 import { VoicesService, Voice } from '../../services/voices.service';
 import { SettingsService } from '../../services/settings.service';
+import { ConnectionConfigService } from '../../services/connection-config.service';
 import { VoiceSelectorComponent } from '../voice-selector/voice-selector.component';
 
 @Component({
@@ -52,7 +52,7 @@ export class UserDetailComponent implements OnInit {
   private settingsService = inject(SettingsService);
   private route = inject(ActivatedRoute);
   private http = inject(HttpClient);
-  private apiUrl = API_URL;
+  private connection = inject(ConnectionConfigService);
 
   ngOnInit(): void {
     if (!this.twitchUserId) {
@@ -177,7 +177,7 @@ export class UserDetailComponent implements OnInit {
     }
     // If no voice is selected, the API will use the pronoun-specific or global default.
 
-    this.http.post(`${this.apiUrl}/speak`, speakPayload).subscribe({
+    this.http.post(`${this.connection.getApiUrl()}/speak`, speakPayload).subscribe({
       next: () => {
         console.log('TTS name queued for playback');
         // Reset playing state after a delay (we can't easily detect when it finishes)
@@ -227,7 +227,7 @@ export class UserDetailComponent implements OnInit {
           }
         }
 
-        this.http.post(`${this.apiUrl}/speak`, speakPayload).subscribe({
+        this.http.post(`${this.connection.getApiUrl()}/speak`, speakPayload).subscribe({
           next: () => {
             console.log('Intro queued for playback');
             // Estimate duration based on text length
@@ -249,7 +249,7 @@ export class UserDetailComponent implements OnInit {
         const speakPayload: any = {
           message: intro.introText,
         };
-        this.http.post(`${this.apiUrl}/speak`, speakPayload).subscribe({
+        this.http.post(`${this.connection.getApiUrl()}/speak`, speakPayload).subscribe({
           next: () => {
             console.log('Intro queued for playback');
             const estimatedDuration = Math.max(2000, (intro.introText.length / 10) * 1000);

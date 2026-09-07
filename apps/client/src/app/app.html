@@ -1,7 +1,9 @@
-<app-status-bar
-  (settingsRequested)="openSettings()"
-  (playgroundRequested)="openPlayground()"
-></app-status-bar>
+@if (!hideChrome) {
+  <app-status-bar
+    (settingsRequested)="openSettings()"
+    (playgroundRequested)="openPlayground()"
+  ></app-status-bar>
+}
 <router-outlet></router-outlet>
 
 @if (settingsModalOpen) {

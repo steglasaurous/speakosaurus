@@ -2,9 +2,9 @@ import { Component, EventEmitter, OnInit, OnDestroy, inject, Output } from '@ang
 
 import { HttpClient } from '@angular/common/http';
 import { Subscription } from 'rxjs';
-import { API_URL } from '../../constants';
 import { StatusService, Status } from '../../services/status.service';
 import { SettingsService } from '../../services/settings.service';
+import { ConnectionConfigService } from '../../services/connection-config.service';
 
 @Component({
   selector: 'app-status-bar',
@@ -30,7 +30,7 @@ export class StatusBarComponent implements OnInit, OnDestroy {
   private statusService = inject(StatusService);
   private settingsService = inject(SettingsService);
   private http = inject(HttpClient);
-  private apiUrl = API_URL;
+  private connection = inject(ConnectionConfigService);
   stopInProgress = false;
 
   ngOnInit() {
@@ -67,7 +67,7 @@ export class StatusBarComponent implements OnInit, OnDestroy {
     if (this.stopInProgress) return;
     this.stopInProgress = true;
 
-    this.http.post(`${this.apiUrl}/speak/stop`, {}).subscribe({
+    this.http.post(`${this.connection.getApiUrl()}/speak/stop`, {}).subscribe({
       next: (result: { success?: boolean }) => {
         // Queue + playback are also reflected via SSE (audioQueueSize / pendingMessages).
         // We don't force UI state here beyond disabling the button momentarily.

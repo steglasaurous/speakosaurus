@@ -10,6 +10,7 @@ import {
   VoicesService,
 } from '../../services/voices.service';
 import { CustomVoicesService } from '../../services/custom-voices.service';
+import { ConnectionConfigService } from '../../services/connection-config.service';
 
 @Component({
   selector: 'app-voice-playground',
@@ -31,9 +32,16 @@ export class VoicePlaygroundComponent implements OnInit {
   statusMessage = '';
   errorMessage = '';
   playingSelected = false;
+  /** Remote playground: where rendered audio should play. */
+  playDestination: 'remote' | 'broadcaster' | 'both' = 'remote';
 
   private voicesService = inject(VoicesService);
   private customVoicesService = inject(CustomVoicesService);
+  private connection = inject(ConnectionConfigService);
+
+  get isRemoteMode(): boolean {
+    return this.connection.isRemoteMode();
+  }
 
   get supportedStyles(): string[] {
     return this.selectedVoice?.supportedStyles ?? [];
@@ -99,6 +107,7 @@ export class VoicePlaygroundComponent implements OnInit {
         message: this.sampleText,
         tweaks: this.tweaks,
         skipPreviewUrl: true,
+        destination: this.isRemoteMode ? this.playDestination : undefined,
       })
       .subscribe({
         next: () => {

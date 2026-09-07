@@ -4,12 +4,17 @@ import { UserDetailComponent } from './components/user-detail/user-detail.compon
 import { SettingsComponent } from './components/settings/settings.component';
 import { TwitchCallbackComponent } from './components/twitch-callback/twitch-callback.component';
 import { SetupWizardComponent } from './components/setup-wizard/setup-wizard.component';
+import { RemoteLoginComponent } from './components/remote-login/remote-login.component';
 
 export const appRoutes: Route[] = [
   {
     path: '',
     redirectTo: '/users',
     pathMatch: 'full',
+  },
+  {
+    path: 'remote-login',
+    component: RemoteLoginComponent,
   },
   {
     path: 'setup',

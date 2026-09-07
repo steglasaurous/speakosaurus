@@ -1,8 +1,9 @@
 import { inject, Injectable } from '@angular/core';
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { Observable } from 'rxjs';
-import { map } from 'rxjs/operators';
-import { API_URL } from '../constants';
+import { map, tap } from 'rxjs/operators';
+import { AudioPlayData, AudioService } from './audio.service';
+import { ConnectionConfigService } from './connection-config.service';
 
 export interface VoiceTweakSettings {
   speed?: number;
@@ -56,19 +57,26 @@ export interface Voice {
   };
 }
 
+interface PreviewResponse {
+  success?: boolean;
+  message?: string;
+  audio?: AudioPlayData;
+}
+
 @Injectable({
   providedIn: 'root',
 })
 export class VoicesService {
-  private apiUrl = API_URL;
   private http = inject(HttpClient);
+  private connection = inject(ConnectionConfigService);
+  private audioService = inject(AudioService);
 
   getVoices(forceReload = false): Observable<Voice[]> {
     let params = new HttpParams();
     if (forceReload) {
       params = params.set('forceReload', 'true');
     }
-    return this.http.get<Voice[]>(`${this.apiUrl}/voices`, { params });
+    return this.http.get<Voice[]>(`${this.connection.getApiUrl()}/voices`, { params });
   }
 
   searchVoices(query: string): Observable<Voice[]> {
@@ -125,7 +133,12 @@ export class VoicesService {
 
   previewVoice(
     voice: Voice,
-    options?: { message?: string; tweaks?: VoiceTweakSettings; skipPreviewUrl?: boolean },
+    options?: {
+      message?: string;
+      tweaks?: VoiceTweakSettings;
+      skipPreviewUrl?: boolean;
+      destination?: 'remote' | 'broadcaster' | 'both';
+    },
   ): Observable<unknown> {
     const previewPayload: {
       voiceProvider: string;
@@ -133,6 +146,7 @@ export class VoicesService {
       previewUrl?: string;
       message?: string;
       tweaks?: VoiceTweakSettings;
+      destination?: 'remote' | 'broadcaster' | 'both';
     } = {
       voiceProvider: voice.providerName,
       voiceId: voice.voiceId,
@@ -144,6 +158,11 @@ export class VoicesService {
     if (options?.tweaks) {
       previewPayload.tweaks = options.tweaks;
     }
+    if (options?.destination) {
+      previewPayload.destination = options.destination;
+    } else if (this.connection.isRemoteMode()) {
+      previewPayload.destination = 'remote';
+    }
 
     const usePreviewUrl =
       !options?.skipPreviewUrl &&
@@ -154,14 +173,19 @@ export class VoicesService {
       previewPayload.previewUrl = voice.previewUrl;
     }
 
-    return this.http.post(`${this.apiUrl}/speak/preview`, previewPayload);
+    return this.http.post<PreviewResponse>(`${this.connection.getApiUrl()}/speak/preview`, previewPayload).pipe(
+      tap((response) => {
+        if (response?.audio?.base64) {
+          this.audioService.enqueue(response.audio);
+        }
+      }),
+    );
   }
 
   downloadPiperVoice(voiceId: string): Observable<Voice> {
     return this.http.post<Voice>(
-      `${this.apiUrl}/voices/piper/${encodeURIComponent(voiceId)}/download`,
+      `${this.connection.getApiUrl()}/voices/piper/${encodeURIComponent(voiceId)}/download`,
       {},
     );
   }
 }
-

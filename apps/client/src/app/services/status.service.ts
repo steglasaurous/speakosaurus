@@ -1,7 +1,7 @@
 import { inject, Injectable, OnDestroy, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import { Observable, BehaviorSubject } from 'rxjs';
-import { API_URL } from '../constants';
+import { ConnectionConfigService } from './connection-config.service';
 
 export interface Status {
   streamerBotConnected: boolean;
@@ -10,13 +10,15 @@ export interface Status {
   mode: string;
 }
 
+const REMOTE_POLL_MS = 4000;
+
 @Injectable({
   providedIn: 'root',
 })
 export class StatusService implements OnDestroy {
-  private apiUrl = API_URL;
   private http = inject(HttpClient);
   private ngZone = inject(NgZone);
+  private connection = inject(ConnectionConfigService);
   private statusSubject = new BehaviorSubject<Status>({
     streamerBotConnected: false,
     audioQueueSize: 0,
@@ -24,6 +26,7 @@ export class StatusService implements OnDestroy {
     mode: 'trigger',
   });
   private eventSource: EventSource | null = null;
+  private pollTimer: ReturnType<typeof setInterval> | null = null;
 
   public readonly status$ = this.statusSubject.asObservable();
 
@@ -42,15 +45,20 @@ export class StatusService implements OnDestroy {
    * Get status via REST API (for one-time queries)
    */
   getStatusOnce(): Observable<Status> {
-    return this.http.get<Status>(`${this.apiUrl}/status`);
+    return this.http.get<Status>(`${this.connection.getApiUrl()}/status`);
   }
 
   /**
-   * Connect to SSE stream and update status subject
+   * Connect to SSE stream (local) or poll via REST (remote — EventSource can't send Bearer).
    */
   private connectToStatusStream(): void {
+    if (this.connection.isRemoteMode()) {
+      this.startRemotePolling();
+      return;
+    }
+
     try {
-      this.eventSource = new EventSource(`${this.apiUrl}/status/stream`);
+      this.eventSource = new EventSource(`${this.connection.getApiUrl()}/status/stream`);
 
       this.eventSource.onmessage = (event) => {
         try {
@@ -87,6 +95,24 @@ export class StatusService implements OnDestroy {
     }
   }
 
+  private startRemotePolling(): void {
+    const poll = () => {
+      this.getStatusOnce().subscribe({
+        next: (status) => {
+          this.ngZone.run(() => {
+            this.statusSubject.next(status);
+          });
+        },
+        error: (error) => {
+          console.error('Status poll error:', error);
+        },
+      });
+    };
+
+    poll();
+    this.pollTimer = setInterval(poll, REMOTE_POLL_MS);
+  }
+
   /**
    * Cleanup (call this in ngOnDestroy if needed)
    */
@@ -95,6 +121,9 @@ export class StatusService implements OnDestroy {
       this.eventSource.close();
       this.eventSource = null;
     }
+    if (this.pollTimer) {
+      clearInterval(this.pollTimer);
+      this.pollTimer = null;
+    }
   }
 }
-
