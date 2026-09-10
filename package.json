@@ -1,6 +1,6 @@
 {
   "name": "@speakosaurus/source",
-  "version": "0.1.7",
+  "version": "0.1.8",
   "author": {
     "name": "steglasaurous",
     "email": "me@steglasaurous.com",
@@ -29,7 +29,8 @@
     "nxe:test:backend": "nx test desktop",
     "nxe:package:app": "nx run desktop:make --prepackageOnly",
     "nxe:make:app": "nx run desktop:make",
-    "prepare:piper": "node scripts/prepare-piper-runtime.mjs"
+    "prepare:piper": "node scripts/prepare-piper-runtime.mjs",
+    "check:version": "node scripts/check-version-bump.mjs"
   },
   "private": true,
   "desktopName": "com.speakosaurus.app",
@@ -116,7 +117,7 @@
     "reflect-metadata": "^0.1.13",
     "rxjs": "~7.8.0",
     "sound-play": "^1.1.0",
-    "speakertts": "git@github.com:steglasaurous/speakertts.git#main",
+    "speakertts": "https://github.com/steglasaurous/speakertts.git#main",
     "uuid": "^13.0.0",
     "zone.js": "^0.15.1"
   },
