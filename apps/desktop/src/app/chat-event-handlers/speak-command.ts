@@ -247,8 +247,14 @@ export class SpeakCommand {
         const linkRegex = /https?:\/\/([a-zA-Z0-9.-]+)(?:\/[^\s]*)?/g;
         message = message.replace(linkRegex, (_match, domain) => {
             // Insert " dot " between domain parts, e.g. twitch.tv -> twitch dot tv
-            const domainParts = domain.split('.');
+            // Remove 'www.' prefix if present
+            let cleanDomain = domain;
+            if (cleanDomain.startsWith('www.')) {
+                cleanDomain = cleanDomain.slice(4);
+            }
+            const domainParts = cleanDomain.split('.');
             const rewrittenDomain = domainParts.join(' dot ');
+    
             return `a link to ${rewrittenDomain}`;
         });
         
