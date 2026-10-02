@@ -12,6 +12,7 @@ export interface StatusResponse {
   streamerBotConnected: boolean;
   audioQueueSize: number;
   pendingMessages: number;
+  audioPaused: boolean;
   mode: string;
 }
 
@@ -39,6 +40,7 @@ export class StatusController {
     const streamerBotConnected = this.streamerBotManagerService.getConnectionStatus();
     const audioQueueSize = this.audioProcessorService.getQueueSize();
     const pendingMessages = this.voiceProviderService.getPendingMessagesCount();
+    const audioPaused = this.audioProcessorService.isPaused();
     
     const modeSetting = await this.settingsService.getSetting(Setting.MODE);
     const mode = modeSetting?.value || modeSetting?.default || 'trigger';
@@ -47,6 +49,7 @@ export class StatusController {
       streamerBotConnected,
       audioQueueSize,
       pendingMessages,
+      audioPaused,
       mode,
     };
   }
@@ -63,6 +66,7 @@ export class StatusController {
       const streamerBotConnected = this.streamerBotManagerService.getConnectionStatus();
       const audioQueueSize = this.audioProcessorService.getQueueSize();
       const pendingMessages = this.voiceProviderService.getPendingMessagesCount();
+      const audioPaused = this.audioProcessorService.isPaused();
       const modeSetting = await this.settingsService.getSetting(Setting.MODE);
       const mode = modeSetting?.value || modeSetting?.default || 'trigger';
 
@@ -70,6 +74,7 @@ export class StatusController {
         streamerBotConnected,
         audioQueueSize,
         pendingMessages,
+        audioPaused,
         mode,
       };
     };

@@ -28,6 +28,10 @@ declare global {
       removeAudioPlayListener: () => void;
       onAudioStop: (callback: () => void) => void;
       removeAudioStopListener: () => void;
+      onAudioPause: (callback: () => void) => void;
+      removeAudioPauseListener: () => void;
+      onAudioResume: (callback: () => void) => void;
+      removeAudioResumeListener: () => void;
       reportAudioTiming?: (payload: AudioTimingPayload) => void;
     };
   }
@@ -40,10 +44,13 @@ export class AudioService implements OnDestroy {
   private audioContext: AudioContext | null = null;
   private currentAudioSource: AudioBufferSourceNode | HTMLAudioElement | null = null;
   private isPlaying = false;
+  private paused = false;
   private audioQueue: AudioPlayData[] = [];
   private pauseBetweenMessages = 1000;
   private audioPlayListener: ((data: AudioPlayData) => void) | null = null;
   private audioStopListener: (() => void) | null = null;
+  private audioPauseListener: (() => void) | null = null;
+  private audioResumeListener: (() => void) | null = null;
   private ngZone = inject(NgZone);
   private settingsService = inject(SettingsService);
   constructor() {
@@ -81,6 +88,20 @@ export class AudioService implements OnDestroy {
         });
       };
       window.AppBridge.onAudioStop(this.audioStopListener);
+
+      this.audioPauseListener = () => {
+        this.ngZone.run(() => {
+          this.pausePlayback();
+        });
+      };
+      window.AppBridge.onAudioPause(this.audioPauseListener);
+
+      this.audioResumeListener = () => {
+        this.ngZone.run(() => {
+          this.resumePlayback();
+        });
+      };
+      window.AppBridge.onAudioResume(this.audioResumeListener);
     } else {
       console.warn('AppBridge not available, audio playback will not work');
     }
@@ -110,13 +131,32 @@ export class AudioService implements OnDestroy {
     // Add to queue
     this.audioQueue.push(data);
 
-    // If already playing, the queue will be processed when current audio finishes
-    if (this.isPlaying) {
+    // If already playing or paused, the queue will be processed later
+    if (this.isPlaying || this.paused) {
       return;
     }
 
     // Start processing queue
     this.processQueue();
+  }
+
+  /**
+   * Holds remaining queued clips after the current one finishes.
+   * Called when the backend triggers an IPC `audio:pause`.
+   */
+  private pausePlayback(): void {
+    this.paused = true;
+  }
+
+  /**
+   * Continues playing queued clips after a pause.
+   * Called when the backend triggers an IPC `audio:resume`.
+   */
+  private resumePlayback(): void {
+    this.paused = false;
+    if (!this.isPlaying && this.audioQueue.length > 0) {
+      this.processQueue();
+    }
   }
 
   /**
@@ -152,7 +192,7 @@ export class AudioService implements OnDestroy {
   }
 
   private async processQueue(): Promise<void> {
-    if (this.audioQueue.length === 0) {
+    if (this.paused || this.audioQueue.length === 0) {
       this.isPlaying = false;
       return;
     }
@@ -338,6 +378,14 @@ export class AudioService implements OnDestroy {
 
     if (typeof window !== 'undefined' && window.AppBridge && this.audioStopListener) {
       window.AppBridge.removeAudioStopListener();
+    }
+
+    if (typeof window !== 'undefined' && window.AppBridge && this.audioPauseListener) {
+      window.AppBridge.removeAudioPauseListener();
+    }
+
+    if (typeof window !== 'undefined' && window.AppBridge && this.audioResumeListener) {
+      window.AppBridge.removeAudioResumeListener();
     }
   }
 }

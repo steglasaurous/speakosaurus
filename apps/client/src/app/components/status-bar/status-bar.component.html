@@ -16,6 +16,15 @@
   </div>
 
   <div class="right-controls">
+    <button
+      class="pause-resume-button"
+      [class.paused]="status.audioPaused"
+      (click)="onPauseResumeClicked()"
+      [disabled]="pauseResumeInProgress"
+      [title]="status.audioPaused ? 'Resume speech queue' : 'Pause speech queue'"
+    >
+      {{ status.audioPaused ? 'Resume' : 'Pause' }}
+    </button>
     <button class="stop-button" (click)="onStopClicked()" [disabled]="stopInProgress" title="Stop all speech">
       Stop
     </button>

@@ -21,6 +21,7 @@ export class StatusBarComponent implements OnInit, OnDestroy {
     streamerBotConnected: false,
     audioQueueSize: 0,
     pendingMessages: 0,
+    audioPaused: false,
     mode: 'trigger',
   };
 
@@ -32,6 +33,7 @@ export class StatusBarComponent implements OnInit, OnDestroy {
   private http = inject(HttpClient);
   private apiUrl = API_URL;
   stopInProgress = false;
+  pauseResumeInProgress = false;
 
   ngOnInit() {
     // Subscribe to real-time status updates via SSE
@@ -61,6 +63,27 @@ export class StatusBarComponent implements OnInit, OnDestroy {
           console.error('Error updating mode:', error);
         },
       });
+  }
+
+  onPauseResumeClicked(): void {
+    if (this.pauseResumeInProgress) return;
+    this.pauseResumeInProgress = true;
+
+    const endpoint = this.status.audioPaused ? 'resume' : 'pause';
+    this.http.post(`${this.apiUrl}/speak/${endpoint}`, {}).subscribe({
+      next: (result: { success?: boolean }) => {
+        if (result?.success === false) {
+          console.warn(`${endpoint} request returned success=false`);
+        }
+      },
+      error: (error) => {
+        console.error(`Failed to ${endpoint} speech playback:`, error);
+        this.pauseResumeInProgress = false;
+      },
+      complete: () => {
+        this.pauseResumeInProgress = false;
+      },
+    });
   }
 
   onStopClicked(): void {

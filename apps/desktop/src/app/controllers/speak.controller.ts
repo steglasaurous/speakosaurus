@@ -231,6 +231,44 @@ export class SpeakController {
     };
   }
 
+  @Post('pause')
+  @ApiOperation({
+    summary: 'Pause the speech playback queue',
+    description: 'Holds queued speech so rendering can continue. The currently playing clip is allowed to finish.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Speech playback queue paused',
+  })
+  async pauseSpeech(): Promise<{ success: boolean; paused: boolean; queueSize: number; message: string }> {
+    const result = this.audioProcessorService.pause();
+    return {
+      success: result.success,
+      paused: result.paused,
+      queueSize: result.queueSize,
+      message: 'Paused playback queue',
+    };
+  }
+
+  @Post('resume')
+  @ApiOperation({
+    summary: 'Resume the speech playback queue',
+    description: 'Resumes playing queued speech after a pause.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Speech playback queue resumed',
+  })
+  async resumeSpeech(): Promise<{ success: boolean; paused: boolean; queueSize: number; message: string }> {
+    const result = this.audioProcessorService.resume();
+    return {
+      success: result.success,
+      paused: result.paused,
+      queueSize: result.queueSize,
+      message: 'Resumed playback queue',
+    };
+  }
+
   private logDiscarded(timingId?: string): void {
     if (!timingId) {
       return;

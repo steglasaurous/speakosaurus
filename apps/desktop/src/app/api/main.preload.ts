@@ -46,6 +46,22 @@ contextBridge.exposeInMainWorld(
         removeAudioStopListener: () => {
             ipcRenderer.removeAllListeners('audio:stop');
         },
+        onAudioPause: (callback: () => void) => {
+            ipcRenderer.on('audio:pause', () => {
+                callback();
+            });
+        },
+        removeAudioPauseListener: () => {
+            ipcRenderer.removeAllListeners('audio:pause');
+        },
+        onAudioResume: (callback: () => void) => {
+            ipcRenderer.on('audio:resume', () => {
+                callback();
+            });
+        },
+        removeAudioResumeListener: () => {
+            ipcRenderer.removeAllListeners('audio:resume');
+        },
         reportAudioTiming: (payload: AudioTimingPayload) => {
             ipcRenderer.send('audio:timing', payload);
         },

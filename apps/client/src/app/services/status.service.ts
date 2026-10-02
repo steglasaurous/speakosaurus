@@ -7,6 +7,7 @@ export interface Status {
   streamerBotConnected: boolean;
   audioQueueSize: number;
   pendingMessages: number;
+  audioPaused: boolean;
   mode: string;
 }
 
@@ -21,6 +22,7 @@ export class StatusService implements OnDestroy {
     streamerBotConnected: false,
     audioQueueSize: 0,
     pendingMessages: 0,
+    audioPaused: false,
     mode: 'trigger',
   });
   private eventSource: EventSource | null = null;

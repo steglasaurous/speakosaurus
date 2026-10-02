@@ -13,6 +13,7 @@ export class AudioProcessorService {
     private queue: AudioData[] = [];
 
     private isProcessing = false;
+    private paused = false;
 
     /**
      * Monotonically increasing value that is bumped whenever the user hits "Stop".
@@ -34,20 +35,57 @@ export class AudioProcessorService {
         return this.queue.length;
     }
 
+    isPaused(): boolean {
+        return this.paused;
+    }
+
     async addToQueue(audioData: AudioData) {
         this.queue.push(audioData);
         // Emit status update
         this.statusEventService.emitStatusUpdate({ 
             audioQueueSize: this.queue.length 
         });
-        if (!this.isProcessing) {   
+        if (!this.isProcessing && !this.paused) {   
             this.logger.log('Processing queue', { queueLength: this.queue.length });
             this.processQueue();
         }
     }
 
     /**
+     * Holds the playback queue without clearing it or discarding in-flight renders.
+     * The clip already sent to the renderer is allowed to finish.
+     */
+    pause(): { success: boolean; paused: boolean; queueSize: number } {
+        this.logger.log('Pausing speech playback queue', { queueLength: this.queue.length });
+        this.paused = true;
+        this.statusEventService.emitStatusUpdate({
+            audioPaused: true,
+            audioQueueSize: this.queue.length,
+        });
+        this.sendPauseToRenderer();
+        return { success: true, paused: true, queueSize: this.queue.length };
+    }
+
+    /**
+     * Resumes sending queued audio to the renderer after a pause.
+     */
+    resume(): { success: boolean; paused: boolean; queueSize: number } {
+        this.logger.log('Resuming speech playback queue', { queueLength: this.queue.length });
+        this.paused = false;
+        this.statusEventService.emitStatusUpdate({
+            audioPaused: false,
+            audioQueueSize: this.queue.length,
+        });
+        this.sendResumeToRenderer();
+        if (!this.isProcessing && this.queue.length > 0) {
+            this.processQueue();
+        }
+        return { success: true, paused: false, queueSize: this.queue.length };
+    }
+
+    /**
      * Stops any currently playing audio in the renderer and clears the pending queue immediately.
+     * Pause state is preserved so new renders keep accumulating until Resume.
      */
     stopAll(): { success: boolean; queueSize: number } {
         this.logger.log('Stopping all speech playback and clearing queue');
@@ -81,6 +119,10 @@ export class AudioProcessorService {
         }
 
         while (this.queue.length > 0 && runId === this.processingRunId) {
+            if (this.paused) {
+                this.logger.log('Playback paused; holding remaining queue', { queueLength: this.queue.length });
+                break;
+            }
             const audioData = this.queue.shift();
             if (audioData) {
                 // Capture epoch at the moment we decide to play this item.
@@ -102,12 +144,12 @@ export class AudioProcessorService {
     }
 
     private async sleepInterruptible(ms: number, runId: number): Promise<void> {
-        // Wake periodically so we can exit quickly on `stopAll()`.
+        // Wake periodically so we can exit quickly on `stopAll()` or pause.
         const start = Date.now();
         const stepMs = 50;
 
         while (Date.now() - start < ms) {
-            if (runId !== this.processingRunId) return;
+            if (runId !== this.processingRunId || this.paused) return;
             await new Promise(resolve => setTimeout(resolve, Math.min(stepMs, ms - (Date.now() - start))));
         }
     }
@@ -178,11 +220,23 @@ export class AudioProcessorService {
         }
     }
 
-    private sendStopToRenderer(): void {
+    private sendIpcToRenderer(channel: 'audio:stop' | 'audio:pause' | 'audio:resume'): void {
         if (App.mainWindow && !App.mainWindow.isDestroyed()) {
-            App.mainWindow.webContents.send('audio:stop');
+            App.mainWindow.webContents.send(channel);
         } else {
-            this.logger.warn('Main window not available, cannot send audio stop IPC');
+            this.logger.warn(`Main window not available, cannot send ${channel} IPC`);
         }
+    }
+
+    private sendStopToRenderer(): void {
+        this.sendIpcToRenderer('audio:stop');
+    }
+
+    private sendPauseToRenderer(): void {
+        this.sendIpcToRenderer('audio:pause');
+    }
+
+    private sendResumeToRenderer(): void {
+        this.sendIpcToRenderer('audio:resume');
     }
 }
